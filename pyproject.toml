@@ -1,0 +1,78 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "minimal-oversight"
+version = "0.1.0"
+description = "A governed-delegation analytics and decision-support toolkit."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Carlos R. B. Azevedo", email = "renatoaz@gmail.com" },
+]
+keywords = [
+    "delegation",
+    "autonomy",
+    "governance",
+    "multi-agent",
+    "oversight",
+    "information-geometry",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "networkx>=3.0",
+]
+
+[project.optional-dependencies]
+viz = [
+    "matplotlib>=3.7",
+    "plotly>=5.14",
+]
+notebooks = [
+    "jupyter>=1.0",
+    "matplotlib>=3.7",
+    "plotly>=5.14",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+    "mypy>=1.5",
+]
+all = ["minimal-oversight[viz,notebooks,dev]"]
+
+[project.urls]
+Homepage = "https://github.com/crbazevedo/delegation-lab"
+Documentation = "https://github.com/crbazevedo/delegation-lab"
+Repository = "https://github.com/crbazevedo/delegation-lab"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/minimal_oversight"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 99
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
