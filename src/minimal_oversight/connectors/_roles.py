@@ -12,33 +12,40 @@ from minimal_oversight.schema import NodeRole
 
 # Keyword patterns for role classification.
 # Order matters: first match wins. More specific patterns first.
+#
+# The input text is normalized (underscores/hyphens replaced with spaces)
+# before matching so \b boundaries work on snake_case and kebab-case names.
+# The original \brout pattern was too broad (matched "about"); we now
+# require more specific stems like router/routing/route.
 _ROLE_PATTERNS: list[tuple[NodeRole, list[str]]] = [
     (NodeRole.HUMAN, [
-        r"human", r"\bmanual\b", r"\bescalat", r"\boperator\b",
-        r"\bhitl\b",
+        r"\bhuman\b", r"\bmanual\b",
+        r"\bescalat", r"\boperator\b", r"\bhitl\b",
     ]),
     (NodeRole.ROUTER, [
-        r"\brout", r"\btriage", r"\bclassif", r"\bdispatch", r"\bselect",
-        r"\bswitch", r"\bbranch", r"\bcondition",
+        r"\brouter\b|\brouting\b|\broute[sd]?\b",
+        r"\btriage", r"\bclassif", r"\bdispatch",
+        r"\bswitch\b", r"\bbranch", r"\bcondition",
     ]),
     (NodeRole.REVIEWER, [
         r"\breview", r"\bcheck", r"\bvalidat", r"\bverif", r"\baudit",
-        r"\bquality", r"\bcorrect", r"\blint", r"\btest", r"\bsecur",
-        r"\beval", r"\bjudge", r"\bgrade", r"\bscore", r"\bcritiqu",
-        r"\bapprov",
+        r"\bquality\b", r"\bcorrect", r"\blint", r"\btest",
+        r"\bsecur", r"\bevaluat", r"\bjudge", r"\bgrade",
+        r"\bscore", r"\bcritiqu", r"\bapprov",
     ]),
     (NodeRole.GATE, [
         r"\bmerge", r"\bgate\b", r"\baggregat", r"\bcombine", r"\bjoin\b",
-        r"\bfinal", r"\bconsolid",
+        r"\bfinaliz", r"\bconsolid",
     ]),
     (NodeRole.TOOL, [
-        r"\btool", r"\bsearch", r"\bapi\b", r"\bfetch", r"\bquery",
-        r"\bretrie", r"\blookup", r"\bweb\b", r"\bdatabase\b",
+        r"\btool", r"\bsearch", r"\bapi\b", r"\bfetch",
+        r"\bquery\b|\bquerying\b", r"\bretrieval\b|\bretriev",
+        r"\blookup", r"\bweb\b", r"\bdatabase\b",
     ]),
     (NodeRole.GENERATOR, [
-        r"\bgenerat", r"\bwrite", r"\bcreat", r"\bdraft", r"\bproduc",
-        r"\bcompos", r"\bsynth", r"\bcode", r"\brespond", r"\banswer",
-        r"\bassist", r"\bagent\b",
+        r"\bgenerat", r"\bwrit", r"\bcreat", r"\bdraft", r"\bproduc",
+        r"\bcompos", r"\bsynth", r"\bcod(?:e[rs]?|ing)\b",
+        r"\brespond", r"\banswer", r"\bassist", r"\bagent\b",
     ]),
 ]
 
@@ -54,6 +61,9 @@ def infer_role(
     This is a heuristic — trace-based calibration is more reliable.
     """
     text = f"{name} {description} {framework_type or ''}".lower()
+    # Normalize underscores and hyphens to spaces so word-boundary patterns
+    # work correctly on snake_case and kebab-case identifiers.
+    text = text.replace("_", " ").replace("-", " ")
 
     for role, patterns in _ROLE_PATTERNS:
         for pattern in patterns:

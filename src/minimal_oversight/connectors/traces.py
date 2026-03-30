@@ -11,6 +11,7 @@ to WorkflowTrace via the bridge for use with estimation.py.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from minimal_oversight.connectors._bridge import traces_from_normalized
@@ -24,6 +25,23 @@ from minimal_oversight.schema import (
 )
 
 
+def _parse_timestamp(value: Any, fallback: float = 0.0) -> float:
+    """Parse a timestamp value to float seconds.
+
+    Handles numeric values directly and ISO-8601 strings via
+    ``datetime.fromisoformat()``.  Returns *fallback* only if parsing fails.
+    """
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            dt = datetime.fromisoformat(value)
+            return dt.timestamp()
+        except (ValueError, TypeError):
+            return fallback
+    return fallback
+
+
 def _parse_langsmith_run(
     run: dict[str, Any],
     trace_id: str,
@@ -34,13 +52,8 @@ def _parse_langsmith_run(
     """Recursively parse a LangSmith run dict."""
     node_id = run.get("name", "unknown")
     run_type = run.get("run_type", "")
-    start_time = run.get("start_time", 0.0)
-    end_time = run.get("end_time", 0.0)
-
-    if isinstance(start_time, str):
-        start_time = 0.0
-    if isinstance(end_time, str):
-        end_time = 0.0
+    start_time = _parse_timestamp(run.get("start_time", 0.0))
+    end_time = _parse_timestamp(run.get("end_time", 0.0))
 
     status = run.get("status", "")
     error = run.get("error", None)
@@ -141,10 +154,7 @@ def from_adk_session_logs(
         for j, event in enumerate(session.get("events", [])):
             agent_name = event.get("agent", event.get("author", "unknown"))
             event_type_str = event.get("type", event.get("action_type", ""))
-            timestamp = event.get("timestamp", float(j))
-
-            if isinstance(timestamp, str):
-                timestamp = float(j)
+            timestamp = _parse_timestamp(event.get("timestamp", float(j)), fallback=float(j))
 
             # Map ADK event types to normalized types
             if "transfer" in event_type_str.lower() or "handoff" in event_type_str.lower():
@@ -170,14 +180,17 @@ def from_adk_session_logs(
                 payload=event.get("data", {}),
             ))
 
-            outcomes.append(NormalizedOutcome(
-                task_id=str(session_id),
-                node_id=agent_name,
-                raw_outcome=raw,
-                corrected_outcome=raw,
-                was_reviewed=False,
-                timestamp=float(timestamp),
-            ))
+            # Only create outcomes for actual task-processing events,
+            # not handoffs/routing which are control-flow, not work output.
+            if evt_type not in (EventType.HANDOFF, EventType.ROUTING_DECISION):
+                outcomes.append(NormalizedOutcome(
+                    task_id=str(session_id),
+                    node_id=agent_name,
+                    raw_outcome=raw,
+                    corrected_outcome=raw,
+                    was_reviewed=False,
+                    timestamp=float(timestamp),
+                ))
 
         traces.append(NormalizedTrace(
             trace_id=str(session_id),
@@ -254,14 +267,16 @@ def from_generic_events(
             if reviewed_field and reviewed_field in evt:
                 reviewed = bool(evt[reviewed_field])
 
+            # pre_correction / post_correction are observation-level flags,
+            # not per-event properties.  Don't set them on events; leave as
+            # default False.  The NormalizedOutcome already captures the
+            # raw vs corrected values correctly.
             norm_events.append(NormalizedEvent(
                 event_type=EventType.NODE_EXIT,
                 node_id=node_id,
                 timestamp=timestamp,
                 task_id=task_id,
                 outcome=OutcomeType.SUCCESS if raw >= 0.5 else OutcomeType.FAILURE,
-                pre_correction=corrected_field is not None,
-                post_correction=corrected_field is not None,
             ))
 
             norm_outcomes.append(NormalizedOutcome(

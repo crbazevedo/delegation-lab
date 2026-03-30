@@ -253,9 +253,10 @@ def _auto_convert(obj: Any) -> PipelineGraph:
             from minimal_oversight.connectors.adk import from_adk_agent
             return from_adk_agent(obj)
 
-    # Dict config (ADK YAML or generic)
+    # Dict config (ADK YAML or generic) — require "sub_agents" key to
+    # distinguish ADK configs from arbitrary dicts that happen to have "name".
     if isinstance(obj, dict):
-        if "sub_agents" in obj or "name" in obj:
+        if "sub_agents" in obj:
             from minimal_oversight.connectors.adk import from_adk_config
             return from_adk_config(obj)
 

@@ -6,6 +6,9 @@ and the PipelineGraph / WorkflowTrace objects used by the analytics layer.
 
 from __future__ import annotations
 
+import warnings
+from collections import defaultdict
+
 from minimal_oversight.models import AggregationType, Node, PipelineGraph, WorkflowTrace
 from minimal_oversight.schema import (
     NormalizedOutcome,
@@ -17,10 +20,12 @@ from minimal_oversight.schema import (
 
 
 def _role_to_aggregation(role: NodeRole) -> AggregationType:
-    """Map node role to default aggregation type."""
-    if role == NodeRole.GATE:
-        return AggregationType.PRODUCT
-    return AggregationType.PRODUCT  # default; can be overridden
+    """Return the default aggregation type.
+
+    Aggregation is topology-dependent, not role-dependent, so we always
+    default to PRODUCT.  Users can override per-node after import.
+    """
+    return AggregationType.PRODUCT
 
 
 def pipeline_from_normalized(
@@ -96,14 +101,30 @@ def traces_from_normalized(
         timestamps: dict[str, float] = {}
         routing_path: list[str] = []
 
+        # Collect all values per node to aggregate duplicates
+        raw_values: dict[str, list[float]] = defaultdict(list)
+        corr_values: dict[str, list[float]] = defaultdict(list)
+
         for o in outcomes:
-            node_outcomes[o.node_id] = o.raw_outcome
-            node_corrected[o.node_id] = o.corrected_outcome
-            was_reviewed[o.node_id] = o.was_reviewed
+            raw_values[o.node_id].append(o.raw_outcome)
+            corr_values[o.node_id].append(o.corrected_outcome)
+            # For reviewed flag, use OR: if any observation was reviewed, mark as reviewed
+            was_reviewed[o.node_id] = was_reviewed.get(o.node_id, False) or o.was_reviewed
             if o.timestamp is not None:
                 timestamps[o.node_id] = o.timestamp
             if o.node_id not in routing_path:
                 routing_path.append(o.node_id)
+
+        for node_id, raws in raw_values.items():
+            if len(raws) > 1:
+                warnings.warn(
+                    f"Multiple outcomes for (task_id={task_id!r}, node_id={node_id!r}): "
+                    f"aggregating {len(raws)} values by mean.",
+                    stacklevel=2,
+                )
+            node_outcomes[node_id] = sum(raws) / len(raws)
+            corrs = corr_values[node_id]
+            node_corrected[node_id] = sum(corrs) / len(corrs)
 
         has_human = any(o.was_reviewed and o.reviewer_id == "human" for o in outcomes)
 

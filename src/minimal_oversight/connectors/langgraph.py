@@ -107,13 +107,38 @@ def normalize_langgraph(graph: Any) -> NormalizedPipeline:
             if isinstance(edge, tuple) and len(edge) >= 2:
                 edges_raw.append((str(edge[0]), str(edge[1])))
 
-    # Also check conditional edges
-    if hasattr(inner, "conditional_edges"):
-        for src, cond_map in inner.conditional_edges.items():
-            if isinstance(cond_map, dict):
-                for _, tgt in cond_map.items():
-                    if isinstance(tgt, str):
-                        edges_raw.append((str(src), tgt))
+    # Also check conditional edges — try multiple attribute names since
+    # LangGraph internals vary across versions.
+    _conditional_attrs = [
+        "conditional_edges",
+        "_conditional_edges",
+        "branches",
+        "_branches",
+    ]
+    for attr_name in _conditional_attrs:
+        cond_data = getattr(inner, attr_name, None)
+        if cond_data is None:
+            continue
+        if isinstance(cond_data, dict):
+            for src, branch_val in cond_data.items():
+                if isinstance(branch_val, dict):
+                    # {source: {condition_result: target_node}}
+                    for _, tgt in branch_val.items():
+                        if isinstance(tgt, str):
+                            edges_raw.append((str(src), tgt))
+                elif isinstance(branch_val, list):
+                    # {source: [Branch(...)]} — LangGraph Branch objects
+                    for branch in branch_val:
+                        # Branch objects may have .ends (dict) or .then (str)
+                        ends = getattr(branch, "ends", None)
+                        if isinstance(ends, dict):
+                            for _, tgt in ends.items():
+                                if isinstance(tgt, str):
+                                    edges_raw.append((str(src), tgt))
+                        then = getattr(branch, "then", None)
+                        if isinstance(then, str):
+                            edges_raw.append((str(src), then))
+            break  # found a valid attribute, stop searching
 
     # Build normalized nodes (skip __start__ and __end__)
     normalized_nodes: list[NormalizedNode] = []

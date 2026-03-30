@@ -51,14 +51,20 @@ def _walk_agent_config(
 ) -> None:
     """Recursively walk an ADK agent config dict, building nodes and edges."""
     agent_name = config.get("name", "unnamed")
-    agent_id = agent_name
+    # Use hierarchical path to avoid duplicate IDs when sub-agents share names
+    agent_id = f"{parent_id}/{agent_name}" if parent_id is not None else agent_name
     description = config.get("description", config.get("instruction", ""))
     model = config.get("model", None)
 
     # Infer role
+    sub_agents = config.get("sub_agents", [])
     role = infer_role(agent_name, description)
     if parent_id is None and role == NodeRole.UNKNOWN:
-        role = NodeRole.ROUTER  # root agent typically routes
+        # Only default to ROUTER if this agent actually delegates
+        if sub_agents:
+            role = NodeRole.ROUTER
+        else:
+            role = NodeRole.GENERATOR
 
     nodes.append(NormalizedNode(
         id=agent_id,
@@ -82,7 +88,6 @@ def _walk_agent_config(
         ))
 
     # Recurse into sub-agents
-    sub_agents = config.get("sub_agents", [])
     for sub in sub_agents:
         if isinstance(sub, dict):
             _walk_agent_config(sub, nodes, edges, parent_id=agent_id)
@@ -96,15 +101,21 @@ def _walk_adk_agent(
 ) -> None:
     """Recursively walk an ADK Agent object."""
     agent_name = getattr(agent, "name", "unnamed")
-    agent_id = agent_name
+    # Use hierarchical path to avoid duplicate IDs when sub-agents share names
+    agent_id = f"{parent_id}/{agent_name}" if parent_id is not None else agent_name
     description = getattr(agent, "description", "") or getattr(agent, "instruction", "") or ""
     model = getattr(agent, "model", None)
     if model and not isinstance(model, str):
         model = str(model)
 
+    sub_agents = getattr(agent, "sub_agents", []) or []
     role = infer_role(agent_name, description)
     if parent_id is None and role == NodeRole.UNKNOWN:
-        role = NodeRole.ROUTER
+        # Only default to ROUTER if this agent actually delegates
+        if sub_agents:
+            role = NodeRole.ROUTER
+        else:
+            role = NodeRole.GENERATOR
 
     nodes.append(NormalizedNode(
         id=agent_id,
@@ -123,7 +134,6 @@ def _walk_adk_agent(
         ))
 
     # Recurse
-    sub_agents = getattr(agent, "sub_agents", []) or []
     for sub in sub_agents:
         _walk_adk_agent(sub, nodes, edges, parent_id=agent_id)
 
