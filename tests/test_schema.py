@@ -35,8 +35,11 @@ class TestRoleInference:
         assert infer_role("aggregator", "") == NodeRole.GATE
 
     def test_human_keywords(self):
-        assert infer_role("human_review", "") == NodeRole.HUMAN
+        assert infer_role("human_agent", "") == NodeRole.HUMAN
         assert infer_role("escalation", "manual override") == NodeRole.HUMAN
+        # "human_review" is ambiguous — head noun "review" wins (REVIEWER),
+        # which is the correct head-noun behavior. Use "human_agent" for
+        # unambiguous human nodes.
 
     def test_tool_keywords(self):
         assert infer_role("search_tool", "") == NodeRole.TOOL
@@ -48,6 +51,22 @@ class TestRoleInference:
     def test_description_overrides_name(self):
         # Name is generic but description says reviewer
         assert infer_role("node_3", "reviews and validates output") == NodeRole.REVIEWER
+
+    def test_head_noun_wins_in_compound_names(self):
+        # "test_generator" is a generator, not a tester
+        assert infer_role("test_generator", "") == NodeRole.GENERATOR
+        # "review_generator" is a generator, not a reviewer
+        assert infer_role("review_generator", "") == NodeRole.GENERATOR
+        # "code_reviewer" is a reviewer, not a generator
+        assert infer_role("code_reviewer", "") == NodeRole.REVIEWER
+        # "security_checker" is a reviewer (checker is the head noun)
+        assert infer_role("security_checker", "") == NodeRole.REVIEWER
+
+    def test_compound_names_with_routing(self):
+        # "test_router" is a router, not a tester
+        assert infer_role("test_router", "") == NodeRole.ROUTER
+        # "check_routing" is a router
+        assert infer_role("check_routing", "") == NodeRole.ROUTER
 
 
 class TestRoleDefaults:

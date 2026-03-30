@@ -28,8 +28,9 @@ _ROLE_PATTERNS: list[tuple[NodeRole, list[str]]] = [
         r"\bswitch\b", r"\bbranch", r"\bcondition",
     ]),
     (NodeRole.REVIEWER, [
-        r"\breview", r"\bcheck", r"\bvalidat", r"\bverif", r"\baudit",
-        r"\bquality\b", r"\bcorrect", r"\blint", r"\btest",
+        r"\breview", r"\bcheck(?:er|ing|s)?\b", r"\bvalidat", r"\bverif",
+        r"\baudit", r"\bquality\b", r"\bcorrect(?:or|ion|ing|s)?\b",
+        r"\blint(?:er|ing|s)?\b", r"\btest(?:er|ing|s)?\b",
         r"\bsecur", r"\bevaluat", r"\bjudge", r"\bgrade",
         r"\bscore", r"\bcritiqu", r"\bapprov",
     ]),
@@ -57,17 +58,44 @@ def infer_role(
 ) -> NodeRole:
     """Infer a node's role from its name, description, and framework type.
 
-    Uses keyword matching. Returns UNKNOWN if no pattern matches.
+    Uses keyword matching. The node *name* is checked first (last matching
+    component wins, since English compounds put the head noun last —
+    "test_generator" is a generator, not a tester). If no role is found
+    from the name alone, the description and framework_type are checked
+    with first-match-wins.
+
+    Returns UNKNOWN if no pattern matches.
     This is a heuristic — trace-based calibration is more reliable.
     """
-    text = f"{name} {description} {framework_type or ''}".lower()
-    # Normalize underscores and hyphens to spaces so word-boundary patterns
-    # work correctly on snake_case and kebab-case identifiers.
-    text = text.replace("_", " ").replace("-", " ")
+    # --- Phase 1: classify from the node name (head-noun priority) ---
+    name_text = name.lower().replace("_", " ").replace("-", " ")
 
+    # HUMAN is a hard override — if the name contains "human", "hitl",
+    # "escalat", etc., it's always a human node regardless of other keywords.
+    for pattern in _ROLE_PATTERNS[0][1]:  # HUMAN is first in the list
+        if re.search(pattern, name_text):
+            return NodeRole.HUMAN
+
+    # For all other roles, find ALL matching roles across name components;
+    # keep the last match position so the head noun (rightmost) wins.
+    # e.g. "test_generator" → "generator" wins over "test".
+    best_role: NodeRole | None = None
+    best_pos: int = -1
+    for role, patterns in _ROLE_PATTERNS[1:]:  # skip HUMAN (handled above)
+        for pattern in patterns:
+            for m in re.finditer(pattern, name_text):
+                if m.start() > best_pos:
+                    best_pos = m.start()
+                    best_role = role
+    if best_role is not None:
+        return best_role
+
+    # --- Phase 2: fall back to description + framework_type (first match) ---
+    desc_text = f"{description} {framework_type or ''}".lower()
+    desc_text = desc_text.replace("_", " ").replace("-", " ")
     for role, patterns in _ROLE_PATTERNS:
         for pattern in patterns:
-            if re.search(pattern, text):
+            if re.search(pattern, desc_text):
                 return role
 
     return NodeRole.UNKNOWN
