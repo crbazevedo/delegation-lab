@@ -116,7 +116,7 @@ class PipelineReport:
 
 
 def analyze_pipeline(
-    pipeline: PipelineGraph,
+    pipeline: PipelineGraph | Any,
     p_min: float = 0.80,
     traces: list[WorkflowTrace] | None = None,
     governance: GovernancePolicy | None = None,
@@ -129,8 +129,12 @@ def analyze_pipeline(
 
     This is the flagship API of the package.
 
+    Accepts either a ``PipelineGraph`` or a framework-native object
+    (LangGraph StateGraph/CompiledGraph, ADK Agent, or dict config).
+    Framework objects are auto-detected and converted.
+
     Args:
-        pipeline: The delegation DAG with node parameters.
+        pipeline: A PipelineGraph, or a LangGraph/ADK object to auto-convert.
         p_min: Minimum acceptable quality target.
         traces: Optional workflow traces for estimation from logs.
         governance: Optional governance policy settings.
@@ -143,6 +147,9 @@ def analyze_pipeline(
         PipelineReport with feasibility, estimates, risks, schedule,
         alerts, and recommendations.
     """
+    # Auto-detect and convert framework objects
+    if not isinstance(pipeline, PipelineGraph):
+        pipeline = _auto_convert(pipeline)
     if governance is not None:
         p_min = governance.p_min
 
@@ -227,4 +234,33 @@ def analyze_pipeline(
         alerts=alerts,
         recommendations=recommendations,
         failure_explanation=failure_explanation,
+    )
+
+
+def _auto_convert(obj: Any) -> PipelineGraph:
+    """Auto-detect framework type and convert to PipelineGraph."""
+    type_name = type(obj).__name__
+    module_name = type(obj).__module__ or ""
+
+    # LangGraph: StateGraph or CompiledGraph
+    if "langgraph" in module_name or type_name in ("StateGraph", "CompiledGraph", "CompiledStateGraph"):
+        from minimal_oversight.connectors.langgraph import from_langgraph
+        return from_langgraph(obj)
+
+    # ADK: Agent object
+    if "adk" in module_name or "google" in module_name:
+        if hasattr(obj, "sub_agents"):
+            from minimal_oversight.connectors.adk import from_adk_agent
+            return from_adk_agent(obj)
+
+    # Dict config (ADK YAML or generic)
+    if isinstance(obj, dict):
+        if "sub_agents" in obj or "name" in obj:
+            from minimal_oversight.connectors.adk import from_adk_config
+            return from_adk_config(obj)
+
+    raise TypeError(
+        f"Cannot auto-convert {type_name} to PipelineGraph. "
+        f"Pass a PipelineGraph directly, or use a connector: "
+        f"from_langgraph(), from_adk_config(), from_adk_agent()."
     )
