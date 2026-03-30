@@ -274,6 +274,91 @@ class TestLangGraphConnector:
         normalized = normalize_langgraph(graph)
         assert normalized.framework_source == "langgraph"
 
+    def test_builder_path(self):
+        """Compiled graphs with .builder (real LangGraph) instead of .graph."""
+
+        def gen():
+            """Generates."""
+
+        def rev():
+            """Reviews."""
+
+        class MockCompiled:
+            pass
+
+        class MockBuilder:
+            pass
+
+        builder = MockBuilder()
+        builder.nodes = {"gen": gen, "rev": rev}
+        builder.edges = [("__start__", "gen"), ("gen", "rev"), ("rev", "__end__")]
+
+        compiled = MockCompiled()
+        compiled.builder = builder
+
+        normalized = normalize_langgraph(compiled)
+        assert len(normalized.nodes) == 2
+        assert any(e.source_id == "gen" and e.target_id == "rev" for e in normalized.edges)
+
+    def test_branchspec_conditional_edges(self):
+        """Real LangGraph branches: {source: {name: BranchSpec(ends={...})}}."""
+
+        def router():
+            """Routes."""
+
+        def handler_a():
+            """Handles A."""
+
+        def handler_b():
+            """Handles B."""
+
+        class MockBranchSpec:
+            def __init__(self, ends=None):
+                self.ends = ends
+
+        graph = self._make_mock_graph(
+            nodes={"router": router, "handler_a": handler_a, "handler_b": handler_b},
+            edges=[("__start__", "router")],
+            branches={"router": {"condition": MockBranchSpec(ends={"a": "handler_a", "b": "handler_b"})}},
+        )
+        normalized = normalize_langgraph(graph)
+        edge_pairs = [(e.source_id, e.target_id) for e in normalized.edges]
+        assert ("router", "handler_a") in edge_pairs
+        assert ("router", "handler_b") in edge_pairs
+
+    def test_real_langgraph_if_available(self):
+        """Integration test with real langgraph (skipped if not installed)."""
+        pytest.importorskip("langgraph")
+        from langgraph.graph import StateGraph, END
+        from typing import TypedDict
+
+        class St(TypedDict):
+            x: str
+
+        def a(s):
+            """Does A."""
+            return s
+
+        def b(s):
+            """Does B."""
+            return s
+
+        g = StateGraph(St)
+        g.add_node("writer", a)
+        g.add_node("checker", b)
+        g.add_edge("writer", "checker")
+        g.add_edge("checker", END)
+        g.set_entry_point("writer")
+        compiled = g.compile()
+
+        normalized = normalize_langgraph(compiled)
+        assert len(normalized.nodes) == 2
+        ids = [n.id for n in normalized.nodes]
+        assert "writer" in ids
+        assert "checker" in ids
+        writer_node = next(n for n in normalized.nodes if n.id == "writer")
+        assert "Does A" in writer_node.description
+
 
 class TestLangSmithTraceParser:
     """Tests for from_langsmith_traces."""

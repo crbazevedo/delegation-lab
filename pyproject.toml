@@ -47,13 +47,17 @@ notebooks = [
     "matplotlib>=3.7",
     "plotly>=5.14",
 ]
+frameworks = [
+    "langgraph>=0.2",
+    "google-adk>=1.0",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.4",
     "mypy>=1.5",
 ]
-all = ["minimal-oversight[viz,notebooks,dev]"]
+all = ["minimal-oversight[viz,notebooks,frameworks,dev]"]
 
 [project.urls]
 Homepage = "https://github.com/crbazevedo/delegation-lab"

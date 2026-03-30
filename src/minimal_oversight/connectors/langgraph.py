@@ -42,16 +42,34 @@ _SKIP_NODES = {_LG_START, _LG_END}
 
 
 def _extract_node_description(node_data: Any) -> str:
-    """Best-effort extraction of a description from a LangGraph node."""
-    # Try common patterns for node metadata
+    """Best-effort extraction of a description from a LangGraph node.
+
+    Handles multiple patterns:
+    - Raw callables (function docstring)
+    - StateNodeSpec wrappers (.runnable.func.__doc__)
+    - Objects with .description attribute
+    """
+    # StateNodeSpec → runnable → func (real LangGraph compiled graphs)
+    runnable = getattr(node_data, "runnable", None)
+    if runnable is not None:
+        func = getattr(runnable, "func", None)
+        if func is not None:
+            if hasattr(func, "__doc__") and func.__doc__:
+                return func.__doc__.strip().split("\n")[0]
+            # Lambda or function without docstring — use __name__
+            if hasattr(func, "__name__") and func.__name__ != "<lambda>":
+                return func.__name__
+        # Don't fall through to runnable.__doc__ — that returns the
+        # framework class docstring (e.g. "A much simpler version of
+        # RunnableLambda..."), which is misleading for role inference.
+
+    # Direct docstring (raw callables, mock objects)
     if hasattr(node_data, "__doc__") and node_data.__doc__:
         return node_data.__doc__.strip().split("\n")[0]
-    if hasattr(node_data, "description"):
+    if hasattr(node_data, "description") and node_data.description:
         return str(node_data.description)
-    if hasattr(node_data, "name"):
-        return str(node_data.name)
-    if callable(node_data):
-        return node_data.__name__ if hasattr(node_data, "__name__") else ""
+    if callable(node_data) and hasattr(node_data, "__name__"):
+        return node_data.__name__
     return ""
 
 
@@ -73,6 +91,46 @@ def _extract_model_name(node_data: Any) -> str | None:
     return None
 
 
+def _extract_branch_edges(
+    src: str,
+    branch_val: Any,
+    edges_raw: list[tuple[str, str]],
+) -> None:
+    """Extract edges from a branch value, handling multiple formats.
+
+    LangGraph stores conditional edges in several shapes across versions:
+    - {condition_result: target_node_str}  (simple dict)
+    - [Branch(ends={...}, then=...)]       (list of Branch objects)
+    - {name: BranchSpec(ends={...})}       (real compiled graph — dict of specs)
+    """
+    if isinstance(branch_val, dict):
+        for _, inner_val in branch_val.items():
+            if isinstance(inner_val, str):
+                # {condition_result: target_node_str}
+                edges_raw.append((str(src), inner_val))
+            elif hasattr(inner_val, "ends"):
+                # BranchSpec or Branch object with .ends dict
+                ends = inner_val.ends
+                if isinstance(ends, dict):
+                    for _, tgt in ends.items():
+                        if isinstance(tgt, str):
+                            edges_raw.append((str(src), tgt))
+                then = getattr(inner_val, "then", None)
+                if isinstance(then, str):
+                    edges_raw.append((str(src), then))
+    elif isinstance(branch_val, list):
+        # [Branch(...)] — list of branch objects
+        for branch in branch_val:
+            ends = getattr(branch, "ends", None)
+            if isinstance(ends, dict):
+                for _, tgt in ends.items():
+                    if isinstance(tgt, str):
+                        edges_raw.append((str(src), tgt))
+            then = getattr(branch, "then", None)
+            if isinstance(then, str):
+                edges_raw.append((str(src), then))
+
+
 def normalize_langgraph(graph: Any) -> NormalizedPipeline:
     """Convert a LangGraph graph to the canonical NormalizedPipeline.
 
@@ -84,9 +142,12 @@ def normalize_langgraph(graph: Any) -> NormalizedPipeline:
     Returns:
         NormalizedPipeline with inferred roles and edges.
     """
-    # Handle both compiled and uncompiled graphs
-    if hasattr(graph, "graph"):
-        # CompiledGraph wraps the underlying graph
+    # Handle compiled, uncompiled, and builder patterns.
+    # Real CompiledStateGraph has .builder (the StateGraph), not .graph.
+    # Some versions/mocks use .graph. Try all patterns.
+    if hasattr(graph, "builder"):
+        inner = graph.builder
+    elif hasattr(graph, "graph"):
         inner = graph.graph
     else:
         inner = graph
@@ -121,23 +182,7 @@ def normalize_langgraph(graph: Any) -> NormalizedPipeline:
             continue
         if isinstance(cond_data, dict):
             for src, branch_val in cond_data.items():
-                if isinstance(branch_val, dict):
-                    # {source: {condition_result: target_node}}
-                    for _, tgt in branch_val.items():
-                        if isinstance(tgt, str):
-                            edges_raw.append((str(src), tgt))
-                elif isinstance(branch_val, list):
-                    # {source: [Branch(...)]} — LangGraph Branch objects
-                    for branch in branch_val:
-                        # Branch objects may have .ends (dict) or .then (str)
-                        ends = getattr(branch, "ends", None)
-                        if isinstance(ends, dict):
-                            for _, tgt in ends.items():
-                                if isinstance(tgt, str):
-                                    edges_raw.append((str(src), tgt))
-                        then = getattr(branch, "then", None)
-                        if isinstance(then, str):
-                            edges_raw.append((str(src), then))
+                _extract_branch_edges(src, branch_val, edges_raw)
             break  # found a valid attribute, stop searching
 
     # Build normalized nodes (skip __start__ and __end__)
