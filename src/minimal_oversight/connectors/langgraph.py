@@ -53,10 +53,15 @@ def _extract_node_description(node_data: Any) -> str:
     runnable = getattr(node_data, "runnable", None)
     if runnable is not None:
         func = getattr(runnable, "func", None)
-        if func is not None and hasattr(func, "__doc__") and func.__doc__:
-            return func.__doc__.strip().split("\n")[0]
-        if hasattr(runnable, "__doc__") and runnable.__doc__:
-            return runnable.__doc__.strip().split("\n")[0]
+        if func is not None:
+            if hasattr(func, "__doc__") and func.__doc__:
+                return func.__doc__.strip().split("\n")[0]
+            # Lambda or function without docstring — use __name__
+            if hasattr(func, "__name__") and func.__name__ != "<lambda>":
+                return func.__name__
+        # Don't fall through to runnable.__doc__ — that returns the
+        # framework class docstring (e.g. "A much simpler version of
+        # RunnableLambda..."), which is misleading for role inference.
 
     # Direct docstring (raw callables, mock objects)
     if hasattr(node_data, "__doc__") and node_data.__doc__:
@@ -84,6 +89,46 @@ def _extract_model_name(node_data: Any) -> str | None:
         if hasattr(llm, "model_name"):
             return str(llm.model_name)
     return None
+
+
+def _extract_branch_edges(
+    src: str,
+    branch_val: Any,
+    edges_raw: list[tuple[str, str]],
+) -> None:
+    """Extract edges from a branch value, handling multiple formats.
+
+    LangGraph stores conditional edges in several shapes across versions:
+    - {condition_result: target_node_str}  (simple dict)
+    - [Branch(ends={...}, then=...)]       (list of Branch objects)
+    - {name: BranchSpec(ends={...})}       (real compiled graph — dict of specs)
+    """
+    if isinstance(branch_val, dict):
+        for _, inner_val in branch_val.items():
+            if isinstance(inner_val, str):
+                # {condition_result: target_node_str}
+                edges_raw.append((str(src), inner_val))
+            elif hasattr(inner_val, "ends"):
+                # BranchSpec or Branch object with .ends dict
+                ends = inner_val.ends
+                if isinstance(ends, dict):
+                    for _, tgt in ends.items():
+                        if isinstance(tgt, str):
+                            edges_raw.append((str(src), tgt))
+                then = getattr(inner_val, "then", None)
+                if isinstance(then, str):
+                    edges_raw.append((str(src), then))
+    elif isinstance(branch_val, list):
+        # [Branch(...)] — list of branch objects
+        for branch in branch_val:
+            ends = getattr(branch, "ends", None)
+            if isinstance(ends, dict):
+                for _, tgt in ends.items():
+                    if isinstance(tgt, str):
+                        edges_raw.append((str(src), tgt))
+            then = getattr(branch, "then", None)
+            if isinstance(then, str):
+                edges_raw.append((str(src), then))
 
 
 def normalize_langgraph(graph: Any) -> NormalizedPipeline:
@@ -137,23 +182,7 @@ def normalize_langgraph(graph: Any) -> NormalizedPipeline:
             continue
         if isinstance(cond_data, dict):
             for src, branch_val in cond_data.items():
-                if isinstance(branch_val, dict):
-                    # {source: {condition_result: target_node}}
-                    for _, tgt in branch_val.items():
-                        if isinstance(tgt, str):
-                            edges_raw.append((str(src), tgt))
-                elif isinstance(branch_val, list):
-                    # {source: [Branch(...)]} — LangGraph Branch objects
-                    for branch in branch_val:
-                        # Branch objects may have .ends (dict) or .then (str)
-                        ends = getattr(branch, "ends", None)
-                        if isinstance(ends, dict):
-                            for _, tgt in ends.items():
-                                if isinstance(tgt, str):
-                                    edges_raw.append((str(src), tgt))
-                        then = getattr(branch, "then", None)
-                        if isinstance(then, str):
-                            edges_raw.append((str(src), then))
+                _extract_branch_edges(src, branch_val, edges_raw)
             break  # found a valid attribute, stop searching
 
     # Build normalized nodes (skip __start__ and __end__)
