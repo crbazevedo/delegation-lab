@@ -42,16 +42,29 @@ _SKIP_NODES = {_LG_START, _LG_END}
 
 
 def _extract_node_description(node_data: Any) -> str:
-    """Best-effort extraction of a description from a LangGraph node."""
-    # Try common patterns for node metadata
+    """Best-effort extraction of a description from a LangGraph node.
+
+    Handles multiple patterns:
+    - Raw callables (function docstring)
+    - StateNodeSpec wrappers (.runnable.func.__doc__)
+    - Objects with .description attribute
+    """
+    # StateNodeSpec → runnable → func (real LangGraph compiled graphs)
+    runnable = getattr(node_data, "runnable", None)
+    if runnable is not None:
+        func = getattr(runnable, "func", None)
+        if func is not None and hasattr(func, "__doc__") and func.__doc__:
+            return func.__doc__.strip().split("\n")[0]
+        if hasattr(runnable, "__doc__") and runnable.__doc__:
+            return runnable.__doc__.strip().split("\n")[0]
+
+    # Direct docstring (raw callables, mock objects)
     if hasattr(node_data, "__doc__") and node_data.__doc__:
         return node_data.__doc__.strip().split("\n")[0]
-    if hasattr(node_data, "description"):
+    if hasattr(node_data, "description") and node_data.description:
         return str(node_data.description)
-    if hasattr(node_data, "name"):
-        return str(node_data.name)
-    if callable(node_data):
-        return node_data.__name__ if hasattr(node_data, "__name__") else ""
+    if callable(node_data) and hasattr(node_data, "__name__"):
+        return node_data.__name__
     return ""
 
 
@@ -84,9 +97,12 @@ def normalize_langgraph(graph: Any) -> NormalizedPipeline:
     Returns:
         NormalizedPipeline with inferred roles and edges.
     """
-    # Handle both compiled and uncompiled graphs
-    if hasattr(graph, "graph"):
-        # CompiledGraph wraps the underlying graph
+    # Handle compiled, uncompiled, and builder patterns.
+    # Real CompiledStateGraph has .builder (the StateGraph), not .graph.
+    # Some versions/mocks use .graph. Try all patterns.
+    if hasattr(graph, "builder"):
+        inner = graph.builder
+    elif hasattr(graph, "graph"):
         inner = graph.graph
     else:
         inner = graph
