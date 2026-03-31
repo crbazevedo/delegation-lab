@@ -1,0 +1,83 @@
+site_name: minimal-oversight
+site_description: Governed-delegation analytics and decision-support toolkit
+site_url: https://crbazevedo.github.io/delegation-lab/
+repo_url: https://github.com/crbazevedo/delegation-lab
+repo_name: crbazevedo/delegation-lab
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: red
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: red
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+            show_root_heading: true
+            heading_level: 3
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - Concepts:
+    - What is a Delegation?: concepts/delegation.md
+    - The Masking Problem: concepts/masking.md
+    - Delegation Capacity: concepts/capacity.md
+    - Autonomy Time: concepts/autonomy.md
+    - Topology as Governance: concepts/topology.md
+  - Guides:
+    - Analyzing a Pipeline: guides/analyze.md
+    - LangGraph Integration: guides/langgraph.md
+    - ADK Integration: guides/adk.md
+    - Calibrating from Traces: guides/traces.md
+    - Reading the Report: guides/interpret.md
+  - Paper:
+    - Validation (8 Experiments): paper/validation.md
+    - Equation-to-Code Reference: paper/references.md
+  - API Reference:
+    - models: api/models.md
+    - estimation: api/estimation.md
+    - capacity: api/capacity.md
+    - topology: api/topology.md
+    - allocation: api/allocation.md
+    - intervention: api/intervention.md
+    - viz: api/viz.md
