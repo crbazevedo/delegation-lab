@@ -66,12 +66,12 @@ class PipelineReport:
         lines.append("=" * 60)
 
         # Feasibility
-        lines.append(f"\n--- Feasibility ---")
+        lines.append("\n--- Feasibility ---")
         lines.append(self.feasibility.explanation)
 
         # Per-node summary
         if self.node_estimates:
-            lines.append(f"\n--- Node Estimates ---")
+            lines.append("\n--- Node Estimates ---")
             lines.append(f"{'Node':<20} {'σ_raw':>8} {'σ_corr':>8} {'M*':>8} {'n':>6}")
             lines.append("-" * 52)
             for name, est in self.node_estimates.items():
@@ -82,17 +82,20 @@ class PipelineReport:
 
         # Motifs
         if self.motifs:
-            lines.append(f"\n--- Detected Motifs ---")
+            lines.append("\n--- Detected Motifs ---")
             for m in self.motifs:
                 lines.append(f"  [{m.motif.value}] {m.risk_description}")
 
         # Intervention schedule
         if self.intervention_schedule:
-            lines.append(f"\n--- Intervention Schedule ---")
+            lines.append("\n--- Intervention Schedule ---")
             lines.append(f"{'Rank':<6} {'Node':<20} {'T*_auto':>10} {'Frequency':>10}")
             lines.append("-" * 48)
             for s in self.intervention_schedule[:5]:  # top 5
-                freq_str = f"{s.intervention_frequency:.3f}" if s.intervention_frequency < 100 else "continuous"
+                freq_str = (
+                    f"{s.intervention_frequency:.3f}"
+                    if s.intervention_frequency < 100 else "continuous"
+                )
                 lines.append(
                     f"{s.priority_rank:<6} {s.node_name:<20} "
                     f"{s.t_auto:>10.1f} {freq_str:>10}"
@@ -100,13 +103,13 @@ class PipelineReport:
 
         # Alerts
         if self.alerts:
-            lines.append(f"\n--- Alerts ---")
+            lines.append("\n--- Alerts ---")
             for a in self.alerts:
                 lines.append(f"  [{a.level.value.upper()}] {a.node_name}: {a.message}")
 
         # Recommendations
         if self.recommendations:
-            lines.append(f"\n--- Recommendations ---")
+            lines.append("\n--- Recommendations ---")
             for r in self.recommendations[:5]:  # top 5
                 lines.append(f"  {r.priority}. [{r.target_node or 'pipeline'}] {r.action}")
                 lines.append(f"     {r.rationale}")
@@ -243,7 +246,8 @@ def _auto_convert(obj: Any) -> PipelineGraph:
     module_name = type(obj).__module__ or ""
 
     # LangGraph: StateGraph or CompiledGraph
-    if "langgraph" in module_name or type_name in ("StateGraph", "CompiledGraph", "CompiledStateGraph"):
+    lg_types = ("StateGraph", "CompiledGraph", "CompiledStateGraph")
+    if "langgraph" in module_name or type_name in lg_types:
         from minimal_oversight.connectors.langgraph import from_langgraph
         return from_langgraph(obj)
 

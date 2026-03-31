@@ -5,7 +5,7 @@ Answers: "Where should I place review effort?" and "What should change?"
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -166,7 +166,6 @@ def prioritize_intervention(
             continue
 
         kappa = 1.0 - sigma_skill
-        sota = F.sota_priority_score(dc, m_star, kappa)
 
         # Determine recommended action based on node profile
         if m_star > 1.5 and dc > 1.0:

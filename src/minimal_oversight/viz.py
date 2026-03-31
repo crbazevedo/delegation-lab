@@ -129,10 +129,13 @@ def plot_pipeline_risk(
     scores_sorted = [sota_scores[i] for i in order]
     masking_sorted = [masking_indices[i] for i in order]
 
-    colors = ["#e74c3c" if m > 1.5 else "#f39c12" if m > 1.2 else "#27ae60" for m in masking_sorted]
+    colors = [
+        "#e74c3c" if m > 1.5 else "#f39c12" if m > 1.2 else "#27ae60"
+        for m in masking_sorted
+    ]
 
     y_pos = np.arange(len(names_sorted))
-    bars = ax.barh(y_pos, scores_sorted, color=colors, alpha=0.8)
+    ax.barh(y_pos, scores_sorted, color=colors, alpha=0.8)
 
     # Annotate with M*
     for i, (score, m) in enumerate(zip(scores_sorted, masking_sorted)):

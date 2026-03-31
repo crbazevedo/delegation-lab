@@ -9,8 +9,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
-
 from minimal_oversight import _formulae as F
 from minimal_oversight.models import Node, PipelineGraph
 

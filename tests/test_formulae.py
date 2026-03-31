@@ -5,11 +5,8 @@ import pytest
 
 from minimal_oversight._formulae import (
     autonomy_time,
-    channel_capacity_single_letter,
-    corrector_capacity_threshold,
     critical_entropy,
     effective_autonomy_buffer,
-    effective_skill,
     fisher_information,
     masking_index,
     max_pipeline_depth,

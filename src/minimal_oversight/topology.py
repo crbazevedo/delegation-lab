@@ -12,7 +12,7 @@ from enum import Enum
 import networkx as nx
 import numpy as np
 
-from minimal_oversight.models import Node, PipelineGraph
+from minimal_oversight.models import PipelineGraph
 
 
 class Motif(Enum):
@@ -196,7 +196,6 @@ def conditional_fragility(
 
     Higher values indicate hidden vulnerability to shared upstream failure.
     """
-    node = pipeline.get_node(merge_node)
     parents = pipeline.parents(merge_node)
 
     if not parents or len(parents) < 2:
