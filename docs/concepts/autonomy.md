@@ -30,7 +30,6 @@ In words: autonomy time is the safety margin divided by how fast that margin ero
     )
     print(f"T*_auto = {t:.0f} time units")  # 66.6
     ```
-```
 
 ## Five factors of autonomy
 
