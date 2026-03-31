@@ -36,10 +36,10 @@ from minimal_oversight.connectors._bridge import pipeline_from_normalized
 from minimal_oversight.connectors._roles import infer_role
 from minimal_oversight.models import PipelineGraph
 from minimal_oversight.schema import (
+    NodeRole,
     NormalizedEdge,
     NormalizedNode,
     NormalizedPipeline,
-    NodeRole,
 )
 
 

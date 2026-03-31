@@ -1,8 +1,14 @@
 # minimal-oversight
 
+[![CI](https://github.com/crbazevedo/delegation-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/crbazevedo/delegation-lab/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A governed-delegation analytics and decision-support toolkit.
 
 Companion package to *"Minimal Oversight: A Theory of Principled Autonomy Delegation"* (Azevedo, 2026).
+
+**[Documentation](https://crbazevedo.github.io/delegation-lab/)** | **[Paper](https://github.com/crbazevedo/delegation-lab)** | **[Notebooks](https://github.com/crbazevedo/delegation-lab/tree/main/notebooks)**
 
 ## What it does
 

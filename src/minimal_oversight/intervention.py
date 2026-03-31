@@ -8,10 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-import numpy as np
-
 from minimal_oversight import _formulae as F
-from minimal_oversight.models import Node, PipelineGraph
+from minimal_oversight.models import PipelineGraph
 
 
 class AlertLevel(Enum):
@@ -209,7 +207,7 @@ def check_alerts(
                 failure_mode=FailureMode.CORRELATED_DRIFT,
                 message=(
                     f"Autonomy buffer B_eff={b_eff:.4f} at {name}. "
-                    f"{'Pipeline is past the cliff.' if b_eff <= 0 else 'Near the autonomy cliff.'}"
+                    f"{'Pipeline is past the cliff.' if b_eff <= 0 else 'Near the cliff.'}"
                 ),
                 recommended_action=(
                     "Simplify routing, increase review capacity, or "
@@ -267,7 +265,7 @@ def explain_failure_surface(
     lines: list[str] = []
     lines.append("=== Failure Surface Analysis ===\n")
 
-    from minimal_oversight.capacity import check_feasibility, compute_c_op
+    from minimal_oversight.capacity import check_feasibility
 
     report = check_feasibility(
         pipeline, p_min=p_min,
@@ -309,7 +307,6 @@ def explain_failure_surface(
 
     # 4. Upstream bottleneck
     if report.bottleneck_node:
-        bn = pipeline.get_node(report.bottleneck_node)
         lines.append(
             f"[BOTTLENECK] {report.bottleneck_node} is the capacity-limiting node. "
             f"Fix upstream before adding downstream checks.\n"

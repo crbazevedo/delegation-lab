@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from minimal_oversight.models import Node, PipelineGraph, WorkflowTrace
+from minimal_oversight.models import PipelineGraph, WorkflowTrace
 
 
 @dataclass

@@ -5,6 +5,7 @@ import warnings
 import pytest
 
 from minimal_oversight import analyze_pipeline
+from minimal_oversight.connectors._bridge import traces_from_normalized
 from minimal_oversight.connectors.adk import from_adk_config, normalize_adk_config
 from minimal_oversight.connectors.langgraph import normalize_langgraph
 from minimal_oversight.connectors.traces import (
@@ -13,7 +14,6 @@ from minimal_oversight.connectors.traces import (
     from_langsmith_traces,
     to_workflow_traces,
 )
-from minimal_oversight.connectors._bridge import traces_from_normalized
 from minimal_oversight.schema import EventType, NodeRole, NormalizedOutcome, NormalizedTrace
 
 
@@ -319,7 +319,11 @@ class TestLangGraphConnector:
         graph = self._make_mock_graph(
             nodes={"router": router, "handler_a": handler_a, "handler_b": handler_b},
             edges=[("__start__", "router")],
-            branches={"router": {"condition": MockBranchSpec(ends={"a": "handler_a", "b": "handler_b"})}},
+            branches={
+                "router": {"condition": MockBranchSpec(
+                    ends={"a": "handler_a", "b": "handler_b"},
+                )},
+            },
         )
         normalized = normalize_langgraph(graph)
         edge_pairs = [(e.source_id, e.target_id) for e in normalized.edges]
@@ -329,8 +333,9 @@ class TestLangGraphConnector:
     def test_real_langgraph_if_available(self):
         """Integration test with real langgraph (skipped if not installed)."""
         pytest.importorskip("langgraph")
-        from langgraph.graph import StateGraph, END
         from typing import TypedDict
+
+        from langgraph.graph import END, StateGraph
 
         class St(TypedDict):
             x: str
@@ -587,8 +592,14 @@ class TestOutcomeAggregation:
             NormalizedTrace(
                 trace_id="t1",
                 outcomes=[
-                    NormalizedOutcome(task_id="t1", node_id="n1", raw_outcome=1.0, corrected_outcome=1.0),
-                    NormalizedOutcome(task_id="t1", node_id="n1", raw_outcome=0.0, corrected_outcome=0.0),
+                    NormalizedOutcome(
+                        task_id="t1", node_id="n1",
+                        raw_outcome=1.0, corrected_outcome=1.0,
+                    ),
+                    NormalizedOutcome(
+                        task_id="t1", node_id="n1",
+                        raw_outcome=0.0, corrected_outcome=0.0,
+                    ),
                 ],
             )
         ]

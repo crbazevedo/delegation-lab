@@ -11,7 +11,7 @@ to WorkflowTrace via the bridge for use with estimation.py.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 from minimal_oversight.connectors._bridge import traces_from_normalized

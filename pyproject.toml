@@ -61,7 +61,8 @@ all = ["minimal-oversight[viz,notebooks,frameworks,dev]"]
 
 [project.urls]
 Homepage = "https://github.com/crbazevedo/delegation-lab"
-Documentation = "https://github.com/crbazevedo/delegation-lab"
+Documentation = "https://crbazevedo.github.io/delegation-lab/"
+Changelog = "https://github.com/crbazevedo/delegation-lab/blob/main/CHANGELOG.md"
 Repository = "https://github.com/crbazevedo/delegation-lab"
 
 [tool.hatch.build.targets.wheel]

@@ -1,7 +1,8 @@
 """Tests for the canonical schema and role inference."""
 
-import pytest
 
+from minimal_oversight.connectors._bridge import pipeline_from_normalized, traces_from_normalized
+from minimal_oversight.connectors._roles import infer_review_edges, infer_role
 from minimal_oversight.schema import (
     NodeRole,
     NormalizedEdge,
@@ -11,8 +12,6 @@ from minimal_oversight.schema import (
     NormalizedTrace,
     defaults_for_role,
 )
-from minimal_oversight.connectors._roles import infer_role, infer_review_edges
-from minimal_oversight.connectors._bridge import pipeline_from_normalized, traces_from_normalized
 
 
 class TestRoleInference:

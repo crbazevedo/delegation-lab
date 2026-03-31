@@ -11,12 +11,12 @@ Not the center of the package.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
 from minimal_oversight import _formulae as F
-from minimal_oversight.models import Node, PipelineGraph, WorkflowTrace
+from minimal_oversight.models import PipelineGraph, WorkflowTrace
 
 
 @dataclass

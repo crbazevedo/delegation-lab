@@ -11,10 +11,10 @@ from collections import defaultdict
 
 from minimal_oversight.models import AggregationType, Node, PipelineGraph, WorkflowTrace
 from minimal_oversight.schema import (
+    NodeRole,
     NormalizedOutcome,
     NormalizedPipeline,
     NormalizedTrace,
-    NodeRole,
     defaults_for_role,
 )
 
