@@ -47,7 +47,7 @@ When a fan-out node's corrector is removed, errors propagate to **all children s
 
 This is why the SOTA model should go to the **corrector at the fan-out node**, not the executor at the generator. The corrector's improvement propagates to all branches; the executor's improvement is local.
 
-The paper's Demonstration 1 shows that placing the expensive model as corrector at the reviewer yields ~9x more system improvement than placing it as executor at the generator.
+The paper's Demonstration 1 formalizes this as the SOTA priority score. In the SDLC pipeline (Notebook 1), placing the expensive model as corrector at the reviewer yields ~10× more system improvement than placing it as executor at the generator ($\Delta C_\text{op}$: +0.008 vs +0.0008), because the corrector's improvement propagates through all three downstream branches.
 
 ## Conditional fragility (diamond pattern)
 

@@ -40,26 +40,35 @@ $$\sigma_\text{corr}^*(i) = R\big(\sigma_\text{skill} \times \sigma_\text{corr}^
 
 where $R(\cdot)$ is the Return Operator at fixed point (Equation 11).
 
-```python
-from minimal_oversight._formulae import recursive_chain_quality
+??? example "Verify the math"
+    ```python
+    from minimal_oversight._formulae import recursive_chain_quality
 
-# How does quality degrade with depth?
-for D in range(1, 8):
-    q = recursive_chain_quality(D, sigma_skill=0.55, catch_rate=0.65, eta=10, delta=2)
-    print(f"D={D}: C_op = {q:.3f}")
-```
+    # How does quality degrade with depth?
+    for D in range(1, 8):
+        q = recursive_chain_quality(D, sigma_skill=0.55, catch_rate=0.65, eta=10, delta=2)
+        print(f"D={D}: C_op = {q:.3f}")
+    ```
 
 The theory-observation gap is less than 0.002 across all 28 conditions tested in the paper (Experiment 6).
 
+!!! note "Correction model: theory vs simulation"
+    The closed-form equations (Eq. 5-6) use raw $c$ as the catch rate. The paper's simulator uses $c \times K/N$ as the effective catch rate, where $K/N$ is the fraction of outputs reviewed. This means:
+
+    - **Theoretical $M^*$ = 1.83** (with $c = 0.70$, Eq. 6)
+    - **Simulated $M^*$ ≈ 1.4** (with $c \times K/N = 0.70 \times 0.50 = 0.35$)
+
+    If your observed $M^*$ is lower than the theoretical prediction, check your effective review coverage.
+
 ## Critical depth
 
-There's a maximum useful depth beyond which adding layers hurts quality:
+There's a maximum useful depth beyond which adding layers hurts quality. The product-formula approximation gives:
 
 $$D_\text{max} \approx \frac{\ln(p_\text{min})}{\ln(\sigma_\text{corr}^*)}$$
 
-For $\sigma_\text{skill} = 0.55$, $c = 0.65$, $p_\text{min} = 0.50$: $D_\text{max} \approx 3\text{–}4$.
+This is a conservative lower bound (the recursive formula, Eq. 11, is more precise). For $\sigma_\text{skill} = 0.55$, $c = 0.65$, $p_\text{min} = 0.50$: $D_\text{max} \approx 3\text{–}4$.
 
-**Better correctors double the useful depth.** At $c = 0.90$: $D_\text{max} \approx 8$.
+**Better correctors extend the useful depth significantly.** At $c = 0.90$: $D_\text{max} \approx 12$.
 
 ## The effective autonomy buffer
 

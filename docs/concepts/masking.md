@@ -23,15 +23,16 @@ When $M^* > 1$: the system appears more competent than it is.
 
 **Baseline masking is always present.** Even the simplest single-agent delegation has $M^* \approx 1.35$ with typical parameters. This is not a bug — it's a structural consequence of having a corrector.
 
-```python
-from minimal_oversight._formulae import (
-    sigma_raw_fixed_point, sigma_corr_fixed_point, masking_index
-)
+??? example "Verify the math"
+    ```python
+    from minimal_oversight._formulae import (
+        sigma_raw_fixed_point, sigma_corr_fixed_point, masking_index
+    )
 
-sr = sigma_raw_fixed_point(0.80, eta=10, delta=2)    # 0.667
-sc = sigma_corr_fixed_point(sr, catch_rate=0.70)     # 0.900
-m = masking_index(sc, sr)                             # 1.35
-```
+    sr = sigma_raw_fixed_point(0.80, eta=10, delta=2)    # 0.667
+    sc = sigma_corr_fixed_point(sr, catch_rate=0.70)     # 0.900
+    m = masking_index(sc, sr)                             # 1.35
+    ```
 
 ## Why masking is dangerous
 
@@ -46,9 +47,11 @@ Masking gets worse with depth. In a linear pipeline where each layer's output fe
 | Depth | $M^*$ per layer | $M^*_\text{total}$ |
 |-------|-----------------|---------------------|
 | 1 | 1.77 | 1.8 |
-| 2 | 1.77, 1.95 | 3.5 |
-| 3 | 1.77, 1.95, 2.06 | 7.1 |
-| 5 | 1.77 → 2.18 | 38.3 |
+| 2 | 1.77, 2.10 | 3.7 |
+| 3 | 1.77, 2.10, 2.17 | 8.1 |
+| 5 | 1.77 → 2.20 | 38.7 |
+
+*Values: closed-form from Eq. 5-6 at each layer. D=5 total matches the paper's simulation (Table 7: 38.7). Per-layer values from the paper: 1.77, 2.10, 2.17, 2.17, 2.20.*
 
 The total masking grows **super-multiplicatively** — faster than $(M^*_\text{single})^D$ — because each downstream layer receives degraded input and depends more on its corrector.
 

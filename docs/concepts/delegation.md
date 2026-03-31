@@ -54,12 +54,13 @@ where $c$ is the corrector's catch rate (Equation 6).
 
 The system ships at 90% quality, but the agent is only 67% competent. The 23-point gap is the corrector doing its job — and hiding the agent's weakness.
 
-```python
-from minimal_oversight._formulae import sigma_raw_fixed_point, sigma_corr_fixed_point
+??? example "Verify the math"
+    ```python
+    from minimal_oversight._formulae import sigma_raw_fixed_point, sigma_corr_fixed_point
 
-sr = sigma_raw_fixed_point(0.80, eta=10, delta=2)  # 0.667
-sc = sigma_corr_fixed_point(sr, catch_rate=0.70)    # 0.900
-```
+    sr = sigma_raw_fixed_point(0.80, eta=10, delta=2)  # 0.667
+    sc = sigma_corr_fixed_point(sr, catch_rate=0.70)    # 0.900
+    ```
 
 ## The Axiom of Minimal Oversight
 

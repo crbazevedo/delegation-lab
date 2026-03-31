@@ -17,6 +17,8 @@ Every numbered equation from the paper maps to a function in `_formulae.py`. Thi
 | (10) | Delegation capacity | $C_\text{op} = \sup_{p(\text{task})} \sigma_\text{raw}^*(\text{output})$ | `node_capacity()` |
 | (11) | Recursive chain quality | $\sigma_\text{corr}^*(i) = R(\sigma_\text{skill} \times \sigma_\text{corr}^*(i-1))$ | `recursive_chain_quality()` |
 | (13) | Channel capacity | $C_\text{del}(B) = (1-B)[1-H_b(\varepsilon_0)] + B[1-H_b(\varepsilon_1)]$ | `channel_capacity_single_letter()` |
+| (9) | GSPN dynamics | $\partial\sigma_\text{raw}/\partial t = \lambda_\text{obs}[\sigma_\text{skill,eff} - \sigma_\text{raw}] - \lambda_\text{forget}\sigma_\text{raw}$ | Not implemented (mean-field approx. only) |
+| (12) | Formal capacity | $C_\text{del}(B) = \sup_\pi \liminf \frac{1}{n} I(X^n; Y^n)$ | Theoretical; see Eq. 13 for computable form |
 | (14) | Process entropy | $H(W) = H(\text{routing}) + H(\text{tools}) + H(\text{timing})$ | `estimation.estimate_process_entropy()` |
 | (15) | Complexity-quality law | $\sigma_\text{raw}^* \geq C_\text{op} - \lambda H(W)$ | `effective_autonomy_buffer()` |
 | (16) | **Autonomy buffer** | $B_\text{eff} = C_\text{op} - p_\text{min} - \lambda H(W)$ | `effective_autonomy_buffer()` |

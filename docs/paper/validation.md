@@ -6,14 +6,16 @@ All 8 experiments from Section 3 of the paper are reproduced in [`notebooks/06_p
 
 | # | Experiment | Tests | Result |
 |---|-----------|-------|--------|
-| 1 | Masking problem | Single vs dual σ governance | M* = 1.83; single-σ over-authorizes by 36% |
-| 2 | Communication strategy | L0-L4 routing strategies | Routing dominates; L4 outperforms L0 |
+| 1 | Masking problem | Single vs dual σ governance | M* = 1.83 (Eq. 6, c=0.70)[^1]; single-σ over-authorizes by 36% |
+| 2 | Communication strategy | L0-L4 routing strategies | Routing dominates (~53%); L4 outperforms L0 by +6.1% |
 | 3 | Bottleneck mechanisms | B1-B4 in isolation and combination | B1 (capacity) ≫ B3 > B2 > B4; B1+B3 super-additive |
-| 4 | Linked chains | Depth 1-5 masking accumulation | M*_total super-multiplicative: 38 vs 18 at D=5 |
-| 5 | Multi-task DAGs | SDLC fan-out + diamond fragility | 3x cascade; 1.4x conditional fragility |
+| 4 | Linked chains | Depth 1-5 masking accumulation | M*_total super-multiplicative: 38.7 vs 17.2 at D=5 |
+| 5 | Multi-task DAGs | SDLC fan-out + diamond fragility | 3× cascade; 1.4× conditional fragility |
 | 6 | Delegation capacity | Recursive chain quality (28 conditions) | Theory-observation gap < 0.002 |
 | 7 | Process entropy | H(W) sweep with 3 K/N levels | Linear degradation, λ ≈ 0.02/bit |
-| 8 | Autonomy time | Drift rate sweep | T*_auto ∝ 1/μ, slope = -1.0 |
+| 8 | Autonomy time | Drift rate sweep | T*_auto ∝ 1/μ, log-log slope = −0.99 |
+
+[^1]: The theoretical M* = 1.83 uses the closed-form correction (Eq. 6) with raw c. The paper's Experiment 1 simulation observes M* ≈ 1.4 because the simulator applies c × K/N as the effective catch rate. Both are correct at different levels of the model.
 
 ## Running the validation
 

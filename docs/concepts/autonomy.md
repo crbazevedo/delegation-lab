@@ -17,17 +17,19 @@ where:
 
 In words: autonomy time is the safety margin divided by how fast that margin erodes.
 
-```python
-from minimal_oversight._formulae import autonomy_time
+??? example "Verify the math (Motif 1 worked example)"
+    ```python
+    from minimal_oversight._formulae import autonomy_time
 
-t = autonomy_time(
-    c_op=0.833,        # pipeline capacity
-    p_min=0.50,        # quality target
-    lam=0.02,          # governance gap coefficient
-    h_w=0.0,           # process entropy (bits)
-    mu_eff=0.005,      # drift rate
-)
-print(f"T*_auto = {t:.0f} time units")  # 66.6
+    t = autonomy_time(
+        c_op=0.833,        # single-node capacity (η=10, δ=2)
+        p_min=0.50,        # quality target
+        lam=0.02,          # governance gap coefficient
+        h_w=0.0,           # process entropy (bits)
+        mu_eff=0.005,      # drift rate
+    )
+    print(f"T*_auto = {t:.0f} time units")  # 66.6
+    ```
 ```
 
 ## Five factors of autonomy
