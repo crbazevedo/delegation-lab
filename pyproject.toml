@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "minimal-oversight"
 version = "0.1.2"
-description = "Uncertainty-aware governed-delegation analytics and decision support."
+description = "AI governance toolkit for delegated AI pipelines centered on the Minimum Sufficient Oversight Principle."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -19,6 +19,9 @@ keywords = [
     "uncertainty",
     "trust-calibration",
     "oversight",
+    "ai-governance",
+    "delegated-ai",
+    "human-ai-collaboration",
     "information-geometry",
     "artificial-intelligence",
 ]

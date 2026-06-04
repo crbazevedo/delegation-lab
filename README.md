@@ -1,15 +1,20 @@
 # minimal-oversight
 
 [![PyPI](https://img.shields.io/pypi/v/minimal-oversight.svg)](https://pypi.org/project/minimal-oversight/)
+[![Release](https://img.shields.io/github/v/release/crbazevedo/delegation-lab?label=release)](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.2)
 [![CI](https://github.com/crbazevedo/delegation-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/crbazevedo/delegation-lab/actions/workflows/ci.yml)
+[![Docs](https://github.com/crbazevedo/delegation-lab/actions/workflows/docs.yml/badge.svg)](https://github.com/crbazevedo/delegation-lab/actions/workflows/docs.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A governed-delegation analytics and uncertainty-aware decision-support toolkit.
+A governed-delegation analytics toolkit for delegated AI pipelines, centered on
+the **Minimum Sufficient Oversight Principle (MSO)**.
 
 Companion package to *"Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems"* (Azevedo, 2026).
 
 **[Documentation](https://crbazevedo.github.io/delegation-lab/)** | **[Notebooks](https://github.com/crbazevedo/delegation-lab/tree/main/notebooks)** | **[Changelog](https://github.com/crbazevedo/delegation-lab/blob/main/CHANGELOG.md)**
+
+Current release tag: [`v0.1.2`](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.2) / PyPI package: [`minimal-oversight==0.1.2`](https://pypi.org/project/minimal-oversight/0.1.2/)
 
 ## What it does
 
@@ -24,16 +29,26 @@ This package turns those questions into computable quantities:
 | Question | What you get |
 |----------|-------------|
 | Can this pipeline meet my quality target? | Feasibility check: $C_\text{op}$ vs $p_\text{min}$ |
-| Where should I place review effort? | Water-filling allocation via the MSO |
+| Where should I place review effort? | Water-filling allocation via the Minimum Sufficient Oversight Principle |
 | Which nodes are most dangerous? | Delegation centrality, masking index, SOTA score |
 | How much autonomy can I safely grant? | Effective autonomy buffer $B_\text{eff}$ |
 | When should humans intervene? | Autonomy time $T^*_\text{auto}$ and intervention schedule |
 | What should stop being delegated? | Scope recommendations with coverage constraints |
 
+In practical terms, MSO treats oversight as a constrained allocation problem:
+meet a target quality level with the least sufficient review effort, then place
+that effort where the model and pipeline state make review most informative.
+
 ## Install
 
 ```bash
 pip install minimal-oversight
+```
+
+For a reproducible install of the current release:
+
+```bash
+pip install minimal-oversight==0.1.2
 ```
 
 With framework connectors and visualization:

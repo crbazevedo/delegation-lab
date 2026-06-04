@@ -1,6 +1,8 @@
 # Equation-to-Code Reference
 
-Every numbered equation from the paper maps to a function in `_formulae.py`. This page is the bridge: if you're reading the paper, find the code; if you're reading the code, find the theorem.
+Every numbered equation from the paper maps to a function in `_formulae.py`.
+This page is the bridge: if you're reading the paper, find the code; if you're
+reading the code, find the corresponding paper concept.
 
 ## Core equations
 

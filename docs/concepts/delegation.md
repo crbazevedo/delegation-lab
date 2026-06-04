@@ -70,10 +70,24 @@ The system ships at 90% quality, but the agent is only 67% competent. The 23-poi
 
 *Paper reference: Section 1, "The Minimum Sufficient Oversight Principle (MSO)"*
 
-The MSO says: **minimize the total cost of oversight, subject to meeting a quality target.** The cost is measured in Fisher information geometry — a principled way to weight governance effort by how informative it is.
+The MSO is a constrained oversight-allocation principle: **minimize the total
+cost of oversight, subject to meeting a quality target.** It is meant as a
+decision rule for AI governance, in the same spirit as risk-control,
+selective-prediction, and human-in-the-loop auditing policies: first state the
+quality constraint, then spend the smallest review budget that satisfies it.
 
-The result is a water-filling allocation: spend more oversight where the agent is moderately competent ($\sigma \approx 0.75$), less where it's very weak (review is wasted) or very strong (review finds nothing). This parallels Shannon's power allocation across channels.
+In this model, oversight cost is weighted by Fisher information geometry, so
+review effort is charged according to how informative it is at the current
+competence level.
+
+The result is a water-filling allocation: spend more oversight where the agent
+is moderately competent ($\sigma \approx 0.75$), less where it is very weak
+(review does not recover enough quality) or very strong (review finds little).
+This parallels Shannon-style power allocation across channels, but here the
+"channel" is a delegated AI workflow with measured raw competence.
 
 $$\alpha^*(x) = \min\left(\alpha_\text{max}, \frac{\lambda}{2} \sigma_\text{raw}(x) \sqrt{\sigma_\text{raw}(x)(1 - \sigma_\text{raw}(x))}\right)$$
 
-The key insight: **oversight is not a uniform slider.** It's a resource that should be allocated where it produces the most quality improvement per unit of governance cost.
+The key insight: **oversight is not a uniform slider.** It is a resource that
+should be allocated where it produces the most quality improvement per unit of
+governance cost under the stated model and measurement assumptions.

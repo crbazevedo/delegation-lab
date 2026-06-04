@@ -3,6 +3,9 @@
 Every numbered equation lives here. Public modules call into this;
 practitioners should never need to import it directly.
 
+The oversight-allocation equations implement the Minimum Sufficient Oversight
+Principle (MSO), a constrained minimum-cost rule for meeting a delivery target.
+
 Equations are referenced by their number in:
     "Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems"
     Carlos R. B. Azevedo, 2026.

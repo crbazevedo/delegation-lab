@@ -6,6 +6,12 @@
 pip install minimal-oversight
 ```
 
+For the current released version:
+
+```bash
+pip install minimal-oversight==0.1.2
+```
+
 With framework connectors:
 
 ```bash
