@@ -29,7 +29,7 @@ When $M^* > 1$: the system appears more competent than it is.
         sigma_raw_fixed_point, sigma_corr_fixed_point, masking_index
     )
 
-    sr = sigma_raw_fixed_point(0.80, eta=10, delta=2)    # 0.667
+    sr = sigma_raw_fixed_point(0.80, eta=10, delta=2)    # 0.667 with σ₀=0
     sc = sigma_corr_fixed_point(sr, catch_rate=0.70)     # 0.900
     m = masking_index(sc, sr)                             # 1.35
     ```

@@ -222,6 +222,9 @@ def recommend_governance_changes(
     p_min: float = 0.80,
     process_entropy: float = 0.0,
     governance_gap: float = 0.02,
+    eta: float = 10.0,
+    delta: float = 2.0,
+    sigma_0: float = 0.0,
 ) -> list[GovernanceRecommendation]:
     """High-level governance recommendations for a pipeline.
 
@@ -234,6 +237,9 @@ def recommend_governance_changes(
         pipeline, p_min=p_min,
         governance_gap=governance_gap,
         process_entropy=process_entropy,
+        eta=eta,
+        delta=delta,
+        sigma_0=sigma_0,
     )
     recs = prioritize_intervention(pipeline)
 

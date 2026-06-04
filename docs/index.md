@@ -1,14 +1,18 @@
 # minimal-oversight
 
-**Governed-delegation analytics and decision-support toolkit.**
+**Uncertainty-aware governed-delegation analytics and decision-support toolkit.**
 
-Companion package to [*Minimal Oversight: A Theory of Principled Autonomy Delegation*](https://github.com/crbazevedo/delegation-lab) (Azevedo, 2026).
+Companion package to [*Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems*](https://github.com/crbazevedo/delegation-lab) (Azevedo, 2026).
 
 ---
 
 ## What problem does this solve?
 
-Multi-agent AI systems delegate work through pipelines: one model proposes, another reviews, a third tests, and a gate decides what ships. The design problem is no longer just accuracy — it's how much autonomy to grant, where to place oversight, what quality ceiling the system can sustain, and when intervention becomes necessary.
+Delegated AI systems route uncertain work through pipelines: one model proposes,
+another reviews, a tool checks, and a gate decides what ships. The design
+problem is no longer just accuracy; it is trust calibration under uncertainty:
+how much autonomy to grant, where to place oversight, what quality ceiling the
+system can sustain, and when intervention becomes necessary.
 
 This package turns those questions into computable quantities.
 
@@ -57,7 +61,9 @@ report = analyze_pipeline(adk_agent, p_min=0.80)
 - Not just a plotting library — visualizations serve the decision layer
 - Not the paper's reproduction code — the [validation notebook](paper/validation.md) does that separately
 
-It is a **governed-delegation analytics and decision-support library**, backed by rigorous information-theoretic foundations but presented through practitioner questions and one-call analysis.
+It is a **governed-delegation analytics and decision-support library**, backed
+by uncertainty-aware and information-theoretic foundations but presented through
+practitioner questions and one-call analysis.
 
 ## Architecture
 

@@ -24,14 +24,17 @@ cd notebooks/
 jupyter notebook 06_paper_validation.ipynb
 ```
 
-The notebook uses only `_formulae.py` (closed-form equations) and inline simulation code. No external data or API keys required.
+The notebook uses only `_formulae.py` (closed-form equations) and inline
+simulation code. The simulations use the conservative `sigma_0=0` specialization
+unless stated otherwise. No external data or API keys required.
 
 ## Standard parameters
 
 Unless otherwise stated, all experiments use:
 
 - η = 10 (observation rate)
-- δ = 2 (decay rate)
+- δ = 2 (decay/reversion rate)
+- σ₀ = 0 (conservative baseline support)
 - σ_skill = 0.55 (agent skill)
 - c = 0.65-0.70 (corrector catch rate)
 - K/N = 0.50 (review coverage)

@@ -5,6 +5,8 @@ import pytest
 
 from minimal_oversight._formulae import (
     autonomy_time,
+    channel_capacity_single_letter,
+    corrector_capacity_threshold,
     critical_entropy,
     effective_autonomy_buffer,
     fisher_information,
@@ -13,6 +15,7 @@ from minimal_oversight._formulae import (
     node_capacity,
     optimal_authority,
     recursive_chain_quality,
+    return_operator_step,
     sigma_corr_fixed_point,
     sigma_raw_fixed_point,
     solve_lambda,
@@ -37,9 +40,24 @@ class TestFisherInformation:
 
 class TestReturnOperator:
     def test_fixed_point_worked_example(self):
-        # Paper example: η=10, δ=2, σ_skill=0.80
+        # Conservative σ₀=0 specialization: η=10, δ=2, σ_skill=0.80
         sigma_star = sigma_raw_fixed_point(0.80, eta=10, delta=2)
         assert pytest.approx(sigma_star, rel=1e-3) == 0.667
+
+    def test_fixed_point_with_prior_support(self):
+        sigma_star = sigma_raw_fixed_point(0.80, eta=10, delta=2, sigma_0=0.50)
+        assert pytest.approx(sigma_star, rel=1e-3) == 0.750
+
+    def test_return_operator_reverts_to_prior(self):
+        sigma_next = return_operator_step(
+            sigma=0.70,
+            sigma_skill_eff=0.70,
+            eta=10,
+            delta=2,
+            dt=0.1,
+            sigma_0=0.50,
+        )
+        assert sigma_next < 0.70
 
     def test_corrected_fixed_point(self):
         # Paper example: σ*_raw=0.667, c=0.70
@@ -79,6 +97,12 @@ class TestCapacity:
         q5 = recursive_chain_quality(5, 0.55, 0.65, 10, 2)
         assert q1 > q3 > q5
 
+    def test_channel_capacity_revealed_action_log(self):
+        revealed = channel_capacity_single_letter(0.5, 0.2, 0.0)
+        hidden = channel_capacity_single_letter(0.5, 0.2, 0.0, action_revealed=False)
+        assert pytest.approx(revealed, rel=1e-3) == 0.639
+        assert revealed > hidden
+
 
 class TestAutonomy:
     def test_buffer_positive_when_feasible(self):
@@ -101,9 +125,23 @@ class TestAutonomy:
 
 class TestMaxDepth:
     def test_worked_example(self):
-        # Paper: σ_skill=0.55, c=0.65, p_min=0.50 → D_max ≈ 4
-        d = max_pipeline_depth(0.55, 0.65, 0.50)
-        assert 3 <= d <= 5
+        # Recursive corrected-chain definition: D=1 clears 0.80, D=2 does not.
+        d = max_pipeline_depth(0.55, 0.65, 0.80)
+        assert d == 1.0
+
+    def test_low_target_has_no_finite_depth_cliff(self):
+        d = max_pipeline_depth(0.55, 0.65, 0.50, max_depth=20)
+        assert np.isinf(d)
+
+
+class TestCorrectorCapacity:
+    def test_threshold_uses_raw_fixed_point(self):
+        threshold = corrector_capacity_threshold(0.80, sigma_raw_star=0.60, catch_rate=0.50)
+        assert pytest.approx(threshold, rel=1e-3) == 1.0
+
+    def test_threshold_is_zero_when_raw_support_suffices(self):
+        threshold = corrector_capacity_threshold(0.50, sigma_raw_star=0.60, catch_rate=0.50)
+        assert threshold == 0.0
 
 
 class TestSOTA:

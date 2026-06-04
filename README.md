@@ -5,15 +5,19 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A governed-delegation analytics and decision-support toolkit.
+A governed-delegation analytics and uncertainty-aware decision-support toolkit.
 
-Companion package to *"Minimal Oversight: A Theory of Principled Autonomy Delegation"* (Azevedo, 2026).
+Companion package to *"Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems"* (Azevedo, 2026).
 
 **[Documentation](https://crbazevedo.github.io/delegation-lab/)** | **[Notebooks](https://github.com/crbazevedo/delegation-lab/tree/main/notebooks)** | **[Changelog](https://github.com/crbazevedo/delegation-lab/blob/main/CHANGELOG.md)**
 
 ## What it does
 
-Multi-agent AI systems delegate work through pipelines: one model proposes, another reviews, a third tests, and a gate decides what ships. The design problem is no longer just accuracy — it's how much autonomy to grant, where to place oversight, and when intervention becomes necessary.
+Delegated AI systems route uncertain work through pipelines: one model proposes,
+another reviews, a tool checks, and a gate decides what ships. The design
+problem is no longer just accuracy; it is trust calibration under uncertainty:
+how much autonomy to grant, where to place oversight, what quality ceiling the
+system can sustain, and when intervention becomes necessary.
 
 This package turns those questions into computable quantities:
 
@@ -145,13 +149,15 @@ report = analyze_pipeline(pipeline, p_min=0.80, traces=traces)
 - Not a workflow orchestrator — it sits above LangGraph / ADK / CrewAI
 - Not just the paper's reproduction code — that's [one notebook](notebooks/06_paper_validation.ipynb)
 
-It is a **governed-delegation analytics and decision-support library**, backed by information-theoretic foundations but presented through practitioner questions and one-call analysis.
+It is a **governed-delegation analytics and decision-support library**, backed
+by uncertainty-aware and information-theoretic foundations but presented through
+practitioner questions and one-call analysis.
 
 ## Citation
 
 ```bibtex
 @article{azevedo2026minimal,
-  title={Minimal Oversight: A Theory of Principled Autonomy Delegation},
+  title={Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems},
   author={Azevedo, Carlos R. B.},
   year={2026}
 }

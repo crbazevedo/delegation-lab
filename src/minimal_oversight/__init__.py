@@ -1,7 +1,7 @@
-"""Minimal Oversight — governed-delegation analytics and decision-support toolkit.
+"""Minimal Oversight — uncertainty-aware governed-delegation analytics.
 
 Companion package to:
-    "Minimal Oversight: A Theory of Principled Autonomy Delegation"
+    "Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems"
     Carlos R. B. Azevedo, 2026.
 
 Quick start::
@@ -29,5 +29,5 @@ Framework import::
 
 from minimal_oversight._api import analyze_pipeline, recommend_governance_changes
 
-__version__ = "0.1.5"
+__version__ = "0.1.1"
 __all__ = ["analyze_pipeline", "recommend_governance_changes"]

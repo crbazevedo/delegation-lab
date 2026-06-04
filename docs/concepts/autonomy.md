@@ -4,7 +4,9 @@
 
 ---
 
-Once you know the pipeline is feasible ($B_\text{eff} > 0$), the operational question is: **how long can it run without human intervention?**
+Once you know the pipeline is feasible ($B_\text{eff} > 0$), the operational
+question is: **what characteristic intervention interval does the drift model
+support?**
 
 ## The formula
 
@@ -15,14 +17,16 @@ where:
 - $B_\text{eff} = C_\text{op} - p_\text{min} - \lambda H(W)$ is the effective autonomy buffer
 - $\mu_\text{eff}$ is the drift rate (how fast the environment changes)
 
-In words: autonomy time is the safety margin divided by how fast that margin erodes.
+In words: autonomy time is the safety margin divided by how fast that margin
+erodes. It is a drift-dominated first-passage scaling, not an exact stopping
+time for every stochastic process.
 
 ??? example "Verify the math (Motif 1 worked example)"
     ```python
     from minimal_oversight._formulae import autonomy_time
 
     t = autonomy_time(
-        c_op=0.833,        # single-node capacity (η=10, δ=2)
+        c_op=0.833,        # single-node capacity (η=10, δ=2, σ₀=0)
         p_min=0.50,        # quality target
         lam=0.02,          # governance gap coefficient
         h_w=0.0,           # process entropy (bits)
@@ -54,7 +58,8 @@ There's a critical process entropy beyond which autonomous operation becomes imp
 $$H_\text{crit} = \frac{C_\text{op} - p_\text{min}}{\lambda}$$
 
 Below $H_\text{crit}$: autonomous operation works ($T_\text{auto}^* > 0$).
-Above $H_\text{crit}$: continuous human oversight required, regardless of governance policy.
+Above $H_\text{crit}$: the fixed design has no autonomy margin and needs
+intervention, simplification, more capability, or a lower target.
 
 This is a **phase transition**, not a gradual trade-off. As $H(W) \to H_\text{crit}$, the buffer shrinks quadratically in $T_\text{auto}^*$, so autonomy time collapses rapidly near the cliff.
 

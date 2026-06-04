@@ -8,9 +8,17 @@ Before optimizing review allocation or tuning a corrector, ask the most basic qu
 
 ## The operational ceiling
 
-The delegation capacity $C_\text{op}$ is the best possible output quality the pipeline can achieve, optimized over all task distributions. If the quality target $p_\text{min}$ exceeds $C_\text{op}$, no governance policy — no review allocation, no routing rule, no amount of corrector effort — can rescue the design.
+The delegation capacity $C_\text{op}$ is the best possible output quality the
+pipeline can achieve under the stated model, topology, and budget. If the
+quality target $p_\text{min}$ exceeds $C_\text{op}$, local governance tuning
+alone cannot rescue the design; capability, review budget, task decomposition,
+or topology must change.
 
-$$C_\text{op}(G, K, B) = \sup_{p(\text{task})} \sigma_\text{raw}^*(\text{output})$$
+$$C_\text{op}(G, K, B) = \sup_{p(\text{task})} q^*(\text{output})$$
+
+Here $q^*(\text{output})$ is the shipped output quality at the sink after
+available correction. Raw support $\sigma_\text{raw}$ remains the authorization
+signal because it is the less masked estimate of agent competence.
 
 ```python
 from minimal_oversight.capacity import check_feasibility
@@ -18,7 +26,8 @@ from minimal_oversight.capacity import check_feasibility
 report = check_feasibility(pipeline, p_min=0.80)
 print(report.explanation)
 # INFEASIBLE: Quality target p_min=0.800 exceeds pipeline
-# capacity C_op=0.725. No governance policy can rescue this design.
+# capacity C_op=0.725. Within the fixed model, topology, and
+# budget, no local governance policy can rescue this design.
 ```
 
 !!! danger "When the AMO has no solution"
@@ -26,11 +35,15 @@ print(report.explanation)
 
 ## For a single node
 
-A single node with observation rate $\eta$ and decay rate $\delta$ achieves maximum capacity when $\sigma_\text{skill} = 1$:
+A single node with observation rate $\eta$, decay/reversion rate $\delta$, and
+baseline support $\sigma_0$ achieves maximum capacity when
+$\sigma_\text{skill} = 1$:
 
-$$C = \frac{\eta}{\eta + \delta}$$
+$$C = \frac{\eta + \delta\sigma_0}{\eta + \delta}$$
 
-With $\eta = 10$, $\delta = 2$: $C = 0.833$. This is the ceiling even for a perfect agent — the decay (stale evidence, environment shift) prevents reaching 1.0.
+With the conservative $\sigma_0=0$ default, $\eta = 10$, and $\delta = 2$,
+$C = 0.833$. This is the ceiling even for a perfect agent because stale
+evidence and environment shift pull measured support back toward the baseline.
 
 ## For a chain
 
@@ -62,13 +75,19 @@ The theory-observation gap is less than 0.002 across all 28 conditions tested in
 
 ## Critical depth
 
-There's a maximum useful depth beyond which adding layers hurts quality. The product-formula approximation gives:
+There is a maximum target-feasible depth beyond which adding layers drives the
+recursive corrected-chain quality below the required target:
 
-$$D_\text{max} \approx \frac{\ln(p_\text{min})}{\ln(\sigma_\text{corr}^*)}$$
+$$D_\text{max} = \max\{D: C_\text{op}(D) \geq p_\text{min}\}$$
 
-This is a conservative lower bound (the recursive formula, Eq. 11, is more precise). For $\sigma_\text{skill} = 0.55$, $c = 0.65$, $p_\text{min} = 0.50$: $D_\text{max} \approx 3\text{–}4$.
+This is computed directly from the recursive formula (Eq. 11). For
+$\sigma_\text{skill} = 0.55$, $c = 0.65$, and the conservative $\sigma_0=0$
+default, a demanding target $p_\text{min}=0.80$ permits one layer but not two.
+A lower target such as $p_\text{min}=0.50$ has no finite cliff in the
+stabilized corrected-chain model.
 
-**Better correctors extend the useful depth significantly.** At $c = 0.90$: $D_\text{max} \approx 12$.
+**Better correctors extend the useful depth significantly** because each layer
+passes a more reliable corrected signal downstream.
 
 ## The effective autonomy buffer
 
@@ -78,6 +97,6 @@ $$B_\text{eff} = C_\text{op} - p_\text{min} - \lambda H(W)$$
 
 - $B_\text{eff} > 0$: delegated autonomy is feasible
 - $B_\text{eff} = 0$: at the autonomy cliff
-- $B_\text{eff} < 0$: no governance policy can maintain quality
+- $B_\text{eff} < 0$: the fixed design lacks sufficient margin to maintain quality
 
 The complexity tax $\lambda H(W)$ captures how routing entropy, tool-call variability, and timing uncertainty consume the quality margin. Each additional bit of process entropy costs approximately $\lambda \approx 0.02$ in quality (Experiment 7).

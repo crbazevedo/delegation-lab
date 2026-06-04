@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.1 (2026-06-04)
+
+Equation and documentation alignment for the revised arXiv submission.
+
+### Core
+- Add the prior-aware Return Operator with `sigma_0` support in fixed-point,
+  simulation, capacity, and one-call analysis paths.
+- Make channel-capacity calculation explicit about revealed versus hidden
+  review/action logs.
+- Compute maximum pipeline depth from recursive corrected-chain quality rather
+  than the older product approximation.
+- Use raw fixed-point support in corrector-capacity thresholds and clamp
+  already-feasible thresholds to zero.
+
+### Documentation
+- Reframe package language around uncertainty-aware governed delegation and
+  trust calibration for delegated AI systems.
+- Update equation-to-code references, capacity notes, autonomy-time wording, and
+  simulation assumptions to match the revised paper.
+- Tone down infeasibility claims to the fixed model, topology, and budget.
+
+### Tests
+- Add regression coverage for nonzero `sigma_0`, revealed/hidden channel
+  capacity, recursive depth limits, and review-capacity thresholds.
+
 ## 0.1.0 (2026-03-30)
 
 Initial release.

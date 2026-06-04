@@ -14,7 +14,8 @@ report = analyze_pipeline(
     governance_gap=0.02,        # λ — complexity sensitivity (~0.02/bit)
     process_entropy=0.0,        # H(W) — estimated from routing traces
     eta=10.0,                   # observation rate
-    delta=2.0,                  # decay rate
+    delta=2.0,                  # decay/reversion rate
+    sigma_0=0.0,                # baseline support under no fresh evidence
 )
 ```
 

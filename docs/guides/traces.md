@@ -71,4 +71,6 @@ from minimal_oversight.estimation import estimate_sigma_raw
 sigma = estimate_sigma_raw(outcomes, window=100)
 ```
 
-The paper recommends setting the window to $1/\delta$ — the reciprocal of the decay rate — so the estimate reflects current competence, not stale history.
+The paper recommends setting the window to $1/\delta$ — the reciprocal of the
+decay/reversion rate — so the estimate reflects current competence, not stale
+history.

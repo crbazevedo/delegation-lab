@@ -9,15 +9,15 @@ Every numbered equation from the paper maps to a function in `_formulae.py`. Thi
 | (1) | Authorization function | $\alpha(x,t) = G(\sigma_\text{raw}(x,t))$ | Governance functional (conceptual) |
 | (2) | **Axiom of Minimal Oversight** | $\min_\alpha \int \alpha^2 \sqrt{\det g}\, dx\, dt$ s.t. delivery | `solve_lambda()` + `optimal_authority()` |
 | (3) | Fisher information | $g(\sigma) = 1/[\sigma(1-\sigma)]$ | `fisher_information()` |
-| (4) | Return Operator | $\partial\sigma/\partial t = \eta(\sigma_\text{skill} - \sigma) - \delta\sigma$ | `return_operator_step()` |
-| (5) | Fixed point | $\sigma_\text{raw}^* = \eta\sigma_\text{skill}/(\eta + \delta)$ | `sigma_raw_fixed_point()` |
+| (4) | Return Operator | $\partial\sigma/\partial t = \eta(\sigma_\text{skill,eff} - \sigma) - \delta(\sigma-\sigma_0)$ | `return_operator_step()` |
+| (5) | Fixed point | $\sigma_\text{raw}^* = (\eta\sigma_\text{skill}+\delta\sigma_0)/(\eta + \delta)$ | `sigma_raw_fixed_point()` |
 | (6) | Corrected fixed point | $\sigma_\text{corr}^* = \sigma_\text{raw}^* + (1-\sigma_\text{raw}^*)\times c$ | `sigma_corr_fixed_point()` |
 | (7) | Effective skill | $\sigma_\text{skill,eff}(v) = \sigma_\text{skill}(v) \times \text{AGG}(\ldots)$ | `effective_skill()` |
 | (8) | **Water-filling solution** | $\alpha^*(x) = \min(\alpha_\text{max}, \frac{\lambda}{2}\sigma\sqrt{\sigma(1-\sigma)})$ | `optimal_authority()` |
-| (10) | Delegation capacity | $C_\text{op} = \sup_{p(\text{task})} \sigma_\text{raw}^*(\text{output})$ | `node_capacity()` |
+| (10) | Delegation capacity | $C_\text{op} = \sup_{p(\text{task})} q^*(\text{output})$ | `node_capacity()` / `compute_pipeline_capacity()` |
 | (11) | Recursive chain quality | $\sigma_\text{corr}^*(i) = R(\sigma_\text{skill} \times \sigma_\text{corr}^*(i-1))$ | `recursive_chain_quality()` |
-| (13) | Channel capacity | $C_\text{del}(B) = (1-B)[1-H_b(\varepsilon_0)] + B[1-H_b(\varepsilon_1)]$ | `channel_capacity_single_letter()` |
-| (9) | GSPN dynamics | $\partial\sigma_\text{raw}/\partial t = \lambda_\text{obs}[\sigma_\text{skill,eff} - \sigma_\text{raw}] - \lambda_\text{forget}\sigma_\text{raw}$ | Not implemented (mean-field approx. only) |
+| (13) | Revealed-action stationary capacity | $C_\text{del}(B) = (1-B)[1-H_b(\varepsilon_0)] + B[1-H_b(\varepsilon_1)]$ | `channel_capacity_single_letter()` |
+| (9) | GSPN dynamics | $\partial\sigma_\text{raw}/\partial t = \lambda_\text{obs}[\sigma_\text{skill,eff} - \sigma_\text{raw}] - \lambda_\text{forget}(\sigma_\text{raw}-\sigma_0)$ | Not implemented (mean-field approx. only) |
 | (12) | Formal capacity | $C_\text{del}(B) = \sup_\pi \liminf \frac{1}{n} I(X^n; Y^n)$ | Theoretical; see Eq. 13 for computable form |
 | (14) | Process entropy | $H(W) = H(\text{routing}) + H(\text{tools}) + H(\text{timing})$ | `estimation.estimate_process_entropy()` |
 | (15) | Complexity-quality law | $\sigma_\text{raw}^* \geq C_\text{op} - \lambda H(W)$ | `effective_autonomy_buffer()` |
@@ -29,9 +29,9 @@ Every numbered equation from the paper maps to a function in `_formulae.py`. Thi
 | Quantity | Definition | Code |
 |----------|-----------|------|
 | Masking index $M^*$ | $\sigma_\text{corr}^* / \sigma_\text{raw}^*$ | `masking_index()` |
-| Critical depth $D_\text{max}$ | $\ln(p_\text{min}) / \ln(\sigma_\text{corr}^*)$ | `max_pipeline_depth()` |
+| Critical depth $D_\text{max}$ | $\max\{D: C_\text{op}(D) \geq p_\text{min}\}$ | `max_pipeline_depth()` |
 | Critical entropy $H_\text{crit}$ | $(C_\text{op} - p_\text{min}) / \lambda$ | `critical_entropy()` |
-| Capacity threshold $K/N$ | $(p_\text{min} - \sigma^*) / [(1-\sigma^*) c]$ | `corrector_capacity_threshold()` |
+| Capacity threshold $K/N$ | $\max(0,(p_\text{min}-\sigma_\text{raw}^*)/[(1-\sigma_\text{raw}^*)c])$ | `corrector_capacity_threshold()` |
 | SOTA priority score $S(v)$ | $\text{DC}(v) \times M^*(v) \times \kappa(v)$ | `sota_priority_score()` |
 
 ## Higher-level functions
@@ -56,8 +56,8 @@ The paper distinguishes three levels of rigor:
 
 | Level | Quantities | Status in code |
 |-------|-----------|----------------|
-| **Theorem** (proved) | $\alpha^*$, $\sigma_\text{raw}^*$, $\sigma_\text{corr}^*$, $M^*$, $C_\text{del}(B)$, $K/N$ threshold, $T_\text{cal}$ | Exact in `_formulae.py` |
-| **Proposition** (approximation) | $\lambda$ (governance gap), $T_\text{auto}^*$ | Approximate; $T_\text{auto}^*$ overestimates by ~20% |
+| **Theorem** (proved in the stated model) | $\alpha^*$, $\sigma_\text{raw}^*$, $\sigma_\text{corr}^*$, $M^*$, revealed-action $C_\text{del}(B)$, $K/N$ threshold, $T_\text{cal}$ | Exact in `_formulae.py` under stated assumptions |
+| **Proposition** (approximation) | $\lambda$ (governance gap), $T_\text{auto}^*$ | Approximate; $T_\text{auto}^*$ is a drift-dominated first-passage scaling |
 | **Empirical law** (observed) | $\lambda \approx 0.02$/bit, $T_\text{auto}^* \propto 1/\mu$ scaling | Confirmed in Experiments 7 and 8 |
 
 The SOTA priority score $S(v)$ is a practical heuristic, not a theorem. The principled quantity is $\partial T_\text{auto}^* / \partial c(v)$, which requires the Jacobian of the coupled system.

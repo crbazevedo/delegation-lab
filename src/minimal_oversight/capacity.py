@@ -42,6 +42,7 @@ def compute_node_capacity(
     node: Node,
     eta: float = 10.0,
     delta: float = 2.0,
+    sigma_0: float = 0.0,
 ) -> float:
     """Operational capacity of a single node.
 
@@ -49,7 +50,7 @@ def compute_node_capacity(
     """
     sigma_skill = node.sigma_skill if node.sigma_skill is not None else 0.55
     catch_rate = node.catch_rate if node.catch_rate is not None else 0.65
-    sigma_raw_star = F.sigma_raw_fixed_point(sigma_skill, eta, delta)
+    sigma_raw_star = F.sigma_raw_fixed_point(sigma_skill, eta, delta, sigma_0=sigma_0)
     return F.sigma_corr_fixed_point(sigma_raw_star, catch_rate)
 
 
@@ -57,6 +58,7 @@ def compute_pipeline_capacity(
     pipeline: PipelineGraph,
     eta: float = 10.0,
     delta: float = 2.0,
+    sigma_0: float = 0.0,
 ) -> dict[str, float]:
     """Compute operational capacity at each node in topological order.
 
@@ -82,7 +84,9 @@ def compute_pipeline_capacity(
         else:
             sigma_skill_eff = sigma_skill
 
-        sigma_raw_star = F.sigma_raw_fixed_point(sigma_skill_eff, eta, delta)
+        sigma_raw_star = F.sigma_raw_fixed_point(
+            sigma_skill_eff, eta, delta, sigma_0=sigma_0
+        )
         sigma_corr_star = F.sigma_corr_fixed_point(sigma_raw_star, catch_rate)
 
         node_sigma_corr[name] = sigma_corr_star
@@ -124,12 +128,15 @@ def check_feasibility(
     process_entropy: float = 0.0,
     eta: float = 10.0,
     delta: float = 2.0,
+    sigma_0: float = 0.0,
 ) -> FeasibilityReport:
     """Full feasibility check with human-readable explanation.
 
     This is the core decision function: "Can this pipeline work?"
     """
-    capacities = compute_pipeline_capacity(pipeline, eta=eta, delta=delta)
+    capacities = compute_pipeline_capacity(
+        pipeline, eta=eta, delta=delta, sigma_0=sigma_0
+    )
     sinks = pipeline.sinks()
 
     if not sinks:
@@ -158,7 +165,8 @@ def check_feasibility(
             f"capacity C_op={c_op:.3f}."
         )
         lines.append(
-            f"No governance policy can rescue this design. "
+            f"Within the fixed model, topology, and budget, no local governance "
+            f"policy can rescue this design. "
             f"Bottleneck: {bottleneck} (capacity={capacities[bottleneck]:.3f})."
         )
         lines.append(
