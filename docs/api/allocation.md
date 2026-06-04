@@ -10,7 +10,11 @@ Optimization and policy support. Answers: *"Where should I place review effort?"
     options:
       show_source: false
 
-Solves the Minimum Sufficient Oversight Principle — the water-filling optimization that allocates oversight proportionally to $\sigma \sqrt{\sigma(1-\sigma)}$, peaking at $\sigma \approx 0.75$.
+Solves the Minimum Sufficient Oversight Principle (MSO): the constrained
+allocation problem that meets a target quality level with minimum sufficient
+oversight effort. Under the Bernoulli/Fisher assumptions used in the paper,
+the solution allocates oversight proportionally to
+$\sigma \sqrt{\sigma(1-\sigma)}$, peaking at $\sigma \approx 0.75$.
 
 ```python
 from minimal_oversight.allocation import solve_mso
@@ -49,7 +53,9 @@ for r in recommend_governance_changes(pipeline, p_min=0.80):
     options:
       show_source: false
 
-Endogenous scope selection (the outer MSO problem): which tasks should be delegated at all? Without a coverage constraint, the optimizer cherry-picks the easiest tasks. With `coverage_min`, it forces broader delegation.
+Endogenous scope selection (the outer MSO problem): which tasks should be
+delegated at all? Without a coverage constraint, the optimizer selects the most
+cost-effective tasks. With `coverage_min`, it forces broader delegation.
 
 ## prioritize_intervention
 

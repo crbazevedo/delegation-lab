@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Documentation
+- Clarify MSO as a constrained oversight-allocation principle for delegated AI
+  pipelines across README and documentation.
+- Add explicit `v0.1.2` release/tag references to the README and quick-start
+  docs.
+
 ## 0.1.2 (2026-06-04)
 
 Terminology alignment for the revised paper and documentation.

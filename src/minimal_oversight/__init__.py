@@ -1,4 +1,8 @@
-"""Minimal Oversight — uncertainty-aware governed-delegation analytics.
+"""Minimal Oversight — governed-delegation analytics for AI pipelines.
+
+The package centers on the Minimum Sufficient Oversight Principle (MSO):
+allocate the least sufficient oversight needed to meet a target quality
+constraint, then place review where it is most informative.
 
 Companion package to:
     "Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems"

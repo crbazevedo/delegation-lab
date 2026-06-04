@@ -1,8 +1,10 @@
 # minimal-oversight
 
-**Uncertainty-aware governed-delegation analytics and decision-support toolkit.**
+**Uncertainty-aware governed-delegation analytics for delegated AI pipelines.**
 
 Companion package to [*Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems*](https://github.com/crbazevedo/delegation-lab) (Azevedo, 2026).
+
+Current release: [`v0.1.2`](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.2) / [`minimal-oversight==0.1.2`](https://pypi.org/project/minimal-oversight/0.1.2/)
 
 ---
 
@@ -16,12 +18,20 @@ system can sustain, and when intervention becomes necessary.
 
 This package turns those questions into computable quantities.
 
+## Minimum Sufficient Oversight Principle
+
+The package is centered on the **Minimum Sufficient Oversight Principle
+(MSO)**: allocate the least sufficient oversight needed to meet a target
+quality constraint, then concentrate review where it has the highest marginal
+value. In the paper's Bernoulli/Fisher model, this yields a water-filling rule
+for review authority rather than a uniform "more oversight everywhere" policy.
+
 ## Six questions it answers
 
 | Question | What you get |
 |----------|-------------|
 | Can this pipeline meet my quality target? | Feasibility check with `C_op` vs `p_min` |
-| Where should I place review effort? | Water-filling allocation via the MSO |
+| Where should I place review effort? | Water-filling allocation via MSO |
 | Which nodes are most dangerous? | Delegation centrality, masking index, SOTA score |
 | How much autonomy can I safely grant? | Effective autonomy buffer `B_eff` |
 | When should humans intervene? | Autonomy time `T*_auto` and intervention schedule |

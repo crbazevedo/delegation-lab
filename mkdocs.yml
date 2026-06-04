@@ -1,5 +1,5 @@
 site_name: minimal-oversight
-site_description: Governed-delegation analytics and decision-support toolkit
+site_description: AI governance toolkit for delegated AI pipelines centered on the Minimum Sufficient Oversight Principle
 site_url: https://crbazevedo.github.io/delegation-lab/
 repo_url: https://github.com/crbazevedo/delegation-lab
 repo_name: crbazevedo/delegation-lab
