@@ -1,7 +1,7 @@
 # minimal-oversight
 
-[![PyPI](https://img.shields.io/pypi/v/minimal-oversight.svg)](https://pypi.org/project/minimal-oversight/)
-[![Release](https://img.shields.io/github/v/release/crbazevedo/delegation-lab?label=release)](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.2)
+[![PyPI](https://img.shields.io/badge/PyPI-v0.1.2-blue.svg)](https://pypi.org/project/minimal-oversight/0.1.2/)
+[![Release](https://img.shields.io/badge/release-v0.1.2-blue.svg)](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.2)
 [![CI](https://github.com/crbazevedo/delegation-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/crbazevedo/delegation-lab/actions/workflows/ci.yml)
 [![Docs](https://github.com/crbazevedo/delegation-lab/actions/workflows/docs.yml/badge.svg)](https://github.com/crbazevedo/delegation-lab/actions/workflows/docs.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
