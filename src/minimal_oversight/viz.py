@@ -162,7 +162,7 @@ def plot_scope_frontier(
     and how average delegated competence decreases.
     """
     plt = _ensure_matplotlib()
-    from minimal_oversight.allocation import solve_amo
+    from minimal_oversight.allocation import solve_mso
 
     sigma = np.asarray(sigma_raw, dtype=float)
     n = len(sigma)
@@ -186,7 +186,7 @@ def plot_scope_frontier(
         sel_sigma = sigma[selected]
 
         try:
-            result = solve_amo(sel_sigma, p_min)
+            result = solve_mso(sel_sigma, p_min)
             costs.append(result.total_cost)
         except Exception:
             costs.append(float("nan"))

@@ -24,7 +24,7 @@ This package turns those questions into computable quantities:
 | Question | What you get |
 |----------|-------------|
 | Can this pipeline meet my quality target? | Feasibility check: $C_\text{op}$ vs $p_\text{min}$ |
-| Where should I place review effort? | Water-filling allocation via the AMO |
+| Where should I place review effort? | Water-filling allocation via the MSO |
 | Which nodes are most dangerous? | Delegation centrality, masking index, SOTA score |
 | How much autonomy can I safely grant? | Effective autonomy buffer $B_\text{eff}$ |
 | When should humans intervene? | Autonomy time $T^*_\text{auto}$ and intervention schedule |
@@ -127,7 +127,7 @@ report = analyze_pipeline(pipeline, p_min=0.80, traces=traces)
 | `estimation` | Infer $\sigma_\text{raw}$, $\sigma_\text{corr}$, $M^*$, catch rate, drift from logs |
 | `capacity` | $C_\text{op}$, $B_\text{eff}$, feasibility checks, $H_\text{crit}$ |
 | `topology` | Motif detection, delegation centrality, conditional fragility |
-| `allocation` | AMO solver, scope selection, governance recommendations |
+| `allocation` | MSO solver, scope selection, governance recommendations |
 | `intervention` | $T^*_\text{auto}$, intervention schedule, alerts, failure diagnosis |
 | `viz` | Masking dashboard, autonomy buffer, risk ranking, scope frontier |
 | `connectors` | LangGraph, Google ADK, LangSmith, generic trace parsers |

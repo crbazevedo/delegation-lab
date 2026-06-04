@@ -16,7 +16,7 @@ from minimal_oversight.topology import delegation_centrality
 
 @dataclass
 class AllocationResult:
-    """Result of the AMO water-filling optimization."""
+    """Result of the MSO water-filling optimization."""
 
     alpha_star: np.ndarray
     sigma_raw: np.ndarray
@@ -48,12 +48,12 @@ class GovernanceRecommendation:
     expected_impact: str
 
 
-def solve_amo(
+def solve_mso(
     sigma_raw: np.ndarray,
     p_min: float,
     alpha_max: float = 1.0,
 ) -> AllocationResult:
-    """Solve the Axiom of Minimal Oversight for optimal authority allocation.
+    """Solve the Minimum Sufficient Oversight Principle.
 
     Finds the water-filling solution α*(x) that minimizes governance cost
     subject to the delivery constraint.
@@ -82,6 +82,15 @@ def solve_amo(
         total_cost=total_cost,
         delivery=delivery,
     )
+
+
+def solve_amo(
+    sigma_raw: np.ndarray,
+    p_min: float,
+    alpha_max: float = 1.0,
+) -> AllocationResult:
+    """Backward-compatible alias for solve_mso()."""
+    return solve_mso(sigma_raw, p_min, alpha_max)
 
 
 def select_scope(
@@ -122,10 +131,10 @@ def select_scope(
     delegated_set = set(delegated)
     excluded = [i for i in range(n) if i not in delegated_set]
 
-    # Solve AMO over delegated subset
+    # Solve MSO over delegated subset
     if delegated:
         delegated_sigma = sigma[delegated]
-        result = solve_amo(delegated_sigma, p_min, alpha_max)
+        result = solve_mso(delegated_sigma, p_min, alpha_max)
         total_cost = result.total_cost
     else:
         total_cost = 0.0

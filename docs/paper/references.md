@@ -7,7 +7,7 @@ Every numbered equation from the paper maps to a function in `_formulae.py`. Thi
 | Eq. | Paper name | Formula | Code |
 |-----|-----------|---------|------|
 | (1) | Authorization function | $\alpha(x,t) = G(\sigma_\text{raw}(x,t))$ | Governance functional (conceptual) |
-| (2) | **Axiom of Minimal Oversight** | $\min_\alpha \int \alpha^2 \sqrt{\det g}\, dx\, dt$ s.t. delivery | `solve_lambda()` + `optimal_authority()` |
+| (2) | **Minimum Sufficient Oversight Principle** | $\min_\alpha \int \alpha^2 \sqrt{\det g}\, dx\, dt$ s.t. delivery | `solve_mso()` + `optimal_authority()` |
 | (3) | Fisher information | $g(\sigma) = 1/[\sigma(1-\sigma)]$ | `fisher_information()` |
 | (4) | Return Operator | $\partial\sigma/\partial t = \eta(\sigma_\text{skill,eff} - \sigma) - \delta(\sigma-\sigma_0)$ | `return_operator_step()` |
 | (5) | Fixed point | $\sigma_\text{raw}^* = (\eta\sigma_\text{skill}+\delta\sigma_0)/(\eta + \delta)$ | `sigma_raw_fixed_point()` |
@@ -40,7 +40,7 @@ Every numbered equation from the paper maps to a function in `_formulae.py`. Thi
 |--------------|---------|------|
 | Feasibility check | Alg. 1, Step 1 | `capacity.check_feasibility()` |
 | Scope selection | Alg. 1, Step 2 | `allocation.select_scope()` |
-| Oversight allocation | Alg. 1, Step 3 | `allocation.solve_amo()` |
+| Oversight allocation | Alg. 1, Step 3 | `allocation.solve_mso()` |
 | State measurement | Alg. 1, Step 4 | `estimation.estimate_node()` |
 | Buffer computation | Alg. 1, Step 5 | `capacity.compute_buffer()` |
 | Intervention scheduling | Alg. 1, Step 6 | `intervention.compute_pipeline_intervention_schedule()` |

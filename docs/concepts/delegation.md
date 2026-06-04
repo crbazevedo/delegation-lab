@@ -66,11 +66,11 @@ The system ships at 90% quality, but the agent is only 67% competent. The 23-poi
     sc = sigma_corr_fixed_point(sr, catch_rate=0.70)    # 0.900
     ```
 
-## The Axiom of Minimal Oversight
+## The Minimum Sufficient Oversight Principle
 
-*Paper reference: Section 1, "The Axiom of Minimal Oversight (AMO)"*
+*Paper reference: Section 1, "The Minimum Sufficient Oversight Principle (MSO)"*
 
-The AMO says: **minimize the total cost of oversight, subject to meeting a quality target.** The cost is measured in Fisher information geometry — a principled way to weight governance effort by how informative it is.
+The MSO says: **minimize the total cost of oversight, subject to meeting a quality target.** The cost is measured in Fisher information geometry — a principled way to weight governance effort by how informative it is.
 
 The result is a water-filling allocation: spend more oversight where the agent is moderately competent ($\sigma \approx 0.75$), less where it's very weak (review is wasted) or very strong (review finds nothing). This parallels Shannon's power allocation across channels.
 

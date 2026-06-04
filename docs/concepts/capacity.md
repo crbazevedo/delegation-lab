@@ -30,7 +30,7 @@ print(report.explanation)
 # budget, no local governance policy can rescue this design.
 ```
 
-!!! danger "When the AMO has no solution"
+!!! danger "When the MSO has no solution"
     If $p_\text{min} > C_\text{op}$, the theory prescribes **no delegation** — not "more authority." The task must be performed by a more capable agent, decomposed into subtasks, or the topology must change.
 
 ## For a single node

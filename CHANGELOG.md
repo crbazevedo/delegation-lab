@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.2 (2026-06-04)
+
+Terminology alignment for the revised paper and documentation.
+
+### Core
+- Rename the preferred oversight-allocation API to `solve_mso()` for the
+  Minimum Sufficient Oversight Principle.
+- Keep `solve_amo()` as a backward-compatible alias for existing notebooks and
+  user code.
+
+### Documentation
+- Replace "Axiom of Minimal Oversight" terminology with "Minimum Sufficient
+  Oversight Principle (MSO)" across README, concepts, API docs, and the
+  equation-to-code reference.
+- Update examples and visualization internals to use `solve_mso()`.
+
+### Tests
+- Add regression coverage confirming `solve_mso()` and the legacy `solve_amo()`
+  alias return identical allocation results.
+
 ## 0.1.1 (2026-06-04)
 
 Equation and documentation alignment for the revised arXiv submission.
