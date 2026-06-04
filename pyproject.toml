@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "minimal-oversight"
-version = "0.1.1"
+version = "0.1.2"
 description = "Uncertainty-aware governed-delegation analytics and decision support."
 readme = "README.md"
 license = "MIT"

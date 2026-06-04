@@ -2,27 +2,30 @@
 
 Optimization and policy support. Answers: *"Where should I place review effort?"* and *"What should change?"*
 
-*Paper reference: Section 1 (AMO, Eq. 2, 8); Section 4 (Algorithm 1, Demonstrations 1-2)*
+*Paper reference: Section 1 (MSO, Eq. 2, 8); Section 4 (Algorithm 1, Demonstrations 1-2)*
 
-## solve_amo
+## solve_mso
 
-::: minimal_oversight.allocation.solve_amo
+::: minimal_oversight.allocation.solve_mso
     options:
       show_source: false
 
-Solves the Axiom of Minimal Oversight — the water-filling optimization that allocates oversight proportionally to $\sigma \sqrt{\sigma(1-\sigma)}$, peaking at $\sigma \approx 0.75$.
+Solves the Minimum Sufficient Oversight Principle — the water-filling optimization that allocates oversight proportionally to $\sigma \sqrt{\sigma(1-\sigma)}$, peaking at $\sigma \approx 0.75$.
 
 ```python
-from minimal_oversight.allocation import solve_amo
+from minimal_oversight.allocation import solve_mso
 import numpy as np
 
 sigma = np.array([0.30, 0.55, 0.75, 0.90])
-result = solve_amo(sigma, p_min=0.60)
+result = solve_mso(sigma, p_min=0.60)
 
 for s, a in zip(sigma, result.alpha_star):
     print(f"σ = {s:.2f} → α* = {a:.3f}")
 # Peak allocation at σ = 0.75 (highest marginal return of review)
 ```
+
+`solve_amo()` remains available as a backward-compatible alias for older
+notebooks and user code.
 
 ## recommend_governance_changes
 
@@ -46,7 +49,7 @@ for r in recommend_governance_changes(pipeline, p_min=0.80):
     options:
       show_source: false
 
-Endogenous scope selection (the outer AMO problem): which tasks should be delegated at all? Without a coverage constraint, the optimizer cherry-picks the easiest tasks. With `coverage_min`, it forces broader delegation.
+Endogenous scope selection (the outer MSO problem): which tasks should be delegated at all? Without a coverage constraint, the optimizer cherry-picks the easiest tasks. With `coverage_min`, it forces broader delegation.
 
 ## prioritize_intervention
 

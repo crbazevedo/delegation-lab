@@ -31,7 +31,7 @@ def fisher_information(sigma: float | np.ndarray) -> float | np.ndarray:
 def fisher_volume_element(sigma: float | np.ndarray) -> float | np.ndarray:
     """sqrt(g(σ)) = 1 / sqrt(σ(1−σ)).
 
-    Used as the cost weight in the AMO.
+    Used as the cost weight in the MSO.
     """
     sigma = np.asarray(sigma, dtype=float)
     eps = 1e-10

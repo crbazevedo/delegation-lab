@@ -21,7 +21,7 @@ This package turns those questions into computable quantities.
 | Question | What you get |
 |----------|-------------|
 | Can this pipeline meet my quality target? | Feasibility check with `C_op` vs `p_min` |
-| Where should I place review effort? | Water-filling allocation via the AMO |
+| Where should I place review effort? | Water-filling allocation via the MSO |
 | Which nodes are most dangerous? | Delegation centrality, masking index, SOTA score |
 | How much autonomy can I safely grant? | Effective autonomy buffer `B_eff` |
 | When should humans intervene? | Autonomy time `T*_auto` and intervention schedule |
