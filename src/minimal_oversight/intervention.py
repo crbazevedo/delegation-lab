@@ -62,7 +62,7 @@ def compute_autonomy_time(
     governance_gap: float = 0.02,
     process_entropy: float = 0.0,
 ) -> float:
-    """Expected time before human intervention is needed.
+    """Characteristic time before human intervention is needed.
 
     T*_auto = B_eff / μ_eff
 
@@ -218,11 +218,15 @@ def check_alerts(
         # Alert 3: Review capacity
         if (
             node.review_capacity is not None
-            and node.sigma_skill is not None
             and node.catch_rate is not None
         ):
+            sigma_raw_for_threshold = (
+                node.sigma_raw if node.sigma_raw is not None else node.sigma_skill
+            )
+            if sigma_raw_for_threshold is None:
+                continue
             threshold_kn = F.corrector_capacity_threshold(
-                p_min, node.sigma_skill, node.catch_rate
+                p_min, sigma_raw_for_threshold, node.catch_rate
             )
             if node.review_capacity < threshold_kn:
                 alerts.append(MonitoringAlert(
@@ -235,7 +239,8 @@ def check_alerts(
                     ),
                     recommended_action=(
                         "Increase corrector capacity or reduce scope. "
-                        "Below this threshold, no authority allocation can maintain quality."
+                        "Below this threshold, the fixed design lacks enough "
+                        "review capacity to maintain the target quality."
                     ),
                 ))
 
@@ -252,6 +257,7 @@ def explain_failure_surface(
     p_min: float = 0.80,
     governance_gap: float = 0.02,
     process_entropy: float = 0.0,
+    sigma_0: float = 0.0,
 ) -> str:
     """Human-readable explanation of the pipeline's failure surface.
 
@@ -271,13 +277,15 @@ def explain_failure_surface(
         pipeline, p_min=p_min,
         governance_gap=governance_gap,
         process_entropy=process_entropy,
+        sigma_0=sigma_0,
     )
 
     # 1. Feasibility
     if not report.feasible:
         lines.append(
             f"[INFEASIBLE TARGET] p_min={p_min:.3f} exceeds C_op={report.c_op:.3f}. "
-            "No local governance policy can rescue this design.\n"
+            "No local governance policy can rescue this fixed design without "
+            "changing capability, budget, or topology.\n"
         )
 
     # 2. Masking

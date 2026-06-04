@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "minimal-oversight"
-version = "0.1.0"
-description = "A governed-delegation analytics and decision-support toolkit."
+version = "0.1.1"
+description = "Uncertainty-aware governed-delegation analytics and decision support."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -16,9 +16,11 @@ keywords = [
     "delegation",
     "autonomy",
     "governance",
-    "multi-agent",
+    "uncertainty",
+    "trust-calibration",
     "oversight",
     "information-geometry",
+    "artificial-intelligence",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",

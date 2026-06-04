@@ -28,6 +28,7 @@ class SimulationConfig:
     dt: float = 0.1
     eta: float = 10.0
     delta: float = 2.0
+    sigma_0: float = 0.0
     seed: int | None = None
 
 
@@ -50,6 +51,7 @@ def simulate_single_node(
     n_scope: int = 100,
     eta: float = 10.0,
     delta: float = 2.0,
+    sigma_0: float = 0.0,
     drift_rate: float = 0.0,
     dt: float = 0.1,
     seed: int | None = None,
@@ -72,7 +74,7 @@ def simulate_single_node(
 
         # Return Operator ODE step
         sigma_raw[t] = F.return_operator_step(
-            sigma_raw[t - 1], current_skill, eta, delta, dt
+            sigma_raw[t - 1], current_skill, eta, delta, dt, sigma_0=sigma_0
         )
 
         # Add Bernoulli noise (finite-sample effect)
@@ -140,7 +142,12 @@ def simulate_pipeline(
 
             # ODE step
             sigma_raw_h[t, j] = F.return_operator_step(
-                sigma_raw_h[t - 1, j], skill_eff, config.eta, config.delta, config.dt
+                sigma_raw_h[t - 1, j],
+                skill_eff,
+                config.eta,
+                config.delta,
+                config.dt,
+                sigma_0=config.sigma_0,
             )
 
             # Noise

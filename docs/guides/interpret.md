@@ -25,7 +25,10 @@ f = report.feasibility
 | `f.bottleneck_node` | The node that limits capacity |
 | `f.explanation` | Human-readable verdict |
 
-**If infeasible:** No routing rule, review allocation, or monitoring strategy will help. You need better agents, better correctors, or a different topology.
+**If infeasible:** Within the fixed model, topology, and budget, local routing
+tweaks, review allocation, and monitoring cannot by themselves close the gap.
+You need better agents, better correctors, more review capacity, a lower
+target, or a different topology.
 
 **If feasible but `b_eff` is small (< 0.05):** The pipeline is near the autonomy cliff. Any increase in workflow complexity or drift could push it over. Simplify routing or increase review capacity.
 
@@ -62,7 +65,9 @@ for s in report.intervention_schedule:
     print(f"{s.node_name}: review every {s.t_auto:.0f} steps")
 ```
 
-Nodes with short $T^*_\text{auto}$ need frequent human review. Nodes with long $T^*_\text{auto}$ can operate autonomously. The schedule is a linear program that minimizes total review cost subject to meeting each node's minimum frequency.
+Nodes with short $T^*_\text{auto}$ need frequent human review. Nodes with long
+$T^*_\text{auto}$ can operate autonomously for longer intervals. The current
+implementation ranks nodes by urgency and reports the implied review frequency.
 
 ## If you observe...
 

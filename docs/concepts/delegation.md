@@ -10,7 +10,7 @@ A **delegation** is the simplest unit of governed autonomy. It has three parts:
 2. **A corrector** ($C$) that reviews a subset and fixes errors
 3. **A principal** ($A$) that decides how much authority to grant
 
-Every multi-agent pipeline is made of delegations chained together.
+Every delegated AI workflow is made of delegations chained together.
 
 ## Two signals, not one
 
@@ -37,17 +37,21 @@ node = Node(
 
 ## The fixed point
 
-Given an observation rate $\eta$ and a decay rate $\delta$, the agent's measured competence converges to:
+Given an observation rate $\eta$, a decay/reversion rate $\delta$, and a
+baseline support level $\sigma_0$, the agent's measured competence converges to:
 
-$$\sigma_\text{raw}^* = \frac{\eta \cdot \sigma_\text{skill}}{\eta + \delta}$$
+$$\sigma_\text{raw}^* = \frac{\eta \cdot \sigma_\text{skill} + \delta \cdot \sigma_0}{\eta + \delta}$$
 
-This is the Return Operator's fixed point (Equation 5). The corrected quality is:
+This is the Return Operator's fixed point (Equation 5). The package default is
+the conservative $\sigma_0=0$ specialization, which recovers the simpler
+$\eta\sigma_\text{skill}/(\eta+\delta)$ examples. The corrected quality is:
 
 $$\sigma_\text{corr}^* = \sigma_\text{raw}^* + (1 - \sigma_\text{raw}^*) \times c$$
 
 where $c$ is the corrector's catch rate (Equation 6).
 
-**Worked example:** With $\sigma_\text{skill} = 0.80$, $\eta = 10$, $\delta = 2$, $c = 0.70$:
+**Worked example:** With $\sigma_\text{skill} = 0.80$, $\eta = 10$,
+$\delta = 2$, $\sigma_0=0$, and $c = 0.70$:
 
 - $\sigma_\text{raw}^* = 10 \times 0.80 / 12 = 0.667$
 - $\sigma_\text{corr}^* = 0.667 + 0.333 \times 0.70 = 0.900$
@@ -58,7 +62,7 @@ The system ships at 90% quality, but the agent is only 67% competent. The 23-poi
     ```python
     from minimal_oversight._formulae import sigma_raw_fixed_point, sigma_corr_fixed_point
 
-    sr = sigma_raw_fixed_point(0.80, eta=10, delta=2)  # 0.667
+    sr = sigma_raw_fixed_point(0.80, eta=10, delta=2)  # 0.667 with σ₀=0
     sc = sigma_corr_fixed_point(sr, catch_rate=0.70)    # 0.900
     ```
 

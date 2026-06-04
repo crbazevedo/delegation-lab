@@ -127,6 +127,7 @@ def analyze_pipeline(
     process_entropy: float = 0.0,
     eta: float = 10.0,
     delta: float = 2.0,
+    sigma_0: float = 0.0,
 ) -> PipelineReport:
     """Analyze a delegated pipeline and produce actionable recommendations.
 
@@ -144,7 +145,8 @@ def analyze_pipeline(
         governance_gap: λ — governance gap coefficient (~0.02/bit typical).
         process_entropy: H(W) — estimated process entropy in bits.
         eta: Observation rate (for capacity calculations).
-        delta: Decay rate (for capacity calculations).
+        delta: Decay/reversion rate (for capacity calculations).
+        sigma_0: Baseline support/prior competence under no fresh evidence.
 
     Returns:
         PipelineReport with feasibility, estimates, risks, schedule,
@@ -173,12 +175,16 @@ def analyze_pipeline(
                 node.catch_rate = est.catch_rate
 
     # 2. Compute capacity and fill in missing node signals from theory
-    node_capacities = compute_pipeline_capacity(pipeline, eta=eta, delta=delta)
+    node_capacities = compute_pipeline_capacity(
+        pipeline, eta=eta, delta=delta, sigma_0=sigma_0
+    )
 
     for name, node in pipeline.nodes.items():
         if node.sigma_raw is None and node.sigma_skill is not None:
             from minimal_oversight._formulae import sigma_raw_fixed_point
-            node.sigma_raw = sigma_raw_fixed_point(node.sigma_skill, eta, delta)
+            node.sigma_raw = sigma_raw_fixed_point(
+                node.sigma_skill, eta, delta, sigma_0=sigma_0
+            )
         if node.sigma_corr is None and node.sigma_raw is not None:
             c = node.catch_rate if node.catch_rate is not None else 0.65
             from minimal_oversight._formulae import sigma_corr_fixed_point
@@ -190,6 +196,7 @@ def analyze_pipeline(
         governance_gap=governance_gap,
         process_entropy=process_entropy,
         eta=eta, delta=delta,
+        sigma_0=sigma_0,
     )
 
     # 4. Topology analysis
@@ -217,6 +224,9 @@ def analyze_pipeline(
         pipeline, p_min=p_min,
         process_entropy=process_entropy,
         governance_gap=governance_gap,
+        eta=eta,
+        delta=delta,
+        sigma_0=sigma_0,
     )
 
     # 8. Failure surface
@@ -225,6 +235,7 @@ def analyze_pipeline(
         p_min=p_min,
         governance_gap=governance_gap,
         process_entropy=process_entropy,
+        sigma_0=sigma_0,
     )
 
     return PipelineReport(

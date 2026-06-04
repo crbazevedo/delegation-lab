@@ -10,7 +10,9 @@ Scheduling and monitoring. Answers: *"When should humans step in?"* and *"What k
     options:
       show_source: false
 
-$T_\text{auto}^* = B_\text{eff} / \mu_\text{eff}$ — the expected time before quality drops below $p_\text{min}$.
+$T_\text{auto}^* = B_\text{eff} / \mu_\text{eff}$ — a drift-dominated
+characteristic intervention time before the fixed design exhausts its quality
+margin.
 
 ## compute_pipeline_intervention_schedule
 

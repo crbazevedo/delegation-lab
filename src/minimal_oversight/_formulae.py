@@ -4,7 +4,7 @@ Every numbered equation lives here. Public modules call into this;
 practitioners should never need to import it directly.
 
 Equations are referenced by their number in:
-    "Minimal Oversight: A Theory of Principled Autonomy Delegation"
+    "Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems"
     Carlos R. B. Azevedo, 2026.
 """
 
@@ -47,17 +47,27 @@ def sigma_raw_fixed_point(
     sigma_skill: float,
     eta: float,
     delta: float,
+    sigma_0: float = 0.0,
 ) -> float:
-    """Fixed-point raw competence: σ*_raw = η·σ_skill / (η + δ).
+    """Fixed-point raw competence.
+
+    σ*_raw = (η·σ_skill + δ·σ₀) / (η + δ)
+
+    The default σ₀=0 recovers the conservative no-demonstrated-support
+    specialization used by the original examples.
 
     Ref: Equation 5.
 
     Args:
         sigma_skill: Agent's true competence.
         eta: Observation rate.
-        delta: Decay rate.
+        delta: Decay/reversion rate.
+        sigma_0: Baseline support or prior competence under no fresh evidence.
     """
-    return eta * sigma_skill / (eta + delta)
+    denom = eta + delta
+    if denom <= 0:
+        raise ValueError("eta + delta must be positive")
+    return (eta * sigma_skill + delta * sigma_0) / denom
 
 
 def sigma_corr_fixed_point(
@@ -91,14 +101,15 @@ def return_operator_step(
     eta: float,
     delta: float,
     dt: float,
+    sigma_0: float = 0.0,
 ) -> float:
     """One Euler step of the Return Operator ODE.
 
-    dσ/dt = η(σ_skill_eff − σ) − δσ
+    dσ/dt = η(σ_skill,eff − σ) − δ(σ − σ₀)
 
     Ref: Equation 4.
     """
-    dsigma = eta * (sigma_skill_eff - sigma) - delta * sigma
+    dsigma = eta * (sigma_skill_eff - sigma) - delta * (sigma - sigma_0)
     return sigma + dsigma * dt
 
 
@@ -207,14 +218,15 @@ def effective_skill(
 # Delegation capacity (Equations 10, 11, 13)
 # ---------------------------------------------------------------------------
 
-def node_capacity(eta: float, delta: float) -> float:
-    """Single-node operational capacity: C = η / (η + δ).
+def node_capacity(eta: float, delta: float, sigma_0: float = 0.0) -> float:
+    """Single-node operational capacity.
 
-    Achieved when σ_skill = 1.
+    Achieved when σ_skill = 1. With the conservative σ₀=0 default this
+    reduces to C = η / (η + δ).
 
     Ref: Follows from Equation 10 + Equation 5.
     """
-    return eta / (eta + delta)
+    return sigma_raw_fixed_point(1.0, eta, delta, sigma_0=sigma_0)
 
 
 def recursive_chain_quality(
@@ -223,6 +235,7 @@ def recursive_chain_quality(
     catch_rate: float,
     eta: float,
     delta: float,
+    sigma_0: float = 0.0,
 ) -> float:
     """Recursive chain quality C_op(D) for a linear chain of identical layers.
 
@@ -233,7 +246,9 @@ def recursive_chain_quality(
     sigma_corr_prev = 1.0  # input quality at layer 0
     for _ in range(depth):
         sigma_skill_eff = sigma_skill * sigma_corr_prev
-        sigma_raw_star = sigma_raw_fixed_point(sigma_skill_eff, eta, delta)
+        sigma_raw_star = sigma_raw_fixed_point(
+            sigma_skill_eff, eta, delta, sigma_0=sigma_0
+        )
         sigma_corr_prev = sigma_corr_fixed_point(sigma_raw_star, catch_rate)
     return sigma_corr_prev
 
@@ -242,10 +257,17 @@ def channel_capacity_single_letter(
     budget: float,
     epsilon_0: float,
     epsilon_1: float,
+    action_revealed: bool = True,
 ) -> float:
-    """Single-letter delegation channel capacity C_del(B).
+    """Stationary single-letter delegation channel capacity C_del(B).
 
-    C_del(B) = (1−B)[1 − H_b(ε₀)] + B[1 − H_b(ε₁)]
+    If the review/action log is revealed to the decoder, the capacity is the
+    budget-weighted average of the two binary symmetric channels:
+
+        C_del(B) = (1−B)[1 − H_b(ε₀)] + B[1 − H_b(ε₁)]
+
+    If the action log is not revealed, this returns the stationary randomized
+    action approximation 1 − H_b((1−B)ε₀ + Bε₁).
 
     Ref: Equation 13.
     """
@@ -256,7 +278,11 @@ def channel_capacity_single_letter(
             return 0.0
         return -p * np.log2(p) - (1 - p) * np.log2(1 - p)
 
-    return (1 - budget) * (1 - h_b(epsilon_0)) + budget * (1 - h_b(epsilon_1))
+    b = float(np.clip(budget, 0.0, 1.0))
+    if action_revealed:
+        return (1 - b) * (1 - h_b(epsilon_0)) + b * (1 - h_b(epsilon_1))
+    epsilon_bar = (1 - b) * epsilon_0 + b * epsilon_1
+    return 1 - h_b(epsilon_bar)
 
 
 # ---------------------------------------------------------------------------
@@ -283,7 +309,10 @@ def autonomy_time(
     h_w: float,
     mu_eff: float,
 ) -> float:
-    """Expected time before intervention: T*_auto = B_eff / μ_eff.
+    """Drift-dominated first-passage scaling: T*_auto = B_eff / μ_eff.
+
+    This is a characteristic intervention time, not an exact stopping-time
+    theorem for arbitrary stochastic drift processes.
 
     Ref: Equation 17.
     """
@@ -311,24 +340,39 @@ def max_pipeline_depth(
     p_min: float,
     eta: float = 10.0,
     delta: float = 2.0,
+    sigma_0: float = 0.0,
+    max_depth: int = 100,
 ) -> float:
-    """Critical depth D_max beyond which adding layers hurts quality.
+    """Maximum target-feasible depth under the recursive chain model.
 
-    Computed via the product formula: D_max ≈ ln(p_min) / ln(σ*_corr),
-    where σ*_corr is the single-layer corrected quality at fixed point.
+    D_max = max {D : C_op(D) >= p_min}, where C_op(D) is computed by
+    recursive_chain_quality(). If all depths up to max_depth remain feasible
+    and the next depth is also feasible, returns infinity.
 
     Ref: Section 4, Demonstration 4.
     """
-    if sigma_skill <= 0 or p_min <= 0:
-        return 0.0
-    # Single-layer corrected quality
-    sigma_raw_star = sigma_raw_fixed_point(sigma_skill, eta, delta)
-    sigma_corr_star = sigma_corr_fixed_point(sigma_raw_star, catch_rate)
-    if sigma_corr_star >= 1.0:
+    if p_min <= 0:
         return float("inf")
-    if sigma_corr_star <= 0.0 or sigma_corr_star <= p_min:
+    if sigma_skill <= 0 or max_depth < 1:
         return 0.0
-    return np.log(p_min) / np.log(sigma_corr_star)
+
+    d_max = 0
+    for depth in range(1, max_depth + 1):
+        quality = recursive_chain_quality(
+            depth, sigma_skill, catch_rate, eta, delta, sigma_0=sigma_0
+        )
+        if quality >= p_min:
+            d_max = depth
+        else:
+            break
+
+    if d_max == max_depth:
+        next_quality = recursive_chain_quality(
+            max_depth + 1, sigma_skill, catch_rate, eta, delta, sigma_0=sigma_0
+        )
+        if next_quality >= p_min:
+            return float("inf")
+    return float(d_max)
 
 
 # ---------------------------------------------------------------------------
@@ -337,19 +381,22 @@ def max_pipeline_depth(
 
 def corrector_capacity_threshold(
     p_min: float,
-    sigma_skill: float,
+    sigma_raw_star: float,
     catch_rate: float,
 ) -> float:
-    """Minimum K/N for the delegation to be feasible.
+    """Minimum review fraction K/N for a target to be feasible.
 
-    K/N > (p_min − σ*) / [(1 − σ*) × c]
+    K/N >= max(0, (p_min − σ*_raw) / [(1 − σ*_raw) × c])
 
     Ref: Section 1, Euler-Lagrange Solution.
     """
-    sigma_star = sigma_skill  # simplified: at fixed point with high eta
+    sigma_star = float(np.clip(sigma_raw_star, 0.0, 1.0))
+    if p_min <= sigma_star:
+        return 0.0
     if catch_rate <= 0 or (1 - sigma_star) <= 0:
         return float("inf")
-    return (p_min - sigma_star) / ((1 - sigma_star) * catch_rate)
+    threshold = (p_min - sigma_star) / ((1 - sigma_star) * catch_rate)
+    return max(0.0, threshold)
 
 
 # ---------------------------------------------------------------------------
