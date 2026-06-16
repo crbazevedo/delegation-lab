@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MSO — feasibility &amp; oversight cockpit</title>
+<link rel="stylesheet" href="../theme.css" />
+</head>
+<body>
+<h1>Feasibility &amp; oversight cockpit</h1>
+<p class="lede">A sales lead-to-deal pipeline. Can it hit your quality target, where's the bottleneck, and which correctors are masking weakness? Every number is computed by the paper's equations.</p>
+
+<div id="ban" class="banner"></div>
+<p class="muted" style="margin:-6px 0 16px">pipeline: lead enrich → scoring → {outreach draft, deal forecast} → CRM write → meeting book · fan-out + diamond merge</p>
+
+<div class="sl"><label>Quality target p_min</label><input type="range" id="pmin" min="0.50" max="0.95" step="0.01" value="0.80" /><span id="pminv">0.80</span></div>
+<div class="sl"><label>Corrector quality</label><input type="range" id="catch" min="60" max="135" step="1" value="100" /><span id="catchv">100%</span></div>
+<div class="sl"><label>Process entropy H(W)</label><input type="range" id="hw" min="0" max="6" step="0.1" value="0" /><span id="hwv">0.0 bits</span></div>
+
+<div class="grid" style="margin:16px 0 20px">
+  <div class="card"><div class="l">Capacity ceiling C_op</div><div class="v" id="cop">—</div></div>
+  <div class="card"><div class="l">Autonomy buffer B_eff</div><div class="v" id="beff">—</div></div>
+  <div class="card"><div class="l">Capacity cliff H_crit</div><div class="v" id="hcrit">—</div></div>
+  <div class="card"><div class="l">Worst masking M*</div><div class="v" id="mstar">—</div></div>
+</div>
+
+<h2>Per-node competence — raw skill vs after correction</h2>
+<p class="muted" style="margin:-4px 0 10px"><span style="display:inline-block;width:10px;height:10px;background:#378ADD;border-radius:2px"></span> raw σ &nbsp; <span style="display:inline-block;width:10px;height:10px;background:#EF9F27;border-radius:2px"></span> masking lift (σ_corr−σ_raw) &nbsp;·&nbsp; vertical line = p_min</p>
+<div id="ledger" style="margin-bottom:20px"></div>
+
+<h2>Recommendations</h2>
+<div id="rx"></div>
+
+<p class="foot">Computed live by the paper's equations (Fisher info <code>g(σ)=1/[σ(1−σ)]</code>, return-operator fixed points, propagated <code>C_op</code>, masking <code>M*=σ_corr/σ_raw</code>, buffer <code>B_eff=C_op−p_min−λH(W)</code>) via <code>mso-core.js</code>, pinned to <code>minimal-oversight==0.1.2</code> by the parity test. Reproduces the paper's validation: masking M*=1.83, autonomy-time slope −1.00.</p>
+
+<script src="../mso-core.js"></script>
+<script>
+var NODES=[
+ {id:'lead_enrich',label:'Lead enrich',sigma_skill:0.80,catch_rate:0.60,parents:[],aggregation:'product',dc:3.6},
+ {id:'lead_score',label:'Lead scoring',sigma_skill:0.62,catch_rate:0.65,parents:['lead_enrich'],aggregation:'product',dc:7.7},
+ {id:'outreach_draft',label:'Outreach draft',sigma_skill:0.50,catch_rate:0.55,parents:['lead_score'],aggregation:'product',dc:2.5},
+ {id:'deal_forecast',label:'Deal forecast',sigma_skill:0.45,catch_rate:0.70,parents:['lead_score'],aggregation:'product',dc:2.5},
+ {id:'crm_write',label:'CRM write',sigma_skill:0.85,catch_rate:0.70,parents:['outreach_draft','deal_forecast'],aggregation:'product',dc:2.0},
+ {id:'meeting_book',label:'Meeting book',sigma_skill:0.65,catch_rate:0.60,parents:['crm_write'],aggregation:'product',dc:0.0}
+];
+var $=function(id){return document.getElementById(id);};
+function scaled(cs){return NODES.map(function(n){return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:Math.max(0.02,Math.min(0.98,n.catch_rate*cs)),parents:n.parents,aggregation:n.aggregation};});}
+function render(){
+  var pmin=+$('pmin').value, cs=(+$('catch').value)/100, hw=+$('hw').value;
+  $('pminv').textContent=pmin.toFixed(2); $('catchv').textContent=Math.round(cs*100)+'%'; $('hwv').textContent=hw.toFixed(1)+' bits';
+  var r=MSO.analyzePipeline({nodes:scaled(cs)},{p_min:pmin,process_entropy:hw});
+  var labelOf={}; NODES.forEach(function(n){labelOf[n.id]=n.label;});
+  var ban=$('ban');
+  if(!r.feasible){ban.style.background='var(--bg-danger)';ban.style.color='var(--tx-danger)';
+    ban.innerHTML='<b>INFEASIBLE</b> · target p_min='+pmin.toFixed(2)+' exceeds capacity C_op='+r.cop.toFixed(3)+'. No review policy rescues this design. Bottleneck: <b>'+labelOf[r.bottleneck]+'</b> (capacity '+r.capacities[r.bottleneck].toFixed(3)+'). Improve agents, better correctors, or change topology.';
+  }else if(r.beff<=0){ban.style.background='var(--bg-warning)';ban.style.color='var(--tx-warning)';
+    ban.innerHTML='<b>FEASIBLE but AT RISK</b> · C_op='+r.cop.toFixed(3)+' ≥ p_min='+pmin.toFixed(2)+', but B_eff='+r.beff.toFixed(3)+' ≤ 0 after H(W)='+hw.toFixed(1)+' bits. Near the autonomy cliff — simplify routing or add review.';
+  }else{ban.style.background='var(--bg-success)';ban.style.color='var(--tx-success)';
+    ban.innerHTML='<b>FEASIBLE</b> · C_op='+r.cop.toFixed(3)+' ≥ p_min='+pmin.toFixed(2)+'. Buffer B_eff='+r.beff.toFixed(3)+', cliff at H_crit='+r.hcrit.toFixed(1)+' bits.';}
+  $('cop').textContent=r.cop.toFixed(3);
+  var be=$('beff');be.textContent=r.beff.toFixed(3);be.style.color=r.beff>0?'var(--tx-success)':'var(--tx-danger)';
+  $('hcrit').textContent=r.feasible?r.hcrit.toFixed(1)+' bits':'past cliff';
+  var worst=NODES.map(function(n){return {l:n.label,m:r.perNode[n.id].masking};}).sort(function(a,b){return b.m-a.m;})[0];
+  $('mstar').textContent=worst.m.toFixed(2)+' · '+worst.l;
+  var led='';
+  NODES.forEach(function(n){var d=r.perNode[n.id];var col=d.masking>1.8?'#E24B4A':(d.masking>1.4?'#EF9F27':'#1D9E75');var isb=n.id===r.bottleneck;
+    led+='<div style="display:grid;grid-template-columns:124px 1fr 150px;gap:10px;align-items:center;margin-bottom:9px">'+
+      '<div style="font-size:12px;font-weight:500">'+n.label+(isb?' <span style="color:var(--tx-danger);font-size:11px">●bottleneck</span>':'')+'</div>'+
+      '<div class="bar"><div style="position:absolute;left:0;top:0;height:100%;width:'+(d.sigma_raw*100).toFixed(1)+'%;background:#378ADD"></div>'+
+      '<div style="position:absolute;top:0;height:100%;left:'+(d.sigma_raw*100).toFixed(1)+'%;width:'+((d.sigma_corr-d.sigma_raw)*100).toFixed(1)+'%;background:'+col+'"></div>'+
+      '<div style="position:absolute;top:-3px;height:21px;width:2px;background:var(--text-primary);left:'+(pmin*100).toFixed(1)+'%"></div></div>'+
+      '<div style="font-size:11px;color:var(--text-secondary);text-align:right">M*='+d.masking.toFixed(2)+' · σ '+d.sigma_raw.toFixed(2)+'→'+d.sigma_corr.toFixed(2)+'</div></div>';});
+  $('ledger').innerHTML=led;
+  var rx=[];
+  if(!r.feasible)rx.push('<b>Redesign — target infeasible.</b> '+labelOf[r.bottleneck]+' caps the chain at '+r.capacities[r.bottleneck].toFixed(3)+'. Lower p_min below '+r.cop.toFixed(3)+', strengthen this agent, or remove a delegation hop.');
+  else if(r.beff<=0)rx.push('<b>Cut process entropy.</b> Feasible on quality but B_eff≤0 at H(W)='+hw.toFixed(1)+' bits. Stay under H_crit='+r.hcrit.toFixed(1)+' bits or simplify routing.');
+  NODES.map(function(n){return {n:n,m:r.perNode[n.id].masking};}).sort(function(a,b){return b.m-a.m;}).slice(0,2).forEach(function(x){
+    if(x.m>1.4)rx.push('<b>Add a blind audit at '+x.n.label+'</b> (M*='+x.m.toFixed(2)+', DC='+x.n.dc.toFixed(1)+'). Correction is masking weakness that propagates downstream — review alone hides the competence signal.');});
+  $('rx').innerHTML=rx.slice(0,3).map(function(t){return '<div class="rx">→&nbsp;<div>'+t+'</div></div>';}).join('');
+}
+['pmin','catch','hw'].forEach(function(id){$(id).addEventListener('input',render);});
+render();
+</script>
+</body>
+</html>
