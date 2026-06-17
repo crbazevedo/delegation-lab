@@ -10,7 +10,6 @@ Skipped automatically when Node.js is unavailable. Add Node to CI to enforce.
 from __future__ import annotations
 
 import json
-import math
 import shutil
 import subprocess
 import tempfile
@@ -27,29 +26,45 @@ RUNNER = REPO / "scripts" / "parity_runner.js"
 TOL = 1e-6
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("node") is None, reason="Node.js not available; parity test requires node"
+    shutil.which("node") is None,
+    reason="Node.js not available; parity test requires node",
 )
 
-_AGG = {"product": AggregationType.PRODUCT, "min": AggregationType.WEAKEST_LINK, "mean": AggregationType.WEIGHTED_MEAN}
+_AGG = {
+    "product": AggregationType.PRODUCT,
+    "min": AggregationType.WEAKEST_LINK,
+    "mean": AggregationType.WEIGHTED_MEAN,
+}
+
+
+def _nd(node_id, skill, catch, parents, agg="product"):
+    return {
+        "id": node_id,
+        "sigma_skill": skill,
+        "catch_rate": catch,
+        "parents": parents,
+        "aggregation": agg,
+    }
+
 
 # --- Shared fixtures (inputs only; both sides compute outputs from these) ---
 SIGMAS = [0.05, 0.1, 0.25, 0.375, 0.417, 0.5, 0.517, 0.667, 0.708, 0.85, 0.95]
 
 PIPE_SALES = {
     "nodes": [
-        {"id": "lead_enrich", "sigma_skill": 0.80, "catch_rate": 0.60, "parents": [], "aggregation": "product"},
-        {"id": "lead_score", "sigma_skill": 0.62, "catch_rate": 0.65, "parents": ["lead_enrich"], "aggregation": "product"},
-        {"id": "outreach_draft", "sigma_skill": 0.50, "catch_rate": 0.55, "parents": ["lead_score"], "aggregation": "product"},
-        {"id": "deal_forecast", "sigma_skill": 0.45, "catch_rate": 0.70, "parents": ["lead_score"], "aggregation": "product"},
-        {"id": "crm_write", "sigma_skill": 0.85, "catch_rate": 0.70, "parents": ["outreach_draft", "deal_forecast"], "aggregation": "product"},
-        {"id": "meeting_book", "sigma_skill": 0.65, "catch_rate": 0.60, "parents": ["crm_write"], "aggregation": "product"},
+        _nd("lead_enrich", 0.80, 0.60, []),
+        _nd("lead_score", 0.62, 0.65, ["lead_enrich"]),
+        _nd("outreach_draft", 0.50, 0.55, ["lead_score"]),
+        _nd("deal_forecast", 0.45, 0.70, ["lead_score"]),
+        _nd("crm_write", 0.85, 0.70, ["outreach_draft", "deal_forecast"]),
+        _nd("meeting_book", 0.65, 0.60, ["crm_write"]),
     ]
 }
 PIPE_CHAIN = {
     "nodes": [
-        {"id": "a", "sigma_skill": 0.7, "catch_rate": 0.65, "parents": [], "aggregation": "product"},
-        {"id": "b", "sigma_skill": 0.6, "catch_rate": 0.6, "parents": ["a"], "aggregation": "min"},
-        {"id": "c", "sigma_skill": 0.75, "catch_rate": 0.7, "parents": ["b"], "aggregation": "mean"},
+        _nd("a", 0.7, 0.65, []),
+        _nd("b", 0.6, 0.6, ["a"], "min"),
+        _nd("c", 0.75, 0.7, ["b"], "mean"),
     ]
 }
 
@@ -59,7 +74,12 @@ CASES = {
     "sraw_fp": [[0.55, 10, 2, 0], [0.8, 10, 2, 0], [0.45, 10, 2, 0.1], [0.62, 8, 3, 0]],
     "scorr": [[0.5167, 0.65], [0.375, 0.70], [0.708, 0.70], [0.2, 0.9]],
     "masking": [[0.83, 0.5167], [0.8125, 0.375], [0.9125, 0.708]],
-    "eff_skill": [[0.85, [0.7012, 0.7908], "product"], [0.6, [0.8, 0.5], "min"], [0.75, [0.9, 0.6], "mean"], [0.5, [], "product"]],
+    "eff_skill": [
+        [0.85, [0.7012, 0.7908], "product"],
+        [0.6, [0.8, 0.5], "min"],
+        [0.75, [0.9, 0.6], "mean"],
+        [0.5, [], "product"],
+    ],
     "opt_auth": [[[0.3, 0.5, 0.7, 0.9], 5.0, 1.0], [[0.4, 0.6], 12.0, 1.0]],
     "solve_lambda": [[[0.6, 0.7, 0.75, 0.8], 0.4], [[0.5, 0.55, 0.6], 0.35]],
     "buffer": [[0.78, 0.70, 0.02, 1.5], [0.777, 0.80, 0.02, 0.0]],
@@ -72,10 +92,27 @@ CASES = {
     ],
 }
 
+SCALAR_KEYS = [
+    "fisher",
+    "volume",
+    "sraw_fp",
+    "scorr",
+    "masking",
+    "eff_skill",
+    "buffer",
+    "autonomy",
+    "crit_entropy",
+]
+
 
 def _build_graph(spec: dict) -> PipelineGraph:
     nodes = [
-        Node(n["id"], sigma_skill=n["sigma_skill"], catch_rate=n["catch_rate"], aggregation=_AGG[n["aggregation"]])
+        Node(
+            n["id"],
+            sigma_skill=n["sigma_skill"],
+            catch_rate=n["catch_rate"],
+            aggregation=_AGG[n["aggregation"]],
+        )
         for n in spec["nodes"]
     ]
     g = PipelineGraph(nodes)
@@ -83,6 +120,15 @@ def _build_graph(spec: dict) -> PipelineGraph:
         for p in n["parents"]:
             g.add_edge(p, n["id"])
     return g
+
+
+def _node_masking(spec: dict) -> dict:
+    masking = {}
+    for n in spec["nodes"]:
+        lsr = F.sigma_raw_fixed_point(n["sigma_skill"], 10, 2, 0)
+        lsc = F.sigma_corr_fixed_point(lsr, n["catch_rate"])
+        masking[n["id"]] = F.masking_index(lsc, lsr)
+    return masking
 
 
 def _python_expected() -> dict:
@@ -105,15 +151,16 @@ def _python_expected() -> dict:
     for pc in CASES["pipelines"]:
         g = _build_graph(pc["pipeline"])
         rep = check_feasibility(g, p_min=pc["p_min"], process_entropy=pc["hw"])
-        masking = {}
-        for n in pc["pipeline"]["nodes"]:
-            lsr = F.sigma_raw_fixed_point(n["sigma_skill"], 10, 2, 0)
-            lsc = F.sigma_corr_fixed_point(lsr, n["catch_rate"])
-            masking[n["id"]] = F.masking_index(lsc, lsr)
-        exp["pipelines"].append({
-            "cop": rep.c_op, "beff": rep.b_eff, "hcrit": rep.h_crit,
-            "bottleneck": rep.bottleneck_node, "feasible": rep.feasible, "masking": masking,
-        })
+        exp["pipelines"].append(
+            {
+                "cop": rep.c_op,
+                "beff": rep.b_eff,
+                "hcrit": rep.h_crit,
+                "bottleneck": rep.bottleneck_node,
+                "feasible": rep.feasible,
+                "masking": _node_masking(pc["pipeline"]),
+            }
+        )
     return exp
 
 
@@ -126,30 +173,37 @@ def _close(a, b, tol=TOL):
     return abs(a - b) <= tol + tol * abs(b)
 
 
-def test_browser_port_matches_python_reference():
+def _run_node(cases: dict) -> dict:
     with tempfile.TemporaryDirectory() as d:
         in_path = Path(d) / "in.json"
         out_path = Path(d) / "out.json"
-        in_path.write_text(json.dumps(CASES))
-        subprocess.run(["node", str(RUNNER), str(in_path), str(out_path)], check=True, stdin=subprocess.DEVNULL)
-        got = json.loads(out_path.read_text())
+        in_path.write_text(json.dumps(cases))
+        subprocess.run(
+            ["node", str(RUNNER), str(in_path), str(out_path)],
+            check=True,
+            stdin=subprocess.DEVNULL,
+        )
+        return json.loads(out_path.read_text())
 
+
+def test_browser_port_matches_python_reference():
+    got = _run_node(CASES)
     exp = _python_expected()
 
-    for key in ["fisher", "volume", "sraw_fp", "scorr", "masking", "eff_skill", "buffer", "autonomy", "crit_entropy"]:
-        assert _close(got[key], exp[key]), f"mismatch in {key}: {got[key]} != {exp[key]}"
+    for key in SCALAR_KEYS:
+        assert _close(got[key], exp[key]), f"mismatch in {key}"
 
     for g, e in zip(got["opt_auth"], exp["opt_auth"]):
-        assert _close(g, e), f"opt_auth mismatch: {g} != {e}"
+        assert _close(g, e), "opt_auth mismatch"
 
     for g, e in zip(got["solve_lambda"], exp["solve_lambda"]):
-        assert _close(g["alpha"], e["alpha"]), f"alpha mismatch: {g['alpha']} != {e['alpha']}"
-        assert _close(g["lam"], e["lam"], tol=1e-5), f"lambda mismatch: {g['lam']} != {e['lam']}"
+        assert _close(g["alpha"], e["alpha"]), "alpha mismatch"
+        assert _close(g["lam"], e["lam"], tol=1e-5), "lambda mismatch"
 
     for g, e in zip(got["pipelines"], exp["pipelines"]):
-        assert g["bottleneck"] == e["bottleneck"], f"bottleneck: {g['bottleneck']} != {e['bottleneck']}"
+        assert g["bottleneck"] == e["bottleneck"], "bottleneck mismatch"
         assert g["feasible"] == e["feasible"]
         for k in ["cop", "beff", "hcrit"]:
-            assert _close(g[k], e[k]), f"pipeline {k}: {g[k]} != {e[k]}"
+            assert _close(g[k], e[k]), f"pipeline {k} mismatch"
         for node_id in e["masking"]:
             assert _close(g["masking"][node_id], e["masking"][node_id]), f"masking {node_id}"
