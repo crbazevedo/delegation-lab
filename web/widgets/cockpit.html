@@ -36,13 +36,15 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
 
 <div class="toolbar">
   <label class="hint">Load template
-    <select id="tpl"><option value="sales">Sales — lead to deal</option><option value="support">Customer support triage</option><option value="github">GitHub PR review</option><option value="rag">RAG research assistant</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option><option value="blank">Blank canvas</option></select>
+    <select id="tpl"><optgroup label="Workflows"><option value="sales">Sales — lead to deal</option><option value="support">Customer support triage</option><option value="github">GitHub PR review</option><option value="rag">RAG research assistant</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option></optgroup><optgroup label="Lessons (try the hint)"><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><option value="blank">Blank canvas</option></select>
   </label>
   <span class="rng" style="gap:6px"><span class="hint">p_min</span><input type="range" id="pmin" min="0.50" max="0.95" step="0.01" value="0.80" style="width:110px"><b id="pminv">0.80</b></span>
   <span class="rng" style="gap:6px"><span class="hint">H(W)</span><input type="range" id="hw" min="0" max="6" step="0.1" value="0" style="width:90px"><b id="hwv">0.0</b></span>
   <span class="seg"><button id="zout" title="zoom out" aria-label="zoom out">−</button><button id="zfit" title="fit to view">Fit</button><button id="zin" title="zoom in" aria-label="zoom in">+</button></span>
   <span class="hint">click a connector to add · drag ● to link · drag canvas to pan · scroll to zoom · Delete to remove</span>
 </div>
+
+<div id="lesson" style="display:none;background:var(--bg-warning);color:var(--tx-warning);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px;line-height:1.5"></div>
 
 <div class="cockpit">
   <div class="palette" id="palette"></div>
@@ -95,7 +97,8 @@ var CONN = {
 var CAT_COLOR = {CRM:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",AI:"#EF9F27",Human:"#639922",Data:"#888780"};
 var MOTIF_COLOR = {chain:"#888780",fan_out:"#EF9F27",merge:"#7F77DD",diamond:"#E24B4A",single:"#888780"};
 
-function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];return {id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product"};}
+function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];return {id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1};}
+var AGG_LABEL={product:"∏ product",min:"weakest-link",mean:"mean"};
 var TEMPLATES = {
   sales: function(){var n=[
     nd("lead_enrich","enrich",20,200,[],{label:"Lead enrich"}),
@@ -145,7 +148,39 @@ var TEMPLATES = {
     nd("ar","llm",310,300,["reconcile"],{label:"AR agent",skill:0.52}),
     nd("control","approver",455,200,["ap","ar"],{label:"Controller"}),
     nd("report","db",600,200,["control"],{label:"Report"})];return n;},
+  review_placement: function(){return [
+    nd("req","db",20,200,[],{label:"Request"}),
+    nd("weak","llm",175,200,["req"],{label:"Weak agent",skill:0.45}),
+    nd("reviewer","reviewer",335,108,["weak"],{label:"Reviewer"}),
+    nd("branchA","classifier",500,108,["reviewer"],{label:"Branch A",skill:0.6}),
+    nd("branchB","classifier",500,300,["weak"],{label:"Branch B",skill:0.6})];},
+  reviewer_competence: function(){return [
+    nd("req","db",20,200,[],{label:"Request"}),
+    nd("agent","llm",185,200,["req"],{label:"Draft agent",skill:0.5}),
+    nd("reviewer","reviewer",350,200,["agent"],{label:"Reviewer",catch:0.45})];},
+  merge_gate: function(){return [
+    nd("src","db",20,200,[],{label:"Request"}),
+    nd("a","llm",180,108,["src"],{label:"Agent A",skill:0.6}),
+    nd("b","llm",180,300,["src"],{label:"Agent B",skill:0.6}),
+    nd("merge","classifier",350,200,["a","b"],{label:"Merge gate",skill:0.7,agg:"product"})];},
+  review_loop: function(){return [
+    nd("req","db",20,200,[],{label:"Request"}),
+    nd("agent","llm",185,200,["req"],{label:"Draft agent",skill:0.5}),
+    nd("reviewer","reviewer",350,200,["agent"],{label:"Reviewer",catch:0.5,rework:1})];},
+  chain_depth: function(){return [
+    nd("a","llm",20,200,[],{label:"Agent 1",skill:0.7}),
+    nd("b","llm",150,200,["a"],{label:"Agent 2",skill:0.7}),
+    nd("c","llm",280,200,["b"],{label:"Agent 3",skill:0.7}),
+    nd("d","llm",410,200,["c"],{label:"Agent 4",skill:0.7}),
+    nd("e","llm",540,200,["d"],{label:"Agent 5",skill:0.7})];},
   blank: function(){return [];}
+};
+var TEMPLATE_HINTS={
+  review_placement:{title:"Reviewer placement.",body:"The reviewer sits on Branch A only, so Branch B is still fed raw by the weak agent → INFEASIBLE. A reviewer lifts only what is downstream of it. Move it ABOVE the fan-out (right after the weak agent) and both branches inherit the correction. (This is the paper's diamond lesson: correct the shared source, not each branch.)",actions:[{label:"Move reviewer upstream",fn:function(){var a=byId("branchA"),b=byId("branchB"),r=byId("reviewer");if(!a||!b||!r)return;r.parents=["weak"];r.x=335;r.y=200;a.parents=["reviewer"];b.parents=["reviewer"];a.y=108;b.y=300;a.x=500;b.x=500;}}]},
+  reviewer_competence:{title:"Reviewer competence.",body:"C_op falls just short: the reviewer's catch rate c is too low to correct the weak draft (σ_corr = σ_raw + (1−σ_raw)·c). Select the reviewer and raise c — or click below — and watch B_eff cross zero.",actions:[{label:"Raise reviewer catch → 0.85",fn:function(){var r=byId("reviewer");if(r)r.catch_rate=0.85;}}]},
+  merge_gate:{title:"Merge gate type.",body:"The gate combines two branches with PRODUCT, so independent errors compound (σ_skill·∏σ_corr) → INFEASIBLE. Select the gate and switch aggregation to mean (or weakest-link) — the same agents now clear the target.",actions:[{label:"Set gate → mean",fn:function(){var g=byId("merge");if(g)g.aggregation="mean";}}]},
+  review_loop:{title:"Review loop.",body:"One review pass leaves errors uncaught. A rework loop sends failures back to the agent; each pass compounds the catch rate as 1−(1−c)^k. Raise the reviewer's rework passes and C_op climbs. Loops are modeled by this steady-state effect on effective catch — MSO analyzes the acyclic projection (the package's review edges are metadata, not forward DAG edges).",actions:[{label:"Set review loop → ×3",fn:function(){var r=byId("reviewer");if(r)r.rework=3;}}]},
+  chain_depth:{title:"Chain depth & masking.",body:"Every delegation hop multiplies effective skill and compounds masking (paper Exp. 4). At depth 5 even capable agents decay below target. Remove hops and watch C_op climb toward the single-agent ceiling — only at depth 1 does it clear p_min. Depth itself is the constraint, not any one agent.",actions:[{label:"Remove last hop",fn:function(){var order=["e","d","c","b"];for(var i=0;i<order.length;i++){if(byId(order[i])){var rm=order[i];state.nodes=state.nodes.filter(function(n){return n.id!==rm;});state.nodes.forEach(function(n){n.parents=(n.parents||[]).filter(function(p){return p!==rm;});});break;}}}}]}
 };
 
 var state = {nodes:[], selected:null};
@@ -156,11 +191,16 @@ var svg=document.getElementById("svg"), $=function(id){return document.getElemen
 var drag=null, draw=null, pan=null, counter=0;
 function clampv(v,a,b){return Math.max(a,Math.min(b,v));}
 
-function loadTemplate(name){state.nodes=TEMPLATES[name]();state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();}
+function loadTemplate(name){state.nodes=TEMPLATES[name]();state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
+function showLesson(name){var h=TEMPLATE_HINTS[name],box=$("lesson");if(!h){box.style.display="none";return;}box.style.display="block";
+  var acts=(h.actions||[]).map(function(a,i){return '<button data-act="'+i+'" style="margin-right:8px;margin-top:2px">'+a.label+'</button>';}).join("");
+  box.innerHTML='<b>Lesson — '+h.title+'</b> '+h.body+(acts?'<div style="margin-top:8px">'+acts+'</div>':'');
+  box.querySelectorAll("[data-act]").forEach(function(b){b.addEventListener("click",function(){h.actions[+b.getAttribute("data-act")].fn();render();analyze();fit();showInspector();});});}
 function el(tag,attrs){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);return e;}
 function edges(){var es=[];state.nodes.forEach(function(n){(n.parents||[]).forEach(function(p){es.push({from:p,to:n.id});});});return es;}
 function byId(id){for(var i=0;i<state.nodes.length;i++)if(state.nodes[i].id===id)return state.nodes[i];return null;}
-function pipeline(){return {nodes:state.nodes.map(function(n){return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:n.catch_rate,parents:(n.parents||[]).slice(),aggregation:n.aggregation};})};}
+function effCatch(n){var k=n.rework||1;return k>1?1-Math.pow(1-n.catch_rate,k):n.catch_rate;}
+function pipeline(){return {nodes:state.nodes.map(function(n){return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:effCatch(n),parents:(n.parents||[]).slice(),aggregation:n.aggregation};})};}
 function reaches(from,to){var es=edges(),adj={};es.forEach(function(e){(adj[e.from]=adj[e.from]||[]).push(e.to);});var seen={},q=[from];while(q.length){var x=q.shift();if(x===to)return true;(adj[x]||[]).forEach(function(y){if(!seen[y]){seen[y]=true;q.push(y);}});}return false;}
 function evtPt(e){var r=svg.getBoundingClientRect();return {x:(e.clientX-r.left-view.x)/view.k,y:(e.clientY-r.top-view.y)/view.k};}
 
@@ -186,6 +226,7 @@ function render(){
   var pa=el("path",{d:"M0 0L10 5L0 10z",fill:"var(--text-tertiary)"});mk.appendChild(pa);defs.appendChild(mk);svg.appendChild(defs);
   var world=el("g",{transform:"translate("+view.x+","+view.y+") scale("+view.k+")"});svg.appendChild(world);
   var risks=lastRisk||{};
+  var fin={};edges().forEach(function(e){fin[e.to]=(fin[e.to]||0)+1;});
   edges().forEach(function(ed){var a=byId(ed.from),b=byId(ed.to);if(!a||!b)return;
     var sx=a.x+W,sy=a.y+H/2,tx=b.x,ty=b.y+H/2;
     var sel=state.selected&&state.selected.kind==="edge"&&state.selected.from===ed.from&&state.selected.to===ed.to;
@@ -203,6 +244,8 @@ function render(){
     var t1=el("text",{x:16,y:16,fill:"var(--text-primary)","font-size":"11.5","font-family":"var(--font)","font-weight":"500"});t1.textContent=n.label.length>13?n.label.slice(0,12)+"…":n.label;g.appendChild(t1);
     var t2=el("text",{x:16,y:29,fill:"var(--text-tertiary)","font-size":"9.5","font-family":"var(--font)"});t2.textContent=CONN[n.type].label+(rk?" M*"+rk.masking_index.toFixed(1):"");g.appendChild(t2);
     if(lastBottleneck===n.id)g.appendChild(el("circle",{cx:W-9,cy:8,r:4,fill:"#E24B4A"}));
+    if(fin[n.id]>1){var gt=el("text",{x:W/2,y:-6,fill:"#7F77DD","font-size":"9.5","font-family":"var(--font)","text-anchor":"middle","font-weight":"500"});gt.textContent="gate · "+AGG_LABEL[n.aggregation];g.appendChild(gt);}
+    if((n.rework||1)>1){g.appendChild(el("path",{d:"M"+(W*0.62)+" 2 C"+(W*0.86)+" -22,"+(W*0.14)+" -22,"+(W*0.38)+" 2",fill:"none",stroke:"#1D9E75","stroke-width":"1.6","marker-end":"url(#arr)"}));var rt=el("text",{x:W/2,y:-13,fill:"#1D9E75","font-size":"9.5","font-family":"var(--font)","text-anchor":"middle","font-weight":"500"});rt.textContent="↺ rework ×"+n.rework;g.appendChild(rt);}
     var port=el("circle",{cx:W,cy:H/2,r:5.5,fill:"#378ADD",stroke:"var(--bg-page)","stroke-width":"1.5",style:"cursor:crosshair"});
     port.addEventListener("pointerdown",function(ev){ev.stopPropagation();var pt=evtPt(ev);draw={from:n.id,x:pt.x,y:pt.y};svg.setPointerCapture(ev.pointerId);});
     g.appendChild(port);
@@ -244,14 +287,16 @@ function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
     '<div class="field"><label>Agent skill σ_skill</label><div class="rng"><input type="range" id="f-skill" min="0.2" max="0.98" step="0.01" value="'+n.sigma_skill+'"><b id="f-skillv">'+n.sigma_skill.toFixed(2)+'</b></div></div>'+
     '<div class="field"><label>Corrector catch c</label><div class="rng"><input type="range" id="f-catch" min="0.2" max="0.95" step="0.01" value="'+n.catch_rate+'"><b id="f-catchv">'+n.catch_rate.toFixed(2)+'</b></div></div>'+
     '<div class="field"><label>Drift σ_drift</label><div class="rng"><input type="range" id="f-drift" min="0" max="0.3" step="0.01" value="'+n.drift_rate+'"><b id="f-driftv">'+n.drift_rate.toFixed(2)+'</b></div></div>'+
-    '<div class="field"><label>Merge aggregation</label><select id="f-agg">'+aggs+'</select></div>'+
+    '<div class="field"><label>Merge aggregation (gate)</label><select id="f-agg">'+aggs+'</select></div>'+
+    '<div class="field"><label>Review rework passes (loop) — c_eff='+effCatch(n).toFixed(2)+'</label><div class="rng"><input type="range" id="f-rework" min="1" max="4" step="1" value="'+(n.rework||1)+'"><b id="f-reworkv">×'+(n.rework||1)+'</b></div></div>'+
     '<button id="f-del" style="color:var(--tx-danger)">Delete node</button>';
   $("f-label").addEventListener("input",function(){n.label=this.value;render();});
   $("f-type").addEventListener("change",function(){n.type=this.value;render();analyze();});
   $("f-skill").addEventListener("input",function(){n.sigma_skill=+this.value;$("f-skillv").textContent=n.sigma_skill.toFixed(2);render();analyze();});
   $("f-catch").addEventListener("input",function(){n.catch_rate=+this.value;$("f-catchv").textContent=n.catch_rate.toFixed(2);render();analyze();});
   $("f-drift").addEventListener("input",function(){n.drift_rate=+this.value;$("f-driftv").textContent=n.drift_rate.toFixed(2);});
-  $("f-agg").addEventListener("change",function(){n.aggregation=this.value;analyze();});
+  $("f-agg").addEventListener("change",function(){n.aggregation=this.value;render();analyze();});
+  $("f-rework").addEventListener("input",function(){n.rework=+this.value;$("f-reworkv").textContent="×"+n.rework;render();analyze();});
   $("f-del").addEventListener("click",deleteSelected);
 }
 
