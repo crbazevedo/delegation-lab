@@ -41,6 +41,7 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
   <span class="rng" style="gap:6px"><span class="hint">p_min</span><input type="range" id="pmin" min="0.50" max="0.95" step="0.01" value="0.80" style="width:110px"><b id="pminv">0.80</b></span>
   <span class="rng" style="gap:6px"><span class="hint">H(W)</span><input type="range" id="hw" min="0" max="6" step="0.1" value="0" style="width:90px"><b id="hwv">0.0</b></span>
   <span class="seg"><button id="zout" title="zoom out" aria-label="zoom out">−</button><button id="zfit" title="fit to view">Fit</button><button id="zin" title="zoom in" aria-label="zoom in">+</button></span>
+  <button id="run" type="button">▶ Run tokens</button>
   <span class="hint">click a connector to add · drag ● to link · drag canvas to pan · scroll to zoom · Delete to remove</span>
 </div>
 
@@ -58,12 +59,13 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
   </div>
   <div class="panel">
     <div id="banner" class="banner" style="font-size:12px"></div>
-    <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <div class="minicard"><div class="l">C_op</div><div class="v" id="cop">—</div></div>
       <div class="minicard"><div class="l">B_eff</div><div class="v" id="beff">—</div></div>
       <div class="minicard"><div class="l">worst M*</div><div class="v" id="mstar">—</div></div>
       <div class="minicard"><div class="l">motifs</div><div class="v" id="nmotif">—</div></div>
     </div>
+    <div id="simrow" style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.</div>
     <div class="sec" id="inspector-sec" style="display:none">
       <h3>Selected node</h3>
       <div id="inspector"></div>
@@ -77,6 +79,7 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
 <p class="foot">Every value is computed by <code>mso-core.js</code> (Fisher info, capacity propagation, masking, water-filling, motif detection, delegation centrality), pinned to <code>minimal-oversight==0.1.2</code> by the parity test. Connector parameters are illustrative defaults — edit any node to match your system.</p>
 
 <script src="../mso-core.js"></script>
+<script src="../mso-sim.js"></script>
 <script>
 var CONN = {
   hubspot:{label:"HubSpot",cat:"CRM",skill:0.85,catch:0.50,drift:0.02},
@@ -251,6 +254,9 @@ function render(){
     g.appendChild(port);
     g.addEventListener("pointerdown",function(ev){if(draw)return;var pt=evtPt(ev);drag={id:n.id,dx:pt.x-n.x,dy:pt.y-n.y,moved:false};svg.setPointerCapture(ev.pointerId);state.selected={kind:"node",id:n.id};render();showInspector();});
     world.appendChild(g);});
+  (simTokens||[]).forEach(function(tk){var a=byId(tk.path[tk.seg]),b=byId(tk.path[tk.seg+1]);if(!a||!b)return;
+    var x=(a.x+W/2)+(b.x-a.x)*tk.t,y=(a.y+H/2)+(b.y-a.y)*tk.t;
+    world.appendChild(el("circle",{cx:x,cy:y,r:5,fill:tk.ok?"#1D9E75":"#E24B4A",stroke:"var(--bg-page)","stroke-width":"1"}));});
 }
 svg.addEventListener("pointerdown",function(e){if(e.target===svg){state.selected=null;pan={sx:e.clientX,sy:e.clientY,ox:view.x,oy:view.y};svg.setPointerCapture(e.pointerId);showInspector();render();}});
 svg.addEventListener("pointermove",function(e){
@@ -336,6 +342,26 @@ $("zin").addEventListener("click",function(){zoomAt(svg.clientWidth/2,svg.client
 $("zout").addEventListener("click",function(){zoomAt(svg.clientWidth/2,svg.clientHeight/2,1/1.2);});
 buildPalette();
 window.addEventListener("resize",function(){render();});
+var simTokens=null, simOn=false, simRng=MSOSim.makeRng(7), simLast=0, simSpawn=0;
+function childrenMap(){var c={};state.nodes.forEach(function(n){c[n.id]=[];});state.nodes.forEach(function(n){(n.parents||[]).forEach(function(p){if(c[p])c[p].push(n.id);});});return c;}
+function randomPath(ch){var srcs=state.nodes.filter(function(n){return !(n.parents&&n.parents.length);}).map(function(n){return n.id;});if(!srcs.length)return null;var cur=srcs[Math.floor(simRng()*srcs.length)],path=[cur],guard=0;while(ch[cur]&&ch[cur].length&&guard++<30){cur=ch[cur][Math.floor(simRng()*ch[cur].length)];path.push(cur);}return path;}
+function runSim(){
+  if(state.nodes.length===0)return;
+  var s=MSOSim.simulateTokens(pipeline(),{n:20000,rng:MSOSim.makeRng(7)});
+  var a=MSO.analyzePipeline(pipeline(),{p_min:+$("pmin").value});
+  $("simrow").innerHTML='<b style="color:var(--text-primary)">empirical end-to-end '+s.endToEndSuccess.toFixed(3)+'</b> over 20k tokens · analytic C_op '+a.cop.toFixed(3)+' · gap '+Math.abs(s.endToEndSuccess-a.cop).toFixed(3);
+  simTokens=[];simOn=true;$("run").textContent="❚❚ Stop";simLast=0;requestAnimationFrame(simLoop);
+  runSim._end=s.endToEndSuccess;
+}
+function simLoop(ts){
+  if(!simOn){simTokens=null;render();return;}
+  if(!simLast)simLast=ts;var dt=Math.min(50,ts-simLast);simLast=ts;
+  var ch=childrenMap();
+  simSpawn+=dt;if(simSpawn>140&&simTokens.length<24){simSpawn=0;var p=randomPath(ch);if(p&&p.length>1)simTokens.push({path:p,seg:0,t:0,ok:simRng()<(runSim._end||0.8)});}
+  for(var i=simTokens.length-1;i>=0;i--){var tk=simTokens[i];tk.t+=dt/650;if(tk.t>=1){tk.seg++;tk.t=0;if(tk.seg>=tk.path.length-1)simTokens.splice(i,1);}}
+  render();requestAnimationFrame(simLoop);
+}
+$("run").addEventListener("click",function(){if(simOn){simOn=false;this.textContent="▶ Run tokens";}else runSim();});
 loadTemplate("sales");
 </script>
 </body>
