@@ -33,5 +33,5 @@ Framework import::
 
 from minimal_oversight._api import analyze_pipeline, recommend_governance_changes
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __all__ = ["analyze_pipeline", "recommend_governance_changes"]

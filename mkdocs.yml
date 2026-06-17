@@ -65,6 +65,7 @@ nav:
     - Topology as Governance: concepts/topology.md
   - Guides:
     - Analyzing a Pipeline: guides/analyze.md
+    - Interactive Companion: guides/interactive.md
     - LangGraph Integration: guides/langgraph.md
     - ADK Integration: guides/adk.md
     - Calibrating from Traces: guides/traces.md

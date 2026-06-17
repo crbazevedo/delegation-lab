@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Minimal Oversight — interactive companion</title>
+<link rel="stylesheet" href="theme.css" />
+</head>
+<body>
+<h1>Minimal Oversight — interactive companion</h1>
+<p class="lede">Three browser widgets for <em>"Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems"</em> (Azevedo, 2026). Every number is computed live by the paper's equations via <code>mso-core.js</code>, a faithful port of <code>minimal_oversight._formulae</code> pinned to the Python package by a parity test (|Δ| &lt; 1e-6).</p>
+
+<div style="display:grid;gap:14px;margin-top:18px">
+  <a href="widgets/cockpit.html" style="text-decoration:none;color:inherit"><div class="card" style="padding:16px 18px;border:2px solid var(--blue)"><div style="font-size:16px;font-weight:500;margin-bottom:4px">Governance cockpit — build &amp; analyze <span class="tag" style="background:var(--blue);color:#fff;margin-left:6px">flagship</span></div><div class="muted">Build or load a delegated workflow from a connector library (HubSpot, Salesforce, GitHub, Jira, Slack, LLM, human review…), edit the graph, and read feasibility, masking, motifs, and risk off it live.</div></div></a>
+  <a href="widgets/feasibility.html" style="text-decoration:none;color:inherit"><div class="card" style="padding:16px 18px"><div style="font-size:16px;font-weight:500;margin-bottom:4px">Feasibility &amp; oversight cockpit</div><div class="muted">Can a sales pipeline hit its target? Capacity ceiling C_op, the bottleneck, the autonomy buffer, the entropy cliff, and per-node masking — live.</div></div></a>
+  <a href="widgets/masking.html" style="text-decoration:none;color:inherit"><div class="card" style="padding:16px 18px"><div style="font-size:16px;font-weight:500;margin-bottom:4px">The masking pathology</div><div class="muted">Why a corrector hides agent weakness. M* = σ_corr/σ_raw, reproducing the paper's M*=1.83.</div></div></a>
+  <a href="widgets/return-operator.html" style="text-decoration:none;color:inherit"><div class="card" style="padding:16px 18px"><div style="font-size:16px;font-weight:500;margin-bottom:4px">The Return Operator, run on time</div><div class="muted">Run the competence ODE forward: σ_raw drifts, σ_corr holds, M* widens. Intervene to reset the autonomy window.</div></div></a>
+  <a href="widgets/token-sim.html" style="text-decoration:none;color:inherit"><div class="card" style="padding:16px 18px"><div style="font-size:16px;font-weight:500;margin-bottom:4px">Token simulation (stochastic Petri net)</div><div class="muted">Run tasks as tokens through the pipeline with real review loops; watch empirical end-to-end success converge to the analytic C_op.</div></div></a>
+  <a href="widgets/waterfilling.html" style="text-decoration:none;color:inherit"><div class="card" style="padding:16px 18px"><div style="font-size:16px;font-weight:500;margin-bottom:4px">Water-filling oversight</div><div class="muted">The Euler-Lagrange allocation α*(x) — autonomy where it's cheap, oversight where competence is low — at least cost.</div></div></a>
+  <a href="widgets/benchmark.html" style="text-decoration:none;color:inherit"><div class="card" style="padding:16px 18px"><div style="font-size:16px;font-weight:500;margin-bottom:4px">Water-filling vs the baseline paradigm</div><div class="muted">MSO vs uniform oversight at equal delivery, plus endogenous task allocation (scope selection). The advantage grows with task heterogeneity.</div></div></a>
+</div>
+
+<p class="foot">Package: <code>pip install minimal-oversight</code> · <a href="https://github.com/crbazevedo/delegation-lab">github.com/crbazevedo/delegation-lab</a>. To embed a widget, copy <code>mso-core.js</code> + <code>theme.css</code> and the widget HTML, or see <code>web/README.md</code>.</p>
+</body>
+</html>

@@ -1,12 +1,32 @@
 # Changelog
 
-## Unreleased
+## 0.1.3 (2026-06-16)
+
+Interactive companion + grounding harness. No changes to the importable Python
+API — `analyze_pipeline()` and friends are unchanged from 0.1.2.
+
+### Added
+- **Interactive companion widgets** (`web/`): a dependency-free, embeddable suite
+  that computes the paper's quantities live in the browser — a governance cockpit
+  (build/edit a delegated workflow from a connector library; read feasibility,
+  masking, motifs, delegation centrality, and risk off it), plus focused
+  explainers for feasibility, masking (M\*=1.83), water-filling allocation, the
+  Return Operator run on time, a stochastic-Petri-net token simulation, and a
+  water-filling-vs-baseline benchmark.
+- **`web/mso-core.js`**: a faithful browser port of `minimal_oversight._formulae`
+  (Fisher info, return-operator fixed points and ODE step, water-filling +
+  `solve_lambda`, capacity propagation, masking, motif detection, delegation
+  centrality, SOTA score, scope selection).
+- **`web/mso-sim.js`**: a lightweight stochastic-Petri-net token simulator
+  (tasks as tokens, review loops as real back-arcs).
+- **Grounding tests** (`tests/test_parity.py`, `tests/test_sim_grounding.py`):
+  pin every ported equation to the Python package to within 1e-6, and assert the
+  token simulator's empirical end-to-end success matches the analytic `C_op`.
 
 ### Documentation
+- Add an "Interactive companion" guide and link it from the README and docs site.
 - Clarify MSO as a constrained oversight-allocation principle for delegated AI
   pipelines across README and documentation.
-- Add explicit `v0.1.2` release/tag references to the README and quick-start
-  docs.
 
 ## 0.1.2 (2026-06-04)
 

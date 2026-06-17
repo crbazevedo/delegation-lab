@@ -1,7 +1,7 @@
 # minimal-oversight
 
-[![PyPI](https://img.shields.io/badge/PyPI-v0.1.2-blue.svg)](https://pypi.org/project/minimal-oversight/0.1.2/)
-[![Release](https://img.shields.io/badge/release-v0.1.2-blue.svg)](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.2)
+[![PyPI](https://img.shields.io/badge/PyPI-v0.1.3-blue.svg)](https://pypi.org/project/minimal-oversight/0.1.3/)
+[![Release](https://img.shields.io/badge/release-v0.1.3-blue.svg)](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.3)
 [![CI](https://github.com/crbazevedo/delegation-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/crbazevedo/delegation-lab/actions/workflows/ci.yml)
 [![Docs](https://github.com/crbazevedo/delegation-lab/actions/workflows/docs.yml/badge.svg)](https://github.com/crbazevedo/delegation-lab/actions/workflows/docs.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
@@ -12,9 +12,9 @@ the **Minimum Sufficient Oversight Principle (MSO)**.
 
 Companion package to *"Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems"* (Azevedo, 2026).
 
-**[Documentation](https://crbazevedo.github.io/delegation-lab/)** | **[Notebooks](https://github.com/crbazevedo/delegation-lab/tree/main/notebooks)** | **[Changelog](https://github.com/crbazevedo/delegation-lab/blob/main/CHANGELOG.md)**
+**[Documentation](https://crbazevedo.github.io/delegation-lab/)** | **[Interactive widgets](web/)** | **[Notebooks](https://github.com/crbazevedo/delegation-lab/tree/main/notebooks)** | **[Changelog](https://github.com/crbazevedo/delegation-lab/blob/main/CHANGELOG.md)**
 
-Current release tag: [`v0.1.2`](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.2) / PyPI package: [`minimal-oversight==0.1.2`](https://pypi.org/project/minimal-oversight/0.1.2/)
+Current release tag: [`v0.1.3`](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.3) / PyPI package: [`minimal-oversight==0.1.3`](https://pypi.org/project/minimal-oversight/0.1.3/)
 
 ## What it does
 
@@ -39,6 +39,28 @@ In practical terms, MSO treats oversight as a constrained allocation problem:
 meet a target quality level with the least sufficient review effort, then place
 that effort where the model and pipeline state make review most informative.
 
+## Interactive companion
+
+A dependency-free, embeddable widget suite under [`web/`](web/) computes the
+paper's quantities **live in the browser** — the same equations as this package.
+Build or load a delegated workflow in the **governance cockpit** (connector
+library, editable graph, merge gates, review loops, didactic lessons) and read
+feasibility, masking, motifs, and risk off it; press **Run** to animate task
+tokens through the graph. Focused explainers cover the masking pathology
+(`M*=1.83`), water-filling allocation, the **Return Operator run on time**, a
+**stochastic-Petri-net token simulation**, and a **water-filling-vs-baseline
+benchmark**.
+
+```bash
+cd web && python -m http.server 8000   # then open http://localhost:8000
+```
+
+Grounding is mechanically enforced: `web/mso-core.js` is a faithful port of
+`minimal_oversight._formulae` pinned to the package to within `1e-6`
+(`tests/test_parity.py`), and the token simulator's empirical end-to-end success
+is asserted to match the analytic `C_op` (`tests/test_sim_grounding.py`). See the
+[Interactive Companion guide](https://crbazevedo.github.io/delegation-lab/guides/interactive/).
+
 ## Install
 
 ```bash
@@ -48,7 +70,7 @@ pip install minimal-oversight
 For a reproducible install of the current release:
 
 ```bash
-pip install minimal-oversight==0.1.2
+pip install minimal-oversight==0.1.3
 ```
 
 With framework connectors and visualization:

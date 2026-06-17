@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MSO — the Return Operator, run on time</title>
+<link rel="stylesheet" href="../theme.css" />
+</head>
+<body>
+<h1>The Return Operator — masking emerging over time</h1>
+<p class="lede">Run the paper's competence dynamics forward: <code>dσ/dt = η(σ_skill,eff − σ) − δ(σ − σ₀)</code>. Raw competence σ_raw drifts down while the corrector holds σ_corr up — so the masking index M* = σ_corr/σ_raw widens with time. Intervene to reset skill and watch the autonomy window reset.</p>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+  <button id="play" type="button">▶ Run</button>
+  <button id="reset" type="button">Reset</button>
+  <button id="intervene" type="button">Intervene (retrain)</button>
+</div>
+
+<svg id="plot" viewBox="0 0 660 290" width="100%" style="display:block;background:var(--bg-surface);border-radius:var(--radius);border:1px solid var(--border)">
+  <line x1="42" y1="142" x2="652" y2="142" stroke="var(--border)"/>
+  <line x1="42" y1="10" x2="42" y2="142" stroke="var(--border)"/>
+  <line x1="42" y1="278" x2="652" y2="278" stroke="var(--border)"/>
+  <line x1="42" y1="172" x2="42" y2="278" stroke="var(--border)"/>
+  <text x="46" y="22" font-size="11" fill="var(--text-secondary)" font-family="var(--font)">competence (0–1)</text>
+  <text x="46" y="186" font-size="11" fill="var(--text-secondary)" font-family="var(--font)">masking M* (1+)</text>
+  <line id="ln-sr" x1="42" x2="652" stroke="#888780" stroke-dasharray="4 4" stroke-width="1"/>
+  <line id="ln-sc" x1="42" x2="652" stroke="#888780" stroke-dasharray="4 4" stroke-width="1"/>
+  <line id="ln-th" x1="42" x2="652" stroke="#E24B4A" stroke-dasharray="4 4" stroke-width="1"/>
+  <polyline id="pl-raw" fill="none" stroke="#378ADD" stroke-width="2"/>
+  <polyline id="pl-corr" fill="none" stroke="#1D9E75" stroke-width="2"/>
+  <polyline id="pl-m" fill="none" stroke="#7F77DD" stroke-width="2"/>
+  <text x="560" y="22" font-size="11" fill="#378ADD" font-family="var(--font)">σ_raw</text>
+  <text x="608" y="22" font-size="11" fill="#1D9E75" font-family="var(--font)">σ_corr</text>
+  <text x="560" y="186" font-size="11" fill="#7F77DD" font-family="var(--font)">M*</text>
+  <text x="606" y="186" font-size="11" fill="#E24B4A" font-family="var(--font)">M*=1.6</text>
+</svg>
+
+<div class="grid" style="margin:14px 0 18px">
+  <div class="card"><div class="l">σ_raw (true) now</div><div class="v" id="r-raw">—</div></div>
+  <div class="card"><div class="l">σ_corr (observed) now</div><div class="v" id="r-corr">—</div></div>
+  <div class="card"><div class="l">masking M* now</div><div class="v" id="r-m">—</div></div>
+  <div class="card"><div class="l">autonomy window</div><div class="v" id="r-auto">—</div></div>
+</div>
+
+<div class="sl"><label>Agent skill σ_skill</label><input type="range" id="skill" min="0.3" max="0.95" step="0.01" value="0.75"><span id="skillv">0.75</span></div>
+<div class="sl"><label>Corrector catch c</label><input type="range" id="catch" min="0.3" max="0.95" step="0.01" value="0.85"><span id="catchv">0.85</span></div>
+<div class="sl"><label>Review coverage K/N</label><input type="range" id="kn" min="0.2" max="1" step="0.05" value="1"><span id="knv">1.00</span></div>
+<div class="sl"><label>Skill drift μ (per unit time)</label><input type="range" id="drift" min="0" max="0.03" step="0.001" value="0.012"><span id="driftv">0.012</span></div>
+
+<p class="foot">Computed by <code>mso-core.js</code> (<code>returnOperatorStep</code>, pinned to <code>minimal_oversight._formulae.return_operator_step</code> by the parity test — the step and the full 400-step trajectory match the package to 1e-6). Dashed grey lines are the drift-free analytic fixed points (Eq. 5–6) the ODE relaxes to; with drift &gt; 0, σ_raw falls below its fixed point and M* climbs. The autonomy window is the time until M* crosses 1.6 — when corrected output stops being a trustworthy signal of competence.</p>
+
+<script src="../mso-core.js"></script>
+<script>
+var ETA=10,DELTA=2,S0=0,DT=0.1,N=400,TH=1.6;
+var $=function(id){return document.getElementById(id);};
+var t,sigmaRaw,curSkill,hist,playing=false,raf=null;
+function P(){return {skill:+$("skill").value,c:+$("catch").value,kn:+$("kn").value,drift:+$("drift").value};}
+function cEff(){var p=P();return p.c*p.kn;}
+function xFor(i){return 42+i/(N-1)*610;}
+function yTop(v){return 10+(1-Math.max(0,Math.min(1,v)))*132;}
+var mMax=4;
+function yBot(m){return 172+(1-(Math.max(1,Math.min(mMax,m))-1)/(mMax-1))*106;}
+function reset(){
+  var p=P();$("skillv").textContent=p.skill.toFixed(2);$("catchv").textContent=p.c.toFixed(2);$("knv").textContent=p.kn.toFixed(2);$("driftv").textContent=p.drift.toFixed(3);
+  t=0;sigmaRaw=0.5;curSkill=p.skill;var sc=sigmaRaw+(1-sigmaRaw)*cEff();
+  hist={raw:[sigmaRaw],corr:[sc],m:[sc/sigmaRaw]};
+  var sr=p.skill*ETA/(ETA+DELTA),scf=sr+(1-sr)*cEff();
+  $("ln-sr").setAttribute("y1",yTop(sr));$("ln-sr").setAttribute("y2",yTop(sr));
+  $("ln-sc").setAttribute("y1",yTop(scf));$("ln-sc").setAttribute("y2",yTop(scf));
+  $("ln-th").setAttribute("y1",yBot(TH));$("ln-th").setAttribute("y2",yBot(TH));
+  redraw();
+}
+function step(){
+  var p=P();
+  curSkill=Math.max(0.05,curSkill-p.drift*DT);
+  sigmaRaw=Math.max(0.01,Math.min(0.99,MSO.returnOperatorStep(sigmaRaw,curSkill,ETA,DELTA,DT,S0)));
+  var sc=sigmaRaw+(1-sigmaRaw)*cEff();
+  hist.raw.push(sigmaRaw);hist.corr.push(sc);hist.m.push(sc/sigmaRaw);t++;
+}
+function pts(arr,yf){var s="";for(var i=0;i<arr.length;i++){s+=xFor(i).toFixed(1)+","+yf(arr[i]).toFixed(1)+" ";}return s;}
+function redraw(){
+  $("pl-raw").setAttribute("points",pts(hist.raw,yTop));
+  $("pl-corr").setAttribute("points",pts(hist.corr,yTop));
+  $("pl-m").setAttribute("points",pts(hist.m,yBot));
+  var i=hist.raw.length-1;
+  $("r-raw").textContent=hist.raw[i].toFixed(3);
+  $("r-corr").textContent=hist.corr[i].toFixed(3);
+  var me=$("r-m");me.textContent=hist.m[i].toFixed(2);me.style.color=hist.m[i]>1.8?"var(--tx-danger)":(hist.m[i]>TH?"var(--tx-warning)":"var(--text-primary)");
+  var settled=-1,cross=-1;
+  for(var k=0;k<hist.m.length;k++){if(settled<0){if(hist.m[k]<=TH)settled=k;}else if(hist.m[k]>TH){cross=k;break;}}
+  $("r-auto").textContent=settled<0?"review always":(cross<0?"stable":(cross*DT).toFixed(1)+" t");
+}
+function loop(){if(!playing)return;step();step();redraw();if(t>=N){playing=false;$("play").textContent="▶ Run";return;}raf=requestAnimationFrame(loop);}
+$("play").addEventListener("click",function(){playing=!playing;this.textContent=playing?"❚❚ Pause":"▶ Run";if(playing){if(t>=N)reset();loop();}});
+$("reset").addEventListener("click",function(){playing=false;$("play").textContent="▶ Run";reset();});
+$("intervene").addEventListener("click",function(){curSkill=P().skill;});
+["skill","catch","kn","drift"].forEach(function(id){$(id).addEventListener("input",function(){playing=false;$("play").textContent="▶ Run";reset();});});
+reset();
+</script>
+</body>
+</html>
