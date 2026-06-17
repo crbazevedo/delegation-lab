@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MSO — water-filling vs the baseline paradigm</title>
+<link rel="stylesheet" href="../theme.css" />
+</head>
+<body>
+<h1>Water-filling vs the fixed-oversight paradigm</h1>
+<p class="lede">The same review effort, allocated three ways across a set of delegated tasks. The Minimum Sufficient Oversight Principle distributes authority by the Euler-Lagrange rule; the baseline paradigm reviews everything uniformly. MSO meets the same delivery target at the least governance cost <code>∫α²√g</code> — and the gap grows with task heterogeneity.</p>
+
+<div class="sl"><label>Delivery target p_min</label><input type="range" id="pmin" min="0.30" max="0.60" step="0.01" value="0.42"><span id="pminv">0.42</span></div>
+<div class="sl"><label>Task heterogeneity (σ spread)</label><input type="range" id="spread" min="0" max="0.45" step="0.01" value="0.30"><span id="spreadv">0.30</span></div>
+
+<div class="grid" style="margin:16px 0 16px">
+  <div class="card"><div class="l">MSO cost ∫α²√g</div><div class="v" id="c-mso">—</div></div>
+  <div class="card"><div class="l">uniform cost</div><div class="v" id="c-uni">—</div></div>
+  <div class="card"><div class="l">MSO saves</div><div class="v" id="c-save">—</div></div>
+  <div class="card"><div class="l">delivery ∫α·σ</div><div class="v" id="c-del">—</div></div>
+</div>
+
+<h2>Governance cost by policy <span class="muted" style="font-size:13px">(same delivery — lower is better)</span></h2>
+<div id="costbars" style="margin-bottom:20px"></div>
+
+<h2>Per-task authority α* <span class="muted" style="font-size:13px">(MSO concentrates oversight 1−α on the weak tasks)</span></h2>
+<p class="muted" style="margin:-4px 0 10px"><span style="display:inline-block;width:10px;height:10px;background:#1D9E75;border-radius:2px"></span> authority α (MSO) &nbsp; <span style="display:inline-block;width:10px;height:10px;background:#E24B4A;border-radius:2px"></span> oversight 1−α &nbsp;·&nbsp; tick = uniform α</p>
+<div id="allocbars" style="margin-bottom:20px"></div>
+
+<h2>Task allocation <span class="muted" style="font-size:13px">(endogenous scope: which tasks to delegate)</span></h2>
+<div class="sl"><label>Minimum coverage</label><input type="range" id="cov" min="0" max="1" step="0.1" value="0"><span id="covv">0%</span></div>
+<div id="scoperow" class="card" style="margin-top:8px"></div>
+
+<p class="foot">Computed by <code>mso-core.js</code> (<code>solveMSO</code>, <code>selectScope</code>) — the water-filling solver and scope selection are pinned to <code>minimal_oversight.allocation</code> by the parity test. Water-filling is the constrained minimum of the Fisher-weighted oversight integral, so MSO never costs more than uniform; with all tasks equal it equals uniform, and the advantage grows as competence varies.</p>
+
+<script src="../mso-core.js"></script>
+<script>
+var $=function(id){return document.getElementById(id);};
+var Ntask=8;
+function sigmas(){var s=+$("spread").value,a=[];for(var i=0;i<Ntask;i++){var v=0.55+s*((i/(Ntask-1))-0.5)*2;a.push(Math.max(0.2,Math.min(0.9,v)));}return a;}
+function vol(x){return MSO.fisherVolumeElement(x);}
+function cost(alpha,sig){var c=0;for(var i=0;i<sig.length;i++)c+=alpha[i]*alpha[i]*vol(sig[i]);return c;}
+function render(){
+  var pmin=+$("pmin").value,sig=sigmas();
+  $("pminv").textContent=pmin.toFixed(2);$("spreadv").textContent=(+$("spread").value).toFixed(2);
+  var mso=MSO.solveMSO(sig,pmin);var deliv=mso.delivery;
+  var sumSig=sig.reduce(function(a,b){return a+b;},0);
+  var au=Math.max(0,Math.min(1,deliv/sumSig));var aUni=sig.map(function(){return au;});
+  var cMso=mso.totalCost,cUni=cost(aUni,sig);
+  $("c-mso").textContent=cMso.toFixed(2);$("c-uni").textContent=cUni.toFixed(2);
+  $("c-del").textContent=deliv.toFixed(2);
+  var save=cUni>0?(cUni-cMso)/cUni*100:0;$("c-save").textContent="−"+Math.max(0,save).toFixed(0)+"%";$("c-save").style.color="var(--tx-success)";
+  var mx=Math.max(cMso,cUni);
+  $("costbars").innerHTML=[["MSO water-filling",cMso,"#1D9E75"],["uniform (baseline paradigm)",cUni,"#888780"]].map(function(r){
+    return '<div style="display:grid;grid-template-columns:150px 1fr 54px;gap:10px;align-items:center;margin-bottom:7px"><div style="font-size:12px;font-weight:500">'+r[0]+'</div>'+
+      '<div class="bar" style="height:16px"><div style="position:absolute;left:0;top:0;height:100%;width:'+(r[1]/mx*100).toFixed(0)+'%;background:'+r[2]+'"></div></div>'+
+      '<div style="font-size:11px;color:var(--text-secondary);text-align:right">'+r[1].toFixed(2)+'</div></div>';}).join("");
+  var rows=sig.map(function(s,i){return {s:s,a:mso.alphaStar[i],u:au};}).sort(function(a,b){return a.s-b.s;});
+  $("allocbars").innerHTML=rows.map(function(d){
+    return '<div style="display:grid;grid-template-columns:80px 1fr 90px;gap:10px;align-items:center;margin-bottom:7px"><div style="font-size:12px">σ='+d.s.toFixed(2)+'</div>'+
+      '<div class="bar" style="height:15px"><div style="position:absolute;left:0;top:0;height:100%;width:'+(d.a*100).toFixed(0)+'%;background:#1D9E75"></div>'+
+      '<div style="position:absolute;top:0;height:100%;left:'+(d.a*100).toFixed(0)+'%;width:'+((1-d.a)*100).toFixed(0)+'%;background:#E24B4A"></div>'+
+      '<div style="position:absolute;top:-2px;height:19px;width:2px;background:var(--text-primary);left:'+(d.u*100).toFixed(0)+'%"></div></div>'+
+      '<div style="font-size:11px;color:var(--text-secondary);text-align:right">α*='+d.a.toFixed(2)+'</div></div>';}).join("");
+  var cov=+$("cov").value;$("covv").textContent=Math.round(cov*100)+"%";
+  var sc=MSO.selectScope(sig,pmin,cov);
+  $("scoperow").innerHTML='Delegating <b>'+sc.delegated_tasks.length+'/'+Ntask+'</b> tasks (coverage '+Math.round(sc.coverage*100)+'%), avg competence of delegated <b>'+sc.avg_sigma_delegated.toFixed(2)+'</b>, governance cost <b>'+sc.total_cost.toFixed(2)+'</b>. <span class="muted">With no coverage floor the optimizer cherry-picks the most cost-effective tasks (σ≈0.75); raise the floor to force broader, costlier delegation.</span>';
+}
+["pmin","spread","cov"].forEach(function(id){$(id).addEventListener("input",render);});
+render();
+</script>
+</body>
+</html>
