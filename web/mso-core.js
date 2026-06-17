@@ -116,6 +116,30 @@
     }
     return { alphaStar: alpha, sigmaRaw: sigma, lam: lam, totalCost: cost, delivery: deliv };
   }
+  // Endogenous scope selection: which tasks to delegate (mirrors allocation.select_scope)
+  function selectScope(sigmaRaw, pMin, coverageMin, alphaMax) {
+    coverageMin = coverageMin == null ? 0 : coverageMin;
+    alphaMax = alphaMax == null ? 1 : alphaMax;
+    var sigma = sigmaRaw.map(Number), n = sigma.length;
+    var eff = sigma.map(function (v) { var s = clip(v, EPS, 1 - EPS); return s * Math.sqrt(s * (1 - s)); });
+    var order = sigma.map(function (_, i) { return i; }).sort(function (a, b) { return eff[b] - eff[a]; });
+    var minCount = Math.max(1, Math.ceil(coverageMin * n));
+    var delegated = order.slice(0, minCount);
+    for (var k = minCount; k < order.length; k++) { if (sigma[order[k]] >= pMin * 0.8) delegated.push(order[k]); }
+    var set = {}; delegated.forEach(function (i) { set[i] = true; });
+    var excluded = []; for (var j = 0; j < n; j++) if (!set[j]) excluded.push(j);
+    var totalCost = 0, avg = 0;
+    if (delegated.length) {
+      var sub = delegated.map(function (i) { return sigma[i]; });
+      totalCost = solveMSO(sub, pMin, alphaMax).totalCost;
+      avg = sub.reduce(function (a, b) { return a + b; }, 0) / sub.length;
+    }
+    return {
+      delegated_tasks: delegated.slice().sort(function (a, b) { return a - b; }),
+      excluded_tasks: excluded, coverage: n > 0 ? delegated.length / n : 0,
+      total_cost: totalCost, avg_sigma_delegated: avg
+    };
+  }
 
   // Effective autonomy buffer: B_eff = C_op − p_min − λH(W) (Eq. 16)
   function effectiveAutonomyBuffer(cOp, pMin, lam, hW) { return cOp - pMin - lam * hW; }
@@ -317,7 +341,7 @@
     delegationCentrality: delegationCentrality, detectMotifs: detectMotifs, rankNodesByRisk: rankNodesByRisk,
     sigmaRawFixedPoint: sigmaRawFixedPoint, sigmaCorrFixedPoint: sigmaCorrFixedPoint,
     maskingIndex: maskingIndex, returnOperatorStep: returnOperatorStep, effectiveSkill: effectiveSkill,
-    optimalAuthority: optimalAuthority, solveLambda: solveLambda, solveMSO: solveMSO,
+    optimalAuthority: optimalAuthority, solveLambda: solveLambda, solveMSO: solveMSO, selectScope: selectScope,
     effectiveAutonomyBuffer: effectiveAutonomyBuffer, autonomyTime: autonomyTime,
     criticalEntropy: criticalEntropy, nodeCapacity: nodeCapacity, sotaPriorityScore: sotaPriorityScore,
     computePipelineCapacity: computePipelineCapacity, analyzePipeline: analyzePipeline, topoOrder: topoOrder

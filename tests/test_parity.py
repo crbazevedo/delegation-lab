@@ -19,6 +19,7 @@ import pytest
 
 from minimal_oversight import _formulae as F
 from minimal_oversight import analyze_pipeline
+from minimal_oversight.allocation import select_scope
 from minimal_oversight.capacity import check_feasibility
 from minimal_oversight.models import AggregationType, Node, PipelineGraph
 from minimal_oversight.topology import delegation_centrality, detect_motifs
@@ -116,6 +117,10 @@ CASES = {
         {"init": 0.2, "skill": 0.7, "eta": 10, "delta": 2,
          "dt": 0.05, "sigma0": 0.1, "steps": 200},
     ],
+    "scope": [
+        {"sigma": [0.667, 0.517, 0.417, 0.375, 0.708, 0.542], "p_min": 0.5, "coverage": 0.0},
+        {"sigma": [0.8, 0.4, 0.6, 0.3, 0.7], "p_min": 0.6, "coverage": 0.5},
+    ],
 }
 
 SCALAR_KEYS = [
@@ -182,6 +187,13 @@ def _python_expected() -> dict:
         for _ in range(c["steps"]):
             s = F.return_operator_step(s, c["skill"], c["eta"], c["delta"], c["dt"], c["sigma0"])
         exp["ro_traj"].append(s)
+    exp["scope"] = []
+    for c in CASES["scope"]:
+        r = select_scope(c["sigma"], c["p_min"], c["coverage"])
+        exp["scope"].append({
+            "delegated": r.delegated_tasks, "coverage": r.coverage,
+            "cost": r.total_cost, "avg": r.avg_sigma_delegated,
+        })
     exp["pipelines"] = []
     for pc in CASES["pipelines"]:
         g = _build_graph(pc["pipeline"])
@@ -266,6 +278,11 @@ def test_browser_port_matches_python_reference():
             assert _close(g[k], e[k]), f"pipeline {k} mismatch"
         for node_id in e["masking"]:
             assert _close(g["masking"][node_id], e["masking"][node_id]), f"masking {node_id}"
+
+    for g, e in zip(got["scope"], exp["scope"]):
+        assert g["delegated"] == e["delegated"], "scope delegated mismatch"
+        for k in ["coverage", "cost", "avg"]:
+            assert _close(g[k], e[k]), f"scope {k} mismatch"
 
     for g, e in zip(got["centrality"], exp["centrality"]):
         assert _close(g, e), "delegation centrality mismatch"
