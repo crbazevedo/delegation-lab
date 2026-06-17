@@ -194,7 +194,7 @@ var svg=document.getElementById("svg"), $=function(id){return document.getElemen
 var drag=null, draw=null, pan=null, counter=0;
 function clampv(v,a,b){return Math.max(a,Math.min(b,v));}
 
-function loadTemplate(name){state.nodes=TEMPLATES[name]();state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
+function loadTemplate(name){simOn=false;simTokens=null;var sr=document.getElementById("simrow");if(sr)sr.innerHTML='Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.';state.nodes=TEMPLATES[name]();state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
 function showLesson(name){var h=TEMPLATE_HINTS[name],box=$("lesson");if(!h){box.style.display="none";return;}box.style.display="block";
   var acts=(h.actions||[]).map(function(a,i){return '<button data-act="'+i+'" style="margin-right:8px;margin-top:2px">'+a.label+'</button>';}).join("");
   box.innerHTML='<b>Lesson — '+h.title+'</b> '+h.body+(acts?'<div style="margin-top:8px">'+acts+'</div>':'');
