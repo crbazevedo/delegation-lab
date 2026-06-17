@@ -18,8 +18,10 @@ from pathlib import Path
 import pytest
 
 from minimal_oversight import _formulae as F
+from minimal_oversight import analyze_pipeline
 from minimal_oversight.capacity import check_feasibility
 from minimal_oversight.models import AggregationType, Node, PipelineGraph
+from minimal_oversight.topology import delegation_centrality, detect_motifs
 
 REPO = Path(__file__).resolve().parents[1]
 RUNNER = REPO / "scripts" / "parity_runner.js"
@@ -67,6 +69,14 @@ PIPE_CHAIN = {
         _nd("c", 0.75, 0.7, ["b"], "mean"),
     ]
 }
+PIPE_LINE = {
+    "nodes": [
+        _nd("a", 0.7, 0.65, []),
+        _nd("b", 0.6, 0.6, ["a"]),
+        _nd("c", 0.72, 0.6, ["b"]),
+        _nd("d", 0.66, 0.6, ["c"]),
+    ]
+}
 
 CASES = {
     "fisher": SIGMAS,
@@ -90,6 +100,12 @@ CASES = {
         {"pipeline": PIPE_SALES, "p_min": 0.70, "hw": 1.5},
         {"pipeline": PIPE_CHAIN, "p_min": 0.75, "hw": 0.5},
     ],
+    "centrality": [
+        {"pipeline": PIPE_SALES, "names": [n["id"] for n in PIPE_SALES["nodes"]]},
+        {"pipeline": PIPE_LINE, "names": [n["id"] for n in PIPE_LINE["nodes"]]},
+    ],
+    "motifs": [PIPE_SALES, PIPE_LINE, PIPE_CHAIN],
+    "risk": [PIPE_SALES, PIPE_LINE],
 }
 
 SCALAR_KEYS = [
@@ -161,6 +177,30 @@ def _python_expected() -> dict:
                 "masking": _node_masking(pc["pipeline"]),
             }
         )
+    exp["centrality"] = []
+    for c in CASES["centrality"]:
+        g = _build_graph(c["pipeline"])
+        exp["centrality"].append([delegation_centrality(g, n) for n in c["names"]])
+    exp["motifs"] = []
+    for spec in CASES["motifs"]:
+        g = _build_graph(spec)
+        exp["motifs"].append(sorted(mi.risk_description for mi in detect_motifs(g)))
+    exp["risk"] = []
+    for spec in CASES["risk"]:
+        g = _build_graph(spec)
+        rep = analyze_pipeline(g, p_min=0.80)
+        exp["risk"].append([
+            {
+                "name": r.name,
+                "sota": r.sota_score,
+                "dc": r.delegation_centrality,
+                "masking": r.masking_index,
+                "fi": r.fan_in_degree,
+                "fo": r.fan_out_degree,
+                "bott": r.is_bottleneck,
+            }
+            for r in rep.node_risks
+        ])
     return exp
 
 
@@ -207,3 +247,16 @@ def test_browser_port_matches_python_reference():
             assert _close(g[k], e[k]), f"pipeline {k} mismatch"
         for node_id in e["masking"]:
             assert _close(g["masking"][node_id], e["masking"][node_id]), f"masking {node_id}"
+
+    for g, e in zip(got["centrality"], exp["centrality"]):
+        assert _close(g, e), "delegation centrality mismatch"
+
+    for g, e in zip(got["motifs"], exp["motifs"]):
+        assert g == e, f"motif mismatch:\n  js={g}\n  py={e}"
+
+    for gr, er in zip(got["risk"], exp["risk"]):
+        assert [x["name"] for x in gr] == [x["name"] for x in er], "risk ranking order mismatch"
+        for gn, en in zip(gr, er):
+            assert gn["fi"] == en["fi"] and gn["fo"] == en["fo"] and gn["bott"] == en["bott"]
+            for k in ["sota", "dc", "masking"]:
+                assert _close(gn[k], en[k]), f"risk {en['name']} {k} mismatch"

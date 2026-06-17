@@ -199,8 +199,115 @@
     return { cop: cop, bottleneck: bott, beff: beff, hcrit: hcrit, feasible: cop >= pmin, perNode: perNode, capacities: caps };
   }
 
+  // ---- Topology (mirrors topology.py: motifs, centrality, risk ranking) ----
+  function _maps(nodes) {
+    var children = {}, parents = {};
+    nodes.forEach(function (n) { children[n.id] = []; parents[n.id] = (n.parents || []).slice(); });
+    nodes.forEach(function (n) { (n.parents || []).forEach(function (p) { if (children[p]) children[p].push(n.id); }); });
+    return { children: children, parents: parents };
+  }
+  function _reach(start, adj) {
+    var seen = {}, q = (adj[start] || []).slice();
+    while (q.length) {
+      var x = q.shift();
+      if (seen[x]) continue;
+      seen[x] = true;
+      (adj[x] || []).forEach(function (y) { if (!seen[y]) q.push(y); });
+    }
+    delete seen[start];
+    return seen;
+  }
+  function _dist(start, adj) {
+    var d = {}; d[start] = 0; var q = [start];
+    while (q.length) {
+      var x = q.shift();
+      (adj[x] || []).forEach(function (y) { if (d[y] == null) { d[y] = d[x] + 1; q.push(y); } });
+    }
+    return d;
+  }
+  // Delegation centrality DC(v): fan-out degree weighted by inverse downstream distance
+  function delegationCentrality(pipeline, name) {
+    var m = _maps(pipeline.nodes);
+    var outDeg = (m.children[name] || []).length;
+    var desc = _reach(name, m.children);
+    if (Object.keys(desc).length === 0) return outDeg;
+    var d = _dist(name, m.children), weighted = 0;
+    Object.keys(d).forEach(function (n) { if (n !== name && d[n] > 0) weighted += 1 / d[n]; });
+    return outDeg * (1 + weighted);
+  }
+  // Detect canonical delegation motifs (Table 2): single, chain, fan_out, merge, diamond
+  function detectMotifs(pipeline) {
+    var nodes = pipeline.nodes, m = _maps(nodes), ids = nodes.map(function (n) { return n.id; });
+    var inDeg = {}, outDeg = {};
+    ids.forEach(function (id) { inDeg[id] = m.parents[id].length; outDeg[id] = m.children[id].length; });
+    var motifs = [];
+    if (ids.length === 1) {
+      return [{ motif: "single", nodes: [ids[0]], risk_description: "Single delegation. Baseline masking applies." }];
+    }
+    var chainNodes = {};
+    ids.forEach(function (id) { if (inDeg[id] === 1 && outDeg[id] === 1) chainNodes[id] = true; });
+    var visited = {};
+    topoOrder(nodes).forEach(function (node) {
+      if (visited[node] || !chainNodes[node]) return;
+      var chain = [node]; visited[node] = true; var cur = node;
+      while (true) {
+        var succ = m.children[cur];
+        if (succ.length === 1 && chainNodes[succ[0]] && !visited[succ[0]]) { chain.push(succ[0]); visited[succ[0]] = true; cur = succ[0]; }
+        else break;
+      }
+      if (chain.length >= 2) motifs.push({ motif: "chain", nodes: chain, risk_description: "Chain of depth " + chain.length + ". Masking and quality loss accumulate with depth. Improve upstream quality first." });
+    });
+    ids.forEach(function (name) {
+      if (outDeg[name] > 1) motifs.push({ motif: "fan_out", nodes: [name].concat(m.children[name]), risk_description: "Fan-out at " + name + " (degree " + outDeg[name] + "). One failure contaminates multiple branches. Prioritize this node for review." });
+    });
+    ids.forEach(function (name) {
+      if (inDeg[name] > 1) motifs.push({ motif: "merge", nodes: m.parents[name].concat([name]), risk_description: "Merge at " + name + " (fan-in " + inDeg[name] + "). Throughput and autonomy limited by bottleneck path. Aggregation type determines masking severity." });
+    });
+    ids.forEach(function (name) {
+      if (inDeg[name] < 2) return;
+      var parents = m.parents[name];
+      for (var i = 0; i < parents.length; i++) for (var j = i + 1; j < parents.length; j++) {
+        var p1 = parents[i], p2 = parents[j];
+        var a1 = _reach(p1, m.parents), a2 = _reach(p2, m.parents), shared = {};
+        Object.keys(a1).forEach(function (k) { if (a2[k]) shared[k] = true; });
+        if (a2[p1]) shared[p1] = true;
+        if (a1[p2]) shared[p2] = true;
+        var sk = Object.keys(shared);
+        if (sk.length) {
+          var source = sk[0], best = -1;
+          sk.forEach(function (s) { var dd = _dist(s, m.children); var L = dd[name] == null ? -1 : dd[name]; if (L > best) { best = L; source = s; } });
+          motifs.push({ motif: "diamond", nodes: [source, p1, p2, name], risk_description: "Diamond: " + source + " → {" + p1 + ", " + p2 + "} → " + name + ". Correlated upstream errors create conditional fragility. Correct the shared source rather than hardening the merge." });
+        }
+      }
+    });
+    return motifs;
+  }
+  // Rank nodes by governance risk: SOTA score S = DC·M*·κ, then delegation centrality
+  function rankNodesByRisk(pipeline, opts) {
+    opts = opts || {};
+    var eta = opts.eta == null ? 10 : opts.eta, delta = opts.delta == null ? 2 : opts.delta, s0 = opts.sigma_0 == null ? 0 : opts.sigma_0;
+    var m = _maps(pipeline.nodes);
+    var motifs = detectMotifs(pipeline), nodeMotifs = {};
+    pipeline.nodes.forEach(function (n) { nodeMotifs[n.id] = {}; });
+    motifs.forEach(function (mi) { mi.nodes.forEach(function (n) { if (nodeMotifs[n]) nodeMotifs[n][mi.motif] = true; }); });
+    var risks = pipeline.nodes.map(function (n) {
+      var dc = delegationCentrality(pipeline, n.id);
+      var skill = n.sigma_skill == null ? 0.55 : n.sigma_skill, c = n.catch_rate == null ? 0.65 : n.catch_rate;
+      var lsr = sigmaRawFixedPoint(skill, eta, delta, s0), lsc = sigmaCorrFixedPoint(lsr, c), mstar = maskingIndex(lsc, lsr);
+      var sota = dc * mstar * (1 - skill);
+      return {
+        name: n.id, delegation_centrality: dc, masking_index: mstar, sota_score: sota,
+        fan_out_degree: m.children[n.id].length, fan_in_degree: m.parents[n.id].length,
+        is_bottleneck: m.parents[n.id].length > 1, motifs: Object.keys(nodeMotifs[n.id])
+      };
+    });
+    risks.sort(function (a, b) { return b.sota_score !== a.sota_score ? b.sota_score - a.sota_score : b.delegation_centrality - a.delegation_centrality; });
+    return risks;
+  }
+
   return {
     fisherInformation: fisherInformation, fisherVolumeElement: fisherVolumeElement,
+    delegationCentrality: delegationCentrality, detectMotifs: detectMotifs, rankNodesByRisk: rankNodesByRisk,
     sigmaRawFixedPoint: sigmaRawFixedPoint, sigmaCorrFixedPoint: sigmaCorrFixedPoint,
     maskingIndex: maskingIndex, effectiveSkill: effectiveSkill,
     optimalAuthority: optimalAuthority, solveLambda: solveLambda, solveMSO: solveMSO,

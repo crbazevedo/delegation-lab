@@ -37,4 +37,11 @@ out.pipelines = cases.pipelines.map((pc) => {
   return { cop: r.cop, beff: r.beff, hcrit: r.hcrit, bottleneck: r.bottleneck, feasible: r.feasible, masking: masking };
 });
 
+out.centrality = cases.centrality.map((c) => c.names.map((n) => MSO.delegationCentrality(c.pipeline, n)));
+out.motifs = cases.motifs.map((p) => MSO.detectMotifs(p).map((mi) => mi.risk_description).sort());
+out.risk = cases.risk.map((p) => MSO.rankNodesByRisk(p).map((r) => ({
+  name: r.name, sota: r.sota_score, dc: r.delegation_centrality, masking: r.masking_index,
+  fi: r.fan_in_degree, fo: r.fan_out_degree, bott: r.is_bottleneck,
+})));
+
 fs.writeFileSync(outPath, JSON.stringify(out));
