@@ -29,6 +29,12 @@ out.solve_lambda = cases.solve_lambda.map((a) => {
 out.buffer = cases.buffer.map((a) => MSO.effectiveAutonomyBuffer(a[0], a[1], a[2], a[3]));
 out.autonomy = cases.autonomy.map((a) => MSO.autonomyTime(a[0], a[1], a[2], a[3], a[4]));
 out.crit_entropy = cases.crit_entropy.map((a) => MSO.criticalEntropy(a[0], a[1], a[2]));
+out.ro_step = cases.ro_step.map((a) => MSO.returnOperatorStep(a[0], a[1], a[2], a[3], a[4], a[5]));
+out.ro_traj = cases.ro_traj.map((c) => {
+  let s = c.init;
+  for (let i = 0; i < c.steps; i++) s = MSO.returnOperatorStep(s, c.skill, c.eta, c.delta, c.dt, c.sigma0);
+  return s;
+});
 
 out.pipelines = cases.pipelines.map((pc) => {
   const r = MSO.analyzePipeline(pc.pipeline, { p_min: pc.p_min, process_entropy: pc.hw });

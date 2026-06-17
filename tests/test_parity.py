@@ -106,6 +106,16 @@ CASES = {
     ],
     "motifs": [PIPE_SALES, PIPE_LINE, PIPE_CHAIN],
     "risk": [PIPE_SALES, PIPE_LINE],
+    "ro_step": [
+        [0.5, 0.55, 10, 2, 0.1, 0],
+        [0.3, 0.8, 10, 2, 0.05, 0.1],
+        [0.9, 0.4, 8, 3, 0.1, 0],
+    ],
+    "ro_traj": [
+        {"init": 0.5, "skill": 0.55, "eta": 10, "delta": 2, "dt": 0.1, "sigma0": 0, "steps": 400},
+        {"init": 0.2, "skill": 0.7, "eta": 10, "delta": 2,
+         "dt": 0.05, "sigma0": 0.1, "steps": 200},
+    ],
 }
 
 SCALAR_KEYS = [
@@ -118,6 +128,8 @@ SCALAR_KEYS = [
     "buffer",
     "autonomy",
     "crit_entropy",
+    "ro_step",
+    "ro_traj",
 ]
 
 
@@ -163,6 +175,13 @@ def _python_expected() -> dict:
     exp["buffer"] = [F.effective_autonomy_buffer(*a) for a in CASES["buffer"]]
     exp["autonomy"] = [F.autonomy_time(*a) for a in CASES["autonomy"]]
     exp["crit_entropy"] = [F.critical_entropy(*a) for a in CASES["crit_entropy"]]
+    exp["ro_step"] = [F.return_operator_step(*a) for a in CASES["ro_step"]]
+    exp["ro_traj"] = []
+    for c in CASES["ro_traj"]:
+        s = c["init"]
+        for _ in range(c["steps"]):
+            s = F.return_operator_step(s, c["skill"], c["eta"], c["delta"], c["dt"], c["sigma0"])
+        exp["ro_traj"].append(s)
     exp["pipelines"] = []
     for pc in CASES["pipelines"]:
         g = _build_graph(pc["pipeline"])

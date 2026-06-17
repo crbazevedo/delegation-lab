@@ -52,6 +52,13 @@
     return sigmaCorr / sigmaRaw;
   }
 
+  // One Euler step of the Return Operator ODE: dσ/dt = η(σ_skill,eff − σ) − δ(σ − σ₀) (Eq. 4)
+  function returnOperatorStep(sigma, sigmaSkillEff, eta, delta, dt, sigma0) {
+    sigma0 = sigma0 == null ? 0 : sigma0;
+    var dsigma = eta * (sigmaSkillEff - sigma) - delta * (sigma - sigma0);
+    return sigma + dsigma * dt;
+  }
+
   // Effective skill with upstream quality: σ_skill·AGG(parents) (Eq. 7)
   function effectiveSkill(sigmaSkill, parentSigmaCorrs, aggregation) {
     if (!parentSigmaCorrs || parentSigmaCorrs.length === 0) return sigmaSkill;
@@ -309,7 +316,7 @@
     fisherInformation: fisherInformation, fisherVolumeElement: fisherVolumeElement,
     delegationCentrality: delegationCentrality, detectMotifs: detectMotifs, rankNodesByRisk: rankNodesByRisk,
     sigmaRawFixedPoint: sigmaRawFixedPoint, sigmaCorrFixedPoint: sigmaCorrFixedPoint,
-    maskingIndex: maskingIndex, effectiveSkill: effectiveSkill,
+    maskingIndex: maskingIndex, returnOperatorStep: returnOperatorStep, effectiveSkill: effectiveSkill,
     optimalAuthority: optimalAuthority, solveLambda: solveLambda, solveMSO: solveMSO,
     effectiveAutonomyBuffer: effectiveAutonomyBuffer, autonomyTime: autonomyTime,
     criticalEntropy: criticalEntropy, nodeCapacity: nodeCapacity, sotaPriorityScore: sotaPriorityScore,
