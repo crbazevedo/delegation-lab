@@ -58,12 +58,14 @@
         : skill;
       // σ_raw fixed point as the per-task success probability (mean-field competence)
       var sraw = MSO.sigmaRawFixedPoint(skillEff, eta, delta, s0);
-      var loops = 0, raw = rng() < sraw ? 1 : 0, corrected = raw;
-      // review + rework loop: retry up to `rework` passes while uncaught failure
-      for (var pass = 0; pass < rework && corrected === 0; pass++) {
-        var reviewed = rng() < kn;
-        if (reviewed && rng() < c) { corrected = 1; }
-        else if (pass + 1 < rework) { loops++; raw = rng() < sraw ? 1 : 0; if (raw === 1) corrected = 1; }
+      var raw = rng() < sraw ? 1 : 0, corrected = raw, loops = 0;
+      // review loop: a failed token gets up to `rework` review passes (each
+      // reviews w.p. K/N and catches w.p. c). Effective catch = 1−(1−c·K/N)^k.
+      if (corrected === 0) {
+        for (var pass = 0; pass < rework; pass++) {
+          if (rng() < kn && rng() < c) { corrected = 1; break; }
+          loops++;
+        }
       }
       rec[id] = { raw: raw, corrected: corrected, loops: loops };
     });

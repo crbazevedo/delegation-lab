@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MSO — token simulation (stochastic Petri net)</title>
+<link rel="stylesheet" href="../theme.css" />
+</head>
+<body>
+<h1>Run the pipeline — tokens, loops, and the law it obeys</h1>
+<p class="lede">Tasks are tokens flowing through the delegated pipeline. Each node fires stochastically (raw success ~ σ_raw, review ~ K/N, correction ~ c); a review loop is a real back-arc — a failed token retries. Watch the empirical end-to-end success converge to the closed-form C_op the theory predicts.</p>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+  <button id="play" type="button">▶ Run</button>
+  <button id="fast" type="button">+10k tokens</button>
+  <button id="reset" type="button">Reset</button>
+  <span class="rng" style="gap:6px;margin-left:6px"><span class="hint">review loop ×k</span><input type="range" id="loop" min="1" max="4" step="1" value="1" style="width:110px"><b id="loopv">×1</b></span>
+</div>
+
+<svg id="flow" viewBox="0 0 600 130" width="100%" style="display:block;background:var(--bg-surface);border-radius:var(--radius);border:1px solid var(--border)"></svg>
+
+<div class="grid" style="margin:14px 0 18px">
+  <div class="card"><div class="l">tokens run</div><div class="v" id="r-n">0</div></div>
+  <div class="card"><div class="l">empirical end-to-end</div><div class="v" id="r-emp">—</div></div>
+  <div class="card"><div class="l">analytic C_op</div><div class="v" id="r-cop">—</div></div>
+  <div class="card"><div class="l">gap</div><div class="v" id="r-gap">—</div></div>
+</div>
+
+<svg id="conv" viewBox="0 0 600 110" width="100%" style="display:block;margin-bottom:6px">
+  <line id="cv-cop" x1="0" x2="600" stroke="#888780" stroke-dasharray="4 4"/>
+  <polyline id="cv-pl" fill="none" stroke="#1D9E75" stroke-width="2"/>
+  <text x="6" y="14" font-size="11" fill="var(--text-secondary)" font-family="var(--font)">empirical estimate (green) converging to analytic C_op (grey)</text>
+</svg>
+
+<h2>Per-node: raw vs corrected (empirical bars, analytic dashes)</h2>
+<div id="bars" style="margin-bottom:18px"></div>
+
+<p class="foot">Simulator <code>mso-sim.js</code> on the analytic core <code>mso-core.js</code>. The empirical end-to-end success is asserted to match the closed-form C_op within 0.02 in CI (<code>tests/test_sim_grounding.py</code>) — the discrete Petri-net level and the mean-field MSO level agree. Loops are real cycles here (the DAG analysis sees their steady-state effect via effective catch).</p>
+
+<script src="../mso-core.js"></script>
+<script src="../mso-sim.js"></script>
+<script>
+var $=function(id){return document.getElementById(id);};
+var NODES=[
+  {id:"intake",label:"Intake",sigma_skill:0.8,catch_rate:0.6,review_capacity:1,parents:[],x:70},
+  {id:"draft",label:"Draft",sigma_skill:0.5,catch_rate:0.6,review_capacity:1,parents:["intake"],x:300},
+  {id:"review",label:"Review",sigma_skill:0.85,catch_rate:0.6,review_capacity:1,parents:["draft"],rework:1,x:530}
+];
+var SINK="review", NS="http://www.w3.org/2000/svg";
+var rng=MSOSim.makeRng(7), tokens=[], totals, playing=false, spawnAcc=0, conv=[];
+function pipeline(){return {nodes:NODES.map(function(n){return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:n.catch_rate,review_capacity:n.review_capacity,parents:n.parents,aggregation:"product",rework:n.rework||1};})};}
+function el(t,a){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);return e;}
+// analytic side uses the loop's effective catch 1−(1−c·K/N)^k, matching the simulator
+function analyticPipeline(){return {nodes:NODES.map(function(n){var k=n.rework||1,ce=1-Math.pow(1-n.catch_rate*n.review_capacity,k);return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:ce,review_capacity:1,parents:n.parents,aggregation:"product"};})};}
+function analytic(){return MSO.analyzePipeline(analyticPipeline(),{p_min:0.8});}
+
+function drawFlow(){
+  var s=$("flow");while(s.firstChild)s.removeChild(s.firstChild);
+  for(var i=0;i<NODES.length-1;i++){s.appendChild(el("line",{x1:NODES[i].x+34,y1:55,x2:NODES[i+1].x-34,y2:55,stroke:"var(--text-tertiary)","stroke-width":1.5}));}
+  NODES.forEach(function(n){
+    s.appendChild(el("rect",{x:n.x-34,y:38,width:68,height:34,rx:8,fill:"var(--bg-page)",stroke:"var(--border)","stroke-width":1.5}));
+    var tx=el("text",{x:n.x,y:58,"text-anchor":"middle","font-size":11,"font-weight":500,fill:"var(--text-primary)","font-family":"var(--font)"});tx.textContent=n.label;s.appendChild(tx);
+    if((n.rework||1)>1){var lp=el("path",{d:"M"+(n.x+12)+" 40 C"+(n.x+30)+" 18,"+(n.x-30)+" 18,"+(n.x-12)+" 40",fill:"none",stroke:"#1D9E75","stroke-width":1.4});s.appendChild(lp);}
+  });
+  tokens.forEach(function(tk){var x=xAt(tk.p),y=55+(tk.bounce||0);s.appendChild(el("circle",{cx:x,cy:y,r:5,fill:tk.fail?"#E24B4A":"#378ADD"}));});
+}
+function xAt(p){var i=Math.floor(p),f=p-i;if(i>=NODES.length-1)return NODES[NODES.length-1].x;return NODES[i].x+f*(NODES[i+1].x-NODES[i].x);}
+
+function reset(){tokens=[];totals={n:0,end:0,raw:{},corr:{}};NODES.forEach(function(n){totals.raw[n.id]=0;totals.corr[n.id]=0;});conv=[];rng=MSOSim.makeRng(7);
+  $("loopv").textContent="×"+$("loop").value;NODES[2].rework=+$("loop").value;
+  var a=analytic();$("r-cop").textContent=a.cop.toFixed(3);
+  $("cv-cop").setAttribute("y1",yConv(a.cop));$("cv-cop").setAttribute("y2",yConv(a.cop));
+  drawFlow();updateStats();drawBars();}
+function spawn(){var t=MSOSim.sampleTask(pipeline(),{},rng);tokens.push({p:0,rec:t.rec,fail:false,bounce:0});}
+function tallyToken(tk){totals.n++;NODES.forEach(function(n){var r=tk.rec[n.id];if(r){totals.raw[n.id]+=r.raw;totals.corr[n.id]+=r.corrected;}});if(tk.rec[SINK].corrected)totals.end++;pushConv();}
+function foldBatch(n){var s=MSOSim.simulateTokens(pipeline(),{n:n,rng:rng});totals.n+=n;totals.end+=Math.round(s.endToEndSuccess*n);NODES.forEach(function(nd){totals.raw[nd.id]+=s.perNode[nd.id].raw*n;totals.corr[nd.id]+=s.perNode[nd.id].corrected*n;});pushConv();}
+function pushConv(){if(totals.n>0){conv.push(totals.end/totals.n);if(conv.length>240)conv.shift();}}
+
+function yConv(v){return 100-(v)*86;}
+function updateStats(){
+  $("r-n").textContent=totals.n.toLocaleString();
+  var emp=totals.n?totals.end/totals.n:0;
+  $("r-emp").textContent=totals.n?emp.toFixed(3):"—";
+  var cop=+$("r-cop").textContent;
+  $("r-gap").textContent=totals.n?(Math.abs(emp-cop)).toFixed(3):"—";
+  var pts="";for(var i=0;i<conv.length;i++){pts+=(6+i/239*588).toFixed(1)+","+yConv(conv[i]).toFixed(1)+" ";}
+  $("cv-pl").setAttribute("points",pts);
+}
+function drawBars(){
+  var a=analytic();
+  $("bars").innerHTML=NODES.map(function(n){
+    var er=totals.n?totals.raw[n.id]/totals.n:0, ec=totals.n?totals.corr[n.id]/totals.n:0;
+    var ar=a.perNode[n.id].sigma_raw, ac=a.perNode[n.id].sigma_corr;
+    return '<div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:10px;align-items:center;margin-bottom:7px">'+
+      '<div style="font-size:12px;font-weight:500">'+n.label+'</div>'+
+      bar("raw",er,ar,"#378ADD")+bar("corr",ec,ac,"#1D9E75")+'</div>';
+  }).join("");
+}
+function bar(lbl,emp,an,col){
+  return '<div><div style="font-size:10px;color:var(--text-secondary)">'+lbl+' '+emp.toFixed(2)+'</div>'+
+    '<div class="bar" style="height:13px"><div style="position:absolute;left:0;top:0;height:100%;width:'+(emp*100).toFixed(0)+'%;background:'+col+'"></div>'+
+    '<div style="position:absolute;top:-2px;height:17px;width:2px;background:var(--text-primary);left:'+(an*100).toFixed(0)+'%"></div></div></div>';
+}
+
+var last=0;
+function loop(ts){
+  if(!playing)return;
+  if(!last)last=ts;var dt=Math.min(50,ts-last);last=ts;
+  spawnAcc+=dt;if(spawnAcc>110&&tokens.length<28){spawnAcc=0;spawn();}
+  for(var i=tokens.length-1;i>=0;i--){var tk=tokens[i];
+    tk.p+=dt/700;
+    if(Math.abs(tk.p-2)<0.5 && tk.rec[SINK].loops>0){tk.bounce=-11*Math.max(0,1-Math.abs(tk.p-2)*2.2);} else tk.bounce=0;
+    if(tk.p>=2){tk.fail=!tk.rec[SINK].corrected;}
+    if(tk.p>=2.05){tallyToken(tk);tokens.splice(i,1);}
+  }
+  drawFlow();updateStats();
+  if(totals.n%50===0)drawBars();
+  requestAnimationFrame(loop);
+}
+$("play").addEventListener("click",function(){playing=!playing;this.textContent=playing?"❚❚ Pause":"▶ Run";last=0;if(playing)requestAnimationFrame(loop);});
+$("fast").addEventListener("click",function(){foldBatch(10000);updateStats();drawBars();});
+$("reset").addEventListener("click",function(){playing=false;$("play").textContent="▶ Run";reset();});
+$("loop").addEventListener("input",function(){playing=false;$("play").textContent="▶ Run";reset();});
+reset();
+</script>
+</body>
+</html>
