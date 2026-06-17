@@ -101,7 +101,7 @@ var CAT_COLOR = {CRM:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",AI:"#EF9F27",Human:
 var MOTIF_COLOR = {chain:"#888780",fan_out:"#EF9F27",merge:"#7F77DD",diamond:"#E24B4A",single:"#888780"};
 
 function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];return {id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1};}
-var AGG_LABEL={product:"∏ product",min:"weakest-link",mean:"mean"};
+var AGG_LABEL={product:"all-required",min:"weakest-link",mean:"vote / redundant"};
 var TEMPLATES = {
   sales: function(){var n=[
     nd("lead_enrich","enrich",20,200,[],{label:"Lead enrich"}),
@@ -181,7 +181,7 @@ var TEMPLATES = {
 var TEMPLATE_HINTS={
   review_placement:{title:"Reviewer placement.",body:"The reviewer sits on Branch A only, so Branch B is still fed raw by the weak agent → INFEASIBLE. A reviewer lifts only what is downstream of it. Move it ABOVE the fan-out (right after the weak agent) and both branches inherit the correction. (This is the paper's diamond lesson: correct the shared source, not each branch.)",actions:[{label:"Move reviewer upstream",fn:function(){var a=byId("branchA"),b=byId("branchB"),r=byId("reviewer");if(!a||!b||!r)return;r.parents=["weak"];r.x=335;r.y=200;a.parents=["reviewer"];b.parents=["reviewer"];a.y=108;b.y=300;a.x=500;b.x=500;}}]},
   reviewer_competence:{title:"Reviewer competence.",body:"C_op falls just short: the reviewer's catch rate c is too low to correct the weak draft (σ_corr = σ_raw + (1−σ_raw)·c). Select the reviewer and raise c — or click below — and watch B_eff cross zero.",actions:[{label:"Raise reviewer catch → 0.85",fn:function(){var r=byId("reviewer");if(r)r.catch_rate=0.85;}}]},
-  merge_gate:{title:"Merge gate type.",body:"The gate combines two branches with PRODUCT, so independent errors compound (σ_skill·∏σ_corr) → INFEASIBLE. Select the gate and switch aggregation to mean (or weakest-link) — the same agents now clear the target.",actions:[{label:"Set gate → mean",fn:function(){var g=byId("merge");if(g)g.aggregation="mean";}}]},
+  merge_gate:{title:"Merge gate.",body:"The merge is set to ALL-REQUIRED: both branches must be right, so independent errors compound → INFEASIBLE. When the branches do the same job, redesign the merge to take a VOTE (redundant) so a wrong branch is outvoted instead of poisoning the result.",actions:[{label:"Make merge a vote",fn:function(){var g=byId("merge");if(g)g.aggregation="mean";}}]},
   review_loop:{title:"Review loop.",body:"One review pass leaves errors uncaught. A rework loop sends failures back to the agent; each pass compounds the catch rate as 1−(1−c)^k. Raise the reviewer's rework passes and C_op climbs. Loops are modeled by this steady-state effect on effective catch — MSO analyzes the acyclic projection (the package's review edges are metadata, not forward DAG edges).",actions:[{label:"Set review loop → ×3",fn:function(){var r=byId("reviewer");if(r)r.rework=3;}}]},
   chain_depth:{title:"Chain depth & masking.",body:"Every delegation hop multiplies effective skill and compounds masking (paper Exp. 4). At depth 5 even capable agents decay below target. Remove hops and watch C_op climb toward the single-agent ceiling — only at depth 1 does it clear p_min. Depth itself is the constraint, not any one agent.",actions:[{label:"Remove last hop",fn:function(){var order=["e","d","c","b"];for(var i=0;i<order.length;i++){if(byId(order[i])){var rm=order[i];state.nodes=state.nodes.filter(function(n){return n.id!==rm;});state.nodes.forEach(function(n){n.parents=(n.parents||[]).filter(function(p){return p!==rm;});});break;}}}}]}
 };
@@ -287,7 +287,7 @@ function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
   if(!state.selected||state.selected.kind!=="node"){sec.style.display="none";return;}
   var n=byId(state.selected.id);if(!n){sec.style.display="none";return;}sec.style.display="block";
   var opts=Object.keys(CONN).map(function(t){return '<option value="'+t+'"'+(t===n.type?" selected":"")+'>'+CONN[t].label+'</option>';}).join("");
-  var aggs=["product","min","mean"].map(function(a){return '<option value="'+a+'"'+(a===n.aggregation?" selected":"")+'>'+a+'</option>';}).join("");
+  var aggs=["product","min","mean"].map(function(a){return '<option value="'+a+'"'+(a===n.aggregation?" selected":"")+'>'+AGG_LABEL[a]+'</option>';}).join("");
   box.innerHTML='<div class="field"><label>Name</label><input type="text" id="f-label" value="'+n.label.replace(/"/g,"&quot;")+'"></div>'+
     '<div class="field"><label>Connector</label><select id="f-type">'+opts+'</select></div>'+
     '<div class="field"><label>Agent skill σ_skill</label><div class="rng"><input type="range" id="f-skill" min="0.2" max="0.98" step="0.01" value="'+n.sigma_skill+'"><b id="f-skillv">'+n.sigma_skill.toFixed(2)+'</b></div></div>'+
