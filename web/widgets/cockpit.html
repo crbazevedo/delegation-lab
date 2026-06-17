@@ -326,7 +326,7 @@ function analyze(){
   var worst=risks.slice().sort(function(a,b){return b.masking_index-a.masking_index;})[0];
   $("mstar").textContent=worst?worst.masking_index.toFixed(2):"—";
   $("nmotif").textContent=motifs.length;
-  $("motifs").innerHTML=motifs.length?motifs.map(function(m){var desc=m.risk_description.split(". ")[0];Object.keys(labelOf).forEach(function(id){desc=desc.split(id).join(labelOf[id]);});return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.4"><span class="mtag" style="background:'+MOTIF_COLOR[m.motif]+'22;color:'+MOTIF_COLOR[m.motif]+'">'+m.motif+'</span> '+desc+'.</div>';}).join(""):'<span class="hint">none</span>';
+  $("motifs").innerHTML=motifs.length?motifs.map(function(m){var desc=m.risk_description.split(". ")[0];Object.keys(labelOf).sort(function(a,b){return b.length-a.length;}).forEach(function(id){desc=desc.replace(new RegExp('\\b'+id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g'),labelOf[id]);});return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.4"><span class="mtag" style="background:'+MOTIF_COLOR[m.motif]+'22;color:'+MOTIF_COLOR[m.motif]+'">'+m.motif+'</span> '+desc+'.</div>';}).join(""):'<span class="hint">none</span>';
   $("risk").innerHTML=risks.slice(0,5).map(function(x){return '<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px"><span>'+(x.is_bottleneck?'<span style="color:var(--tx-danger)">●</span> ':'')+labelOf[x.name]+'</span><span class="hint">M*'+x.masking_index.toFixed(2)+' · DC'+x.delegation_centrality.toFixed(1)+' · S'+x.sota_score.toFixed(1)+'</span></div>';}).join("");
   var rx=[];
   if(!r.feasible)rx.push("Redesign: "+labelOf[r.bottleneck]+" caps C_op at "+r.cop.toFixed(3)+". Strengthen it, add a corrector, or lower p_min.");
