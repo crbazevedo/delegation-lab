@@ -66,7 +66,8 @@ out.seed_node = (cases.seed_node || []).map((c) => {
   return {
     seeds: s.seeds,
     sigma_skill: s.sigma_skill != null ? s.sigma_skill : null,
-    catch_rate: s.catch_rate,
+    catch_rate: s.catch_rate != null ? s.catch_rate : null,
+    fix_rate: s.fix_rate != null ? s.fix_rate : null,
     confidence: p.confidence,
     band_low: p.band.low,
     band_mid: p.band.mid,

@@ -144,6 +144,12 @@ CASES = {
         {"model": "gpt-4o", "task_type": "drafting"},
         {"model": "gemini-2-flash", "task_type": "review"},
         {"model": "deepseek-r1", "task_type": "extraction"},
+        # v2 component types: embedder retrieval, reranker, judge, corrector
+        {"model": "qwen3-embedding-8b", "task_type": "retrieval"},
+        {"model": "rankgpt-gpt4", "task_type": "reranking"},
+        {"model": "llm-judge-ensemble", "task_type": "review"},
+        {"model": "corrector-with-feedback", "task_type": "correction"},
+        {"model": "gpt-5.4-nano", "task_type": "grounded_generation"},
     ],
     # web/mso-estimate.js turns a practitioner's real outcomes into per-node
     # sigma_raw / sigma_corr / catch / masking. Pin those to estimation.py.
@@ -283,7 +289,8 @@ def _python_expected() -> dict:
         exp["seed_node"].append({
             "seeds": s["seeds"],
             "sigma_skill": s.get("sigma_skill"),
-            "catch_rate": s["catch_rate"],
+            "catch_rate": s.get("catch_rate"),
+            "fix_rate": s.get("fix_rate"),
             "confidence": prov["confidence"],
             "band_low": prov["band"]["low"],
             "band_mid": prov["band"]["mid"],
@@ -364,6 +371,8 @@ def test_browser_port_matches_python_reference():
         assert g["seeds"] == e["seeds"], f"seed_node seeds mismatch for {label}"
         for k in ["band_low", "band_mid", "band_high", "confidence"]:
             assert _close(g[k], e[k]), f"seed_node {k} mismatch for {label}"
-        if e["sigma_skill"] is not None:
-            assert _close(g["sigma_skill"], e["sigma_skill"]), f"seed_node sigma_skill mismatch for {label}"
-        assert _close(g["catch_rate"], e["catch_rate"]), f"seed_node catch_rate mismatch for {label}"
+        for k in ["sigma_skill", "catch_rate", "fix_rate"]:
+            if e[k] is not None:
+                assert g[k] is not None and _close(g[k], e[k]), f"seed_node {k} mismatch for {label}"
+            else:
+                assert g[k] is None, f"seed_node {k} should be null for {label}"

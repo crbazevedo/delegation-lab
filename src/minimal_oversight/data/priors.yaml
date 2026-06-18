@@ -31,19 +31,23 @@
 #   FaithJudge: https://arxiv.org/abs/2505.04847
 
 meta:
-  schema_version: 1
+  schema_version: 2            # v2: + grounded_generation/retrieval/reranking/correction tasks
   gamma: 0.8333333333333334   # return-operator fixed-point gain eta/(eta+delta)=10/12
-  status: curated              # placeholder -> curated after research pass (2026-06-17)
-  observed_date: "2026-06-17"  # date this table was compiled; check for staleness
+  status: curated              # placeholder -> curated after research pass (2026-06-17/18)
+  observed_date: "2026-06-18"  # date this table was compiled; check for staleness
   generator_default_catch_rate: 0.0   # a generator does not correct its parent
+  evidence_ledger: docs/methodology/priors-evidence.md  # provenance + confidence tags
 
 task_types:
   - code_generation
   - classification
   - extraction
   - drafting
-  - retrieval
-  - review        # catch-rate proxy
+  - grounded_generation   # RAG reader: LLM generating a grounded answer (faithfulness)
+  - retrieval             # embedder + vector search (NOT an LLM) — P(relevant item in top-k)
+  - reranking             # post-ranking of candidates (cross-encoder or listwise LLM)
+  - review                # reviewer error-DETECTION (catch_rate); human or LLM-as-judge
+  - correction            # corrector error-REPAIR (fix_rate); consumes reviewer feedback
 
 # ---- CODE GENERATION ----------------------------------------------------------
 # Anchor: LiveBench Coding (contamination-limited, ground-truth scored, no LLM
@@ -704,7 +708,11 @@ priors:
     source_url: https://github.com/vectara/hallucination-leaderboard
     normalization_note: interpolated; mid tier faithfulness; wide band
 
-# ---- RETRIEVAL / RAG-ANSWER CORRECTNESS ----------------------------------------
+# ---- GROUNDED GENERATION / RAG READER (LLM faithfulness) ----------------------
+# IMPORTANT: an LLM does NOT do retrieval. Retrieval is embedding + vector search
+# (see the RETRIEVAL section below, populated by embedder models). What an LLM
+# does in a RAG pipeline is GROUNDED GENERATION — the "reader" that writes an
+# answer from already-retrieved context. These cells score that reader role.
 # Proxy: Vectara HHEM (grounded-summarization faithfulness) + FaithBench/RAGTruth.
 # NOTE: this measures FAITHFULNESS (groundedness), not full end-to-end RAG answer-
 # correctness. The two can diverge — DeepSeek-R1 scores low on faithfulness but
@@ -715,7 +723,7 @@ priors:
 #         https://arxiv.org/abs/2505.04847 (FaithBench Table 7)
 
   - model: claude-opus-4
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.83, mid: 0.89, high: 0.94 }
     primary_benchmark: Vectara-HHEM + FaithBench/RAGTruth
     metric: factual-consistency / faithfulness rate (PROXY for RAG correctness)
@@ -727,7 +735,7 @@ priors:
     normalization_note: faithfulness PROXY — not full RAG answer-correctness; interpolated above Sonnet anchor
 
   - model: claude-sonnet-4
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.80, mid: 0.87, high: 0.93 }
     primary_benchmark: FaithBench/RAGTruth
     metric: factual-consistency rate (faithfulness proxy for RAG)
@@ -739,7 +747,7 @@ priors:
     normalization_note: direct FaithBench measurement; faithfulness PROXY only; Sonnet-4.5 confirmed >10% hallu — use low end of band
 
   - model: claude-haiku-4
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.75, mid: 0.83, high: 0.90 }
     primary_benchmark: Vectara-HHEM (interpolated)
     metric: factual-consistency rate (faithfulness proxy)
@@ -751,7 +759,7 @@ priors:
     normalization_note: interpolated; small tier; faithfulness proxy only; refine from traces
 
   - model: gpt-4o
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.80, mid: 0.84, high: 0.90 }
     primary_benchmark: FaithBench/RAGTruth
     metric: factual-consistency rate (faithfulness proxy for RAG)
@@ -763,7 +771,7 @@ priors:
     normalization_note: direct FaithBench measurement; faithfulness PROXY only
 
   - model: gpt-4o-mini
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.72, mid: 0.80, high: 0.88 }
     primary_benchmark: Vectara-HHEM (interpolated)
     metric: factual-consistency rate (faithfulness proxy)
@@ -775,7 +783,7 @@ priors:
     normalization_note: interpolated; small tier; faithfulness proxy only
 
   - model: openai-o3
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.80, mid: 0.87, high: 0.93 }
     primary_benchmark: Vectara next-gen (interpolated)
     metric: factual-consistency rate (faithfulness proxy)
@@ -787,7 +795,7 @@ priors:
     normalization_note: reasoning models WORSE on faithfulness than Flash; wide band; faithfulness proxy only
 
   - model: gemini-2-pro
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.88, mid: 0.93, high: 0.97 }
     primary_benchmark: FaithBench/RAGTruth
     metric: factual-consistency rate (faithfulness proxy for RAG)
@@ -799,7 +807,7 @@ priors:
     normalization_note: best faithfulness in FaithBench set; faithfulness PROXY only; note HHEM conflict-of-interest
 
   - model: gemini-2-flash
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.88, mid: 0.93, high: 0.97 }
     primary_benchmark: Vectara-HHEM + FaithBench
     metric: factual-consistency rate (faithfulness proxy for RAG)
@@ -811,7 +819,7 @@ priors:
     normalization_note: Flash-class tops HHEM; FaithBench confirms strong faithfulness; PROXY only
 
   - model: llama-3.3-70b
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.78, mid: 0.84, high: 0.90 }
     primary_benchmark: FaithBench/RAGTruth
     metric: factual-consistency rate (faithfulness proxy for RAG)
@@ -823,7 +831,7 @@ priors:
     normalization_note: direct FaithBench measurement; faithfulness PROXY only; 70B tier
 
   - model: deepseek-v3
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.88, mid: 0.93, high: 0.96 }
     primary_benchmark: Vectara-HHEM + DeepSeek blog
     metric: factual-consistency rate (faithfulness proxy for RAG)
@@ -835,7 +843,7 @@ priors:
     normalization_note: V3 outstanding faithfulness; faithfulness PROXY only; does not predict end-to-end RAG correctness
 
   - model: deepseek-r1
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.78, mid: 0.86, high: 0.91 }
     primary_benchmark: Vectara-HHEM + DeepSeek blog
     metric: factual-consistency rate (faithfulness proxy for RAG)
@@ -847,7 +855,7 @@ priors:
     normalization_note: REASONING PENALTY on faithfulness; R1+RAG can hit 86% clinical accuracy despite poor faithfulness — proxy gap CRITICAL
 
   - model: qwen2.5-72b
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.75, mid: 0.85, high: 0.92 }
     primary_benchmark: Vectara-HHEM (interpolated)
     metric: factual-consistency rate (faithfulness proxy)
@@ -859,7 +867,7 @@ priors:
     normalization_note: interpolated; mid tier faithfulness proxy; wide band
 
   - model: mistral-large
-    task_type: retrieval
+    task_type: grounded_generation
     sigma_raw: { low: 0.75, mid: 0.85, high: 0.92 }
     primary_benchmark: Vectara-HHEM (interpolated)
     metric: factual-consistency rate (faithfulness proxy)
@@ -1043,3 +1051,519 @@ priors:
     observed_date: null
     source_url: null
     normalization_note: SOFTEST COLUMN; conservative wide-band fallback per research guidance; no reliable evidence
+
+# ===============================================================================
+# v2 ADDITIONS (2026-06-18 research sweep). Provenance + confidence tags:
+# docs/methodology/priors-evidence.md.
+# ===============================================================================
+
+# ---- NEW FRONTIER MODELS · faithfulness (drafting + grounded_generation) ------
+# Source: Vectara HHEM-2.3 leaderboard (updated 2026-05-11), summarization
+# factual-consistency = 100% − hallucination%. CONFIRMED (3-0) for the reasoning
+# penalty and the top tier. faithfulness σ ≈ consistency, modest domain discount.
+# https://github.com/vectara/hallucination-leaderboard
+
+  - model: gpt-5.4-nano
+    task_type: drafting
+    sigma_raw: { low: 0.90, mid: 0.93, high: 0.96 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: absolute
+    reported_value: "3.1% hallucination (96.9% consistency)"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: CONFIRMED top-tier faithfulness; faithfulness subdim only; style/IF quality is relative-only and NOT captured
+  - model: gpt-5.4-nano
+    task_type: grounded_generation
+    sigma_raw: { low: 0.90, mid: 0.93, high: 0.96 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness PROXY for RAG reader)
+    metric_kind: absolute
+    reported_value: "3.1% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: RAG reader faithfulness proxy; retrieval STEP is an embedder (see retrieval task)
+
+  - model: gemini-2.5-flash-lite
+    task_type: drafting
+    sigma_raw: { low: 0.90, mid: 0.93, high: 0.96 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: absolute
+    reported_value: "3.3% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: CONFIRMED top-tier faithfulness; faithfulness subdim only
+  - model: gemini-2.5-flash-lite
+    task_type: grounded_generation
+    sigma_raw: { low: 0.90, mid: 0.93, high: 0.96 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness PROXY)
+    metric_kind: absolute
+    reported_value: "3.3% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: RAG reader faithfulness proxy
+
+  - model: gemini-2.5-pro
+    task_type: drafting
+    sigma_raw: { low: 0.82, mid: 0.89, high: 0.94 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: absolute
+    reported_value: "7.0% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: SOURCED (verification rate-limited); faithfulness subdim only; wider band
+  - model: gemini-2.5-pro
+    task_type: grounded_generation
+    sigma_raw: { low: 0.82, mid: 0.89, high: 0.94 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness PROXY)
+    metric_kind: absolute
+    reported_value: "7.0% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: RAG reader faithfulness proxy; SOURCED
+
+  - model: phi-4
+    task_type: drafting
+    sigma_raw: { low: 0.89, mid: 0.93, high: 0.96 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: absolute
+    reported_value: "3.7% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: SOURCED; small-model strong faithfulness; faithfulness subdim only
+  - model: phi-4
+    task_type: grounded_generation
+    sigma_raw: { low: 0.89, mid: 0.93, high: 0.96 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness PROXY)
+    metric_kind: absolute
+    reported_value: "3.7% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: RAG reader faithfulness proxy; SOURCED
+
+  - model: qwen3-8b
+    task_type: drafting
+    sigma_raw: { low: 0.86, mid: 0.91, high: 0.95 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: absolute
+    reported_value: "4.8% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: SOURCED; faithfulness subdim only
+  - model: qwen3-8b
+    task_type: grounded_generation
+    sigma_raw: { low: 0.86, mid: 0.91, high: 0.95 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness PROXY)
+    metric_kind: absolute
+    reported_value: "4.8% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: RAG reader faithfulness proxy; SOURCED
+
+  - model: kimi-k2.5
+    task_type: drafting
+    sigma_raw: { low: 0.70, mid: 0.80, high: 0.88 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: absolute
+    reported_value: "14.2% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: SOURCED; mid-low faithfulness; faithfulness subdim only; wide band
+  - model: kimi-k2.5
+    task_type: grounded_generation
+    sigma_raw: { low: 0.70, mid: 0.80, high: 0.88 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness PROXY)
+    metric_kind: absolute
+    reported_value: "14.2% hallucination"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: RAG reader faithfulness proxy; SOURCED
+
+  - model: o3-pro
+    task_type: drafting
+    sigma_raw: { low: 0.58, mid: 0.70, high: 0.82 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: absolute
+    reported_value: "23.3% hallucination (reasoning model — among worst)"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: CONFIRMED reasoning-vs-faithfulness penalty; a reasoning model is a WORSE drafting prior than its base sibling; wide band
+  - model: o3-pro
+    task_type: grounded_generation
+    sigma_raw: { low: 0.58, mid: 0.70, high: 0.82 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness PROXY)
+    metric_kind: absolute
+    reported_value: "23.3% hallucination (reasoning model)"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: CONFIRMED reasoning penalty; reader faithfulness proxy; wide band
+
+  - model: o4-mini-high
+    task_type: drafting
+    sigma_raw: { low: 0.64, mid: 0.75, high: 0.85 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: absolute
+    reported_value: "18.6% hallucination (reasoning model)"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: CONFIRMED reasoning penalty; faithfulness subdim only; wide band
+  - model: o4-mini-high
+    task_type: grounded_generation
+    sigma_raw: { low: 0.64, mid: 0.75, high: 0.85 }
+    primary_benchmark: Vectara-HHEM-2.3
+    metric: factual-consistency rate (faithfulness PROXY)
+    metric_kind: absolute
+    reported_value: "18.6% hallucination (reasoning model)"
+    sample_size: "7700+ docs"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: CONFIRMED reasoning penalty; reader faithfulness proxy; wide band
+
+# ---- USER-NAMED MODELS WITHOUT A PUBLIC BENCHMARK (INTERPOLATED, flagged) ------
+# These exact names did not appear on a public faithfulness leaderboard as of the
+# 2026-06-18 sweep. Bands are interpolated from the nearest benchmarked sibling
+# and flagged — NOT invented measurements. Refine from your own traces first.
+
+  - model: gpt-5.5
+    task_type: drafting
+    sigma_raw: { low: 0.86, mid: 0.92, high: 0.96 }
+    primary_benchmark: NONE (interpolated from gpt-5.4-nano)
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: relative
+    reported_value: "no public benchmark for exact name; sibling gpt-5.4-nano 3.1%"
+    sample_size: null
+    observed_date: "2026-06"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: INTERPOLATED from gpt-5.4-nano tier; no public benchmark for this exact name; wide band; refine from traces
+  - model: gpt-5.5
+    task_type: grounded_generation
+    sigma_raw: { low: 0.86, mid: 0.92, high: 0.96 }
+    primary_benchmark: NONE (interpolated from gpt-5.4-nano)
+    metric: faithfulness PROXY
+    metric_kind: relative
+    reported_value: "no public benchmark for exact name"
+    sample_size: null
+    observed_date: "2026-06"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: INTERPOLATED; reader faithfulness proxy; no public benchmark for exact name
+
+  - model: claude-opus-4.8
+    task_type: drafting
+    sigma_raw: { low: 0.78, mid: 0.86, high: 0.93 }
+    primary_benchmark: NONE (interpolated from claude-opus-4)
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: relative
+    reported_value: "no public benchmark for exact name; sibling Claude Opus 4 ~12% hallu"
+    sample_size: null
+    observed_date: "2026-06"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: INTERPOLATED from Claude Opus 4 (modest gen-over-gen lift assumed); no public benchmark for exact name; wide band
+  - model: claude-opus-4.8
+    task_type: grounded_generation
+    sigma_raw: { low: 0.78, mid: 0.86, high: 0.93 }
+    primary_benchmark: NONE (interpolated from claude-opus-4)
+    metric: faithfulness PROXY
+    metric_kind: relative
+    reported_value: "no public benchmark for exact name"
+    sample_size: null
+    observed_date: "2026-06"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: INTERPOLATED; reader faithfulness proxy; no public benchmark for exact name
+
+  - model: kimi-2.6
+    task_type: drafting
+    sigma_raw: { low: 0.70, mid: 0.81, high: 0.89 }
+    primary_benchmark: NONE (interpolated from kimi-k2.5)
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: relative
+    reported_value: "no public benchmark for exact name; sibling Kimi-K2.5 14.2% hallu"
+    sample_size: null
+    observed_date: "2026-06"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: INTERPOLATED from Kimi-K2.5; no public benchmark for exact name; wide band
+  - model: kimi-2.6
+    task_type: grounded_generation
+    sigma_raw: { low: 0.70, mid: 0.81, high: 0.89 }
+    primary_benchmark: NONE (interpolated from kimi-k2.5)
+    metric: faithfulness PROXY
+    metric_kind: relative
+    reported_value: "no public benchmark for exact name"
+    sample_size: null
+    observed_date: "2026-06"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: INTERPOLATED; reader faithfulness proxy; no public benchmark for exact name
+
+  - model: fable-5
+    task_type: drafting
+    sigma_raw: { low: 0.65, mid: 0.80, high: 0.92 }
+    primary_benchmark: NONE (no public evidence)
+    metric: factual-consistency rate (faithfulness)
+    metric_kind: relative
+    reported_value: "no reliable public evidence — model not on any public leaderboard"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO PUBLIC BENCHMARK FOUND; deliberately wide conservative band; this is a placeholder to refine from your own traces, not a measurement
+  - model: fable-5
+    task_type: grounded_generation
+    sigma_raw: { low: 0.65, mid: 0.80, high: 0.92 }
+    primary_benchmark: NONE (no public evidence)
+    metric: faithfulness PROXY
+    metric_kind: relative
+    reported_value: "no reliable public evidence"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO PUBLIC BENCHMARK FOUND; wide conservative band; refine from traces
+
+# ---- RETRIEVAL · EMBEDDING MODELS (NOT LLMs) ----------------------------------
+# Retrieval is embedding + vector search. σ here ≈ P(relevant item in top-k),
+# anchored to MTEB-v2 Retrieval / BEIR nDCG@10. Leaderboard numbers are upper-
+# bound-ish and CORPUS-DEPENDENT → wide bands. SOURCED (verification rate-limited).
+# Qwen3-Embedding arXiv:2506.05176 · mGTE/BGE/OpenAI arXiv:2407.19669 · Granite arXiv:2508.21085
+
+  - model: qwen3-embedding-8b
+    task_type: retrieval
+    sigma_raw: { low: 0.62, mid: 0.68, high: 0.74 }
+    primary_benchmark: MTEB-English-v2 (Retrieval)
+    metric: nDCG@10 / Mean(Task)
+    metric_kind: absolute
+    reported_value: "MTEB-En v2 75.2; Retrieval 70.9"
+    sample_size: "MTEB-v2 task suite"
+    observed_date: "2025-06"
+    source_url: https://arxiv.org/abs/2506.05176
+    normalization_note: retrieval σ ≈ P(relevant in top-k); leaderboard upper-bound, corpus-dependent; SOURCED
+  - model: openai-text-embedding-3-large
+    task_type: retrieval
+    sigma_raw: { low: 0.52, mid: 0.58, high: 0.64 }
+    primary_benchmark: BEIR / MTEB-English
+    metric: nDCG@10
+    metric_kind: absolute
+    reported_value: "BEIR nDCG@10 55.4; MTEB-En 64.6"
+    sample_size: "BEIR 13-task avg"
+    observed_date: "2024-07"
+    source_url: https://arxiv.org/abs/2407.19669
+    normalization_note: retrieval σ from BEIR nDCG@10; corpus-dependent; SOURCED
+  - model: openai-text-embedding-3-small
+    task_type: retrieval
+    sigma_raw: { low: 0.48, mid: 0.55, high: 0.62 }
+    primary_benchmark: MTEB-English
+    metric: MTEB-En average
+    metric_kind: absolute
+    reported_value: "MTEB-En 62.3"
+    sample_size: "MTEB suite"
+    observed_date: "2024-07"
+    source_url: https://arxiv.org/abs/2407.19669
+    normalization_note: cheaper/smaller embedder; corpus-dependent; SOURCED
+  - model: cohere-embed-v3
+    task_type: retrieval
+    sigma_raw: { low: 0.50, mid: 0.57, high: 0.63 }
+    primary_benchmark: MTEB-English
+    metric: MTEB-En average
+    metric_kind: absolute
+    reported_value: "MTEB-En 64.0 (multilingual-v3.0)"
+    sample_size: "MTEB suite"
+    observed_date: "2024-07"
+    source_url: https://arxiv.org/abs/2407.19669
+    normalization_note: corpus-dependent; SOURCED
+  - model: e5-mistral-7b
+    task_type: retrieval
+    sigma_raw: { low: 0.52, mid: 0.59, high: 0.65 }
+    primary_benchmark: MTEB-English
+    metric: MTEB-En average
+    metric_kind: absolute
+    reported_value: "MTEB-En 66.6"
+    sample_size: "MTEB suite"
+    observed_date: "2024-07"
+    source_url: https://arxiv.org/abs/2407.19669
+    normalization_note: 7B LLM-initialized embedder; corpus-dependent; SOURCED
+  - model: bge-m3
+    task_type: retrieval
+    sigma_raw: { low: 0.46, mid: 0.53, high: 0.60 }
+    primary_benchmark: BEIR / MIRACL
+    metric: nDCG@10
+    metric_kind: absolute
+    reported_value: "BEIR 48.7; MIRACL 67.7 (dense)"
+    sample_size: "BEIR / MIRACL"
+    observed_date: "2024-07"
+    source_url: https://arxiv.org/abs/2407.19669
+    normalization_note: strong open multilingual embedder; corpus-dependent; SOURCED
+  - model: granite-embedding-r2
+    task_type: retrieval
+    sigma_raw: { low: 0.48, mid: 0.55, high: 0.62 }
+    primary_benchmark: BEIR / MTEB-v2 Retrieval
+    metric: nDCG@10
+    metric_kind: absolute
+    reported_value: "BEIR 53.1; MTEB-v2 Retrieval 56.4 (149M)"
+    sample_size: "BEIR 13-task"
+    observed_date: "2025-08"
+    source_url: https://arxiv.org/abs/2508.21085
+    normalization_note: compact ModernBERT embedder; corpus-dependent; SOURCED
+
+# ---- RERANKING · POST-RANKING (cross-encoder or listwise LLM) ------------------
+# A reranker transforms a candidate list. σ ≈ P(correct item in top-k AFTER rerank).
+# Recency penalty: nDCG@10 drops 5-15% on novel queries (FutureQueryEval) → low end.
+# Qwen3/Granite rerankers arXiv:2506.05176 / 2508.21085 · listwise LLMs arXiv:2508.16757
+
+  - model: qwen3-reranker
+    task_type: reranking
+    sigma_raw: { low: 0.65, mid: 0.71, high: 0.76 }
+    primary_benchmark: MTEB-R (over Qwen3-Embedding)
+    metric: nDCG@10 / MTEB-R uplift
+    metric_kind: absolute
+    reported_value: "MTEB-R 61.8 → ~69 (+7) with 4B/8B reranker"
+    sample_size: "MTEB-R"
+    observed_date: "2025-06"
+    source_url: https://arxiv.org/abs/2506.05176
+    normalization_note: cross-encoder; post-rerank P(correct in top-k); corpus-dependent; SOURCED
+  - model: cohere-rerank-3
+    task_type: reranking
+    sigma_raw: { low: 0.58, mid: 0.65, high: 0.72 }
+    primary_benchmark: BEIR / TREC-DL (cross-encoder)
+    metric: nDCG@10 uplift
+    metric_kind: relative
+    reported_value: "proprietary cross-encoder; no clean public absolute row"
+    sample_size: null
+    observed_date: "2026-06"
+    source_url: https://arxiv.org/abs/2508.16757
+    normalization_note: cross-encoder; relative-only public evidence; wide band; SOURCED
+  - model: bge-reranker-v2-m3
+    task_type: reranking
+    sigma_raw: { low: 0.55, mid: 0.61, high: 0.67 }
+    primary_benchmark: MTEB-R (cross-encoder)
+    metric: nDCG@10
+    metric_kind: absolute
+    reported_value: "MTEB-R ~57.0"
+    sample_size: "MTEB-R"
+    observed_date: "2025-06"
+    source_url: https://arxiv.org/abs/2506.05176
+    normalization_note: open cross-encoder reranker; corpus-dependent; SOURCED
+  - model: rankzephyr-7b
+    task_type: reranking
+    sigma_raw: { low: 0.62, mid: 0.69, high: 0.75 }
+    primary_benchmark: TREC-DL19 / FutureQueryEval (listwise LLM)
+    metric: nDCG@10
+    metric_kind: absolute
+    reported_value: "TREC-DL19 74.2; novel-query 62.7"
+    sample_size: "TREC-DL / FutureQueryEval"
+    observed_date: "2025-08"
+    source_url: https://arxiv.org/abs/2508.16757
+    normalization_note: listwise LLM reranker (post-ranking, NOT retrieval); recency penalty on novel queries; SOURCED
+  - model: rankgpt-gpt4
+    task_type: reranking
+    sigma_raw: { low: 0.66, mid: 0.72, high: 0.78 }
+    primary_benchmark: TREC-DL19 (listwise LLM)
+    metric: nDCG@10
+    metric_kind: absolute
+    reported_value: "TREC-DL19 75.6"
+    sample_size: "TREC-DL19"
+    observed_date: "2025-08"
+    source_url: https://arxiv.org/abs/2508.16757
+    normalization_note: listwise LLM post-ranking; an LLM's legitimate role in retrieval is reranking, NOT the retrieval step; SOURCED
+
+# ---- REVIEW · LLM-as-judge vs human reviewer (catch_rate) ---------------------
+# Reviewer error-DETECTION. Distinguishes a model reviewer (LLM-as-judge) from a
+# human reviewer. RewardBench-2 (arXiv:2506.01937 / sweep 2604.13717), CriticGPT
+# (arXiv:2407.00215). SOFTEST COLUMN — wide bands.
+
+  - model: llm-judge-single
+    task_type: review
+    catch_rate: { low: 0.60, mid: 0.68, high: 0.74 }
+    primary_benchmark: RewardBench-2 (single LLM judge, k=1)
+    metric: judge↔human preference accuracy
+    metric_kind: absolute
+    reported_value: "71.7% accuracy (N=1729)"
+    sample_size: "1729"
+    observed_date: "2026"
+    source_url: https://arxiv.org/abs/2506.01937
+    normalization_note: a single LLM-as-judge call; SOFTEST COLUMN; subject to position/verbosity/self-preference bias; SOURCED
+  - model: llm-judge-ensemble
+    task_type: review
+    catch_rate: { low: 0.72, mid: 0.80, high: 0.85 }
+    primary_benchmark: RewardBench-2 (ensemble k=8)
+    metric: judge↔human preference accuracy
+    metric_kind: absolute
+    reported_value: "81.5% (k=8); 83.6% with scoring criteria"
+    sample_size: "1729"
+    observed_date: "2026"
+    source_url: https://arxiv.org/abs/2506.01937
+    normalization_note: ensembling N independent judge calls materially raises catch_rate (+~10pp); still bias-prone; SOURCED
+  - model: human-reviewer
+    task_type: review
+    catch_rate: { low: 0.75, mid: 0.85, high: 0.92 }
+    primary_benchmark: paper assumption (domain-expert reviewer)
+    metric: error-detection rate
+    metric_kind: relative
+    reported_value: "model-default; CriticGPT beats humans on 63% of code critiques"
+    sample_size: null
+    observed_date: "2024"
+    source_url: https://arxiv.org/abs/2407.00215
+    normalization_note: human domain expert; higher catch than a single LLM judge but slower/costly; for code, a strong LLM judge can rival humans; refine from traces
+
+# ---- CORRECTION · corrector fix-success (fix_rate) ----------------------------
+# Corrector REPAIR-success given a flagged error: P(repair succeeds | flagged).
+# KEY FINDING (multiple papers): intrinsic self-correction WITHOUT external
+# feedback is unreliable (at/below baseline); WITH reviewer feedback it improves.
+# arXiv:2310.01798 (LLMs Cannot Self-Correct Reasoning Yet) · TACL 2024.
+
+  - model: corrector-no-feedback
+    task_type: correction
+    fix_rate: { low: 0.10, mid: 0.30, high: 0.55 }
+    primary_benchmark: "LLMs Cannot Self-Correct Reasoning Yet"
+    metric: P(repair succeeds | flagged), no external signal
+    metric_kind: absolute
+    reported_value: "intrinsic self-correction at/below baseline; can degrade"
+    sample_size: null
+    observed_date: "2023-10"
+    source_url: https://arxiv.org/abs/2310.01798
+    normalization_note: corrector with NO reviewer feedback; unreliable → low/wide band; this is why detection (reviewer) and repair (corrector) must be modeled separately
+  - model: corrector-with-feedback
+    task_type: correction
+    fix_rate: { low: 0.55, mid: 0.70, high: 0.85 }
+    primary_benchmark: "When Can LLMs Actually Correct Their Own Mistakes (TACL 2024)"
+    metric: P(repair succeeds | flagged), with reviewer feedback
+    metric_kind: absolute
+    reported_value: "correction with reliable external feedback materially beats baseline"
+    sample_size: null
+    observed_date: "2024"
+    source_url: https://direct.mit.edu/tacl/article/doi/10.1162/tacl_a_00713/125177
+    normalization_note: corrector that CONSUMES reviewer feedback and re-does/patches; fix_rate is high only when the feedback signal is reliable; SOURCED
+  - model: corrector-with-oracle
+    task_type: correction
+    fix_rate: { low: 0.65, mid: 0.78, high: 0.90 }
+    primary_benchmark: Reflexion / agentic re-do with test or oracle signal
+    metric: P(repair succeeds | flagged), with verifiable signal
+    metric_kind: absolute
+    reported_value: "agentic re-do with unit-test/oracle signal repairs reliably"
+    sample_size: null
+    observed_date: "2023"
+    source_url: https://arxiv.org/abs/2303.11366
+    normalization_note: corrector with a verifiable signal (tests, exec results); highest fix_rate; degrades if the signal is noisy; SOURCED

@@ -24,7 +24,8 @@ from typing import Any
 
 import yaml
 
-REVIEW_TASK = "review"
+REVIEW_TASK = "review"        # payload: catch_rate (reviewer error-detection)
+CORRECTION_TASK = "correction"  # payload: fix_rate (corrector repair-success)
 
 
 @dataclass(frozen=True)
@@ -50,8 +51,9 @@ class PriorCell:
 
     model: str
     task_type: str
-    sigma_raw: Band | None          # generator task-types
-    catch_rate: Band | None         # the `review` task-type
+    sigma_raw: Band | None          # generator / retrieval / reranking task-types
+    catch_rate: Band | None         # the `review` task-type (reviewer detection)
+    fix_rate: Band | None           # the `correction` task-type (corrector repair)
     primary_benchmark: str | None
     metric: str | None
     metric_kind: str | None         # "absolute" | "relative"
@@ -95,11 +97,14 @@ def load_priors(path: str | None = None) -> dict[str, Any]:
             raise ValueError(f"unknown task_type {task!r} for model {model!r}")
         sigma = Band.from_mapping(row["sigma_raw"]) if "sigma_raw" in row else None
         catch = Band.from_mapping(row["catch_rate"]) if "catch_rate" in row else None
+        fix = Band.from_mapping(row["fix_rate"]) if "fix_rate" in row else None
         if task == REVIEW_TASK and catch is None:
             raise ValueError(f"review cell {model!r} must carry a catch_rate band")
-        if task != REVIEW_TASK and sigma is None:
+        elif task == CORRECTION_TASK and fix is None:
+            raise ValueError(f"correction cell {model!r} must carry a fix_rate band")
+        elif task not in (REVIEW_TASK, CORRECTION_TASK) and sigma is None:
             raise ValueError(f"generator cell {model!r}/{task!r} must carry a sigma_raw band")
-        for b in (sigma, catch):
+        for b in (sigma, catch, fix):
             if b is not None and not (0.0 <= b.low <= b.mid <= b.high <= 1.0):
                 raise ValueError(f"non-monotone or out-of-range band for {model!r}/{task!r}")
         key = (model, task)
@@ -110,6 +115,7 @@ def load_priors(path: str | None = None) -> dict[str, Any]:
             task_type=task,
             sigma_raw=sigma,
             catch_rate=catch,
+            fix_rate=fix,
             primary_benchmark=row.get("primary_benchmark"),
             metric=row.get("metric"),
             metric_kind=row.get("metric_kind"),
@@ -160,6 +166,10 @@ def seed_node(model: str, task_type: str, path: str | None = None) -> dict[str, 
         band = cell.catch_rate
         out["catch_rate"] = _clamp(band.mid, 0.0, 1.0)
         out["seeds"] = "catch_rate"
+    elif task_type == CORRECTION_TASK:
+        band = cell.fix_rate
+        out["fix_rate"] = _clamp(band.mid, 0.0, 1.0)
+        out["seeds"] = "fix_rate"
     else:
         band = cell.sigma_raw
         meta = data["meta"]
