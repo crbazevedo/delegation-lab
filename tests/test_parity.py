@@ -19,6 +19,7 @@ import pytest
 
 from minimal_oversight import _formulae as F
 from minimal_oversight import analyze_pipeline
+from minimal_oversight import estimation as E
 from minimal_oversight.allocation import select_scope
 from minimal_oversight.capacity import check_feasibility
 from minimal_oversight.models import AggregationType, Node, PipelineGraph
@@ -121,6 +122,13 @@ CASES = {
         {"sigma": [0.667, 0.517, 0.417, 0.375, 0.708, 0.542], "p_min": 0.5, "coverage": 0.0},
         {"sigma": [0.8, 0.4, 0.6, 0.3, 0.7], "p_min": 0.6, "coverage": 0.5},
     ],
+    # web/mso-estimate.js turns a practitioner's real outcomes into per-node
+    # sigma_raw / sigma_corr / catch / masking. Pin those to estimation.py.
+    "estimate": [
+        {"raw": [1, 0, 1, 1, 0, 1, 0, 1, 1, 0], "corr": [1, 1, 1, 1, 0, 1, 1, 1, 1, 0]},
+        {"raw": [1, 0, 0, 1, 0, 0, 1, 0], "corr": [1, 1, 0, 1, 1, 0, 1, 1]},
+        {"raw": [1, 1, 1, 0], "corr": [1, 1, 1, 1]},
+    ],
 }
 
 SCALAR_KEYS = [
@@ -187,6 +195,16 @@ def _python_expected() -> dict:
         for _ in range(c["steps"]):
             s = F.return_operator_step(s, c["skill"], c["eta"], c["delta"], c["dt"], c["sigma0"])
         exp["ro_traj"].append(s)
+    exp["estimate"] = []
+    for c in CASES["estimate"]:
+        s_raw = E.estimate_sigma_raw(c["raw"])
+        s_corr = E.estimate_sigma_corr(c["corr"])
+        exp["estimate"].append({
+            "sigma_raw": s_raw,
+            "sigma_corr": s_corr,
+            "masking": E.estimate_masking_index(s_corr, s_raw),
+            "catch": E.estimate_catch_rate(c["raw"], c["corr"]),
+        })
     exp["scope"] = []
     for c in CASES["scope"]:
         r = select_scope(c["sigma"], c["p_min"], c["coverage"])
@@ -278,6 +296,10 @@ def test_browser_port_matches_python_reference():
             assert _close(g[k], e[k]), f"pipeline {k} mismatch"
         for node_id in e["masking"]:
             assert _close(g["masking"][node_id], e["masking"][node_id]), f"masking {node_id}"
+
+    for g, e in zip(got["estimate"], exp["estimate"]):
+        for k in ["sigma_raw", "sigma_corr", "masking", "catch"]:
+            assert _close(g[k], e[k]), f"estimate {k} mismatch"
 
     for g, e in zip(got["scope"], exp["scope"]):
         assert g["delegated"] == e["delegated"], "scope delegated mismatch"

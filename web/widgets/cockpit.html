@@ -42,10 +42,30 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
   <span class="rng" style="gap:6px"><span class="hint">H(W)</span><input type="range" id="hw" min="0" max="6" step="0.1" value="0" style="width:90px"><b id="hwv">0.0</b></span>
   <span class="seg"><button id="zout" title="zoom out" aria-label="zoom out">−</button><button id="zfit" title="fit to view">Fit</button><button id="zin" title="zoom in" aria-label="zoom in">+</button></span>
   <button id="run" type="button">▶ Run tokens</button>
+  <button id="import-btn" type="button" style="border-color:var(--blue);color:var(--blue)">⤓ Import your pipeline</button>
   <span class="hint">click a connector to add · drag ● to link · drag canvas to pan · scroll to zoom · Delete to remove</span>
 </div>
 
 <div id="lesson" style="display:none;background:var(--bg-warning);color:var(--tx-warning);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px;line-height:1.5"></div>
+<div id="import-note" style="display:none;background:var(--bg-success);color:var(--tx-success);border-radius:var(--radius);padding:9px 13px;margin-bottom:12px;font-size:13px"></div>
+
+<div id="import-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:680px;width:92%;max-height:88vh;overflow:auto;padding:20px 22px">
+    <div style="font-size:17px;font-weight:500;margin-bottom:4px">Analyze your own pipeline</div>
+    <p class="muted" style="margin:0 0 12px">Paste one of: <b>trace events</b> (estimates real catch rate &amp; masking per node), a <b>LangGraph graph</b> (<code>app.get_graph().to_json()</code>), or plain <code>{nodes:[…]}</code>. Auto-detected. Nothing leaves your browser.</p>
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <button type="button" class="ex" data-ex="traces" style="font-size:12px">sample: traces</button>
+      <button type="button" class="ex" data-ex="langgraph" style="font-size:12px">sample: LangGraph</button>
+      <button type="button" class="ex" data-ex="nodes" style="font-size:12px">sample: nodes</button>
+    </div>
+    <textarea id="import-text" spellcheck="false" style="width:100%;height:240px;font-family:var(--mono);font-size:12px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--bg-surface);color:var(--text-primary)" placeholder='[{"task_id":"1","node_id":"draft","outcome":1,"corrected":1},{"task_id":"1","node_id":"review","outcome":0,"corrected":1}, ...]'></textarea>
+    <div id="import-err" style="color:var(--tx-danger);font-size:12px;min-height:16px;margin-top:6px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button type="button" id="import-cancel">Cancel</button>
+      <button type="button" id="import-go" class="on">Analyze pipeline</button>
+    </div>
+  </div>
+</div>
 
 <div class="cockpit">
   <div class="palette" id="palette"></div>
@@ -80,6 +100,7 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
 
 <script src="../mso-core.js"></script>
 <script src="../mso-sim.js"></script>
+<script src="../mso-estimate.js"></script>
 <script>
 var CONN = {
   hubspot:{label:"HubSpot",cat:"CRM",skill:0.85,catch:0.50,drift:0.02},
@@ -194,7 +215,9 @@ var svg=document.getElementById("svg"), $=function(id){return document.getElemen
 var drag=null, draw=null, pan=null, counter=0;
 function clampv(v,a,b){return Math.max(a,Math.min(b,v));}
 
-function loadTemplate(name){simOn=false;simTokens=null;var sr=document.getElementById("simrow");if(sr)sr.innerHTML='Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.';state.nodes=TEMPLATES[name]();state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
+function resetSimRow(){simOn=false;simTokens=null;var sr=document.getElementById("simrow");if(sr)sr.innerHTML='Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.';}
+function loadTemplate(name){resetSimRow();document.getElementById("import-note").style.display="none";state.nodes=TEMPLATES[name]();state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
+function loadImported(parsed){resetSimRow();document.getElementById("lesson").style.display="none";state.nodes=MSOEstimate.layout(parsed.nodes,W,H);state.nodes.forEach(function(n){if(!n.label)n.label=String(n.id).replace(/_/g," ");});state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();var nn=document.getElementById("import-note");nn.style.display="block";nn.innerHTML="<b>Imported your pipeline</b> · "+parsed.note+". Edit any node in the inspector, slide p_min to your target, or press Run tokens.";}
 function showLesson(name){var h=TEMPLATE_HINTS[name],box=$("lesson");if(!h){box.style.display="none";return;}box.style.display="block";
   var acts=(h.actions||[]).map(function(a,i){return '<button data-act="'+i+'" style="margin-right:8px;margin-top:2px">'+a.label+'</button>';}).join("");
   box.innerHTML='<b>Lesson — '+h.title+'</b> '+h.body+(acts?'<div style="margin-top:8px">'+acts+'</div>':'');
@@ -362,6 +385,31 @@ function simLoop(ts){
   render();requestAnimationFrame(simLoop);
 }
 $("run").addEventListener("click",function(){if(simOn){simOn=false;this.textContent="▶ Run tokens";}else runSim();});
+var IMPORT_SAMPLES={
+  traces: JSON.stringify([
+    {task_id:"1",path:["intake","draft","review"],outcomes:{intake:1,draft:0,review:0},corrected:{intake:1,draft:1,review:1}},
+    {task_id:"2",path:["intake","draft","review"],outcomes:{intake:1,draft:1,review:1},corrected:{intake:1,draft:1,review:1}},
+    {task_id:"3",path:["intake","draft","review"],outcomes:{intake:1,draft:0,review:0},corrected:{intake:1,draft:0,review:1}},
+    {task_id:"4",path:["intake","draft","review"],outcomes:{intake:0,draft:0,review:1},corrected:{intake:1,draft:1,review:1}},
+    {task_id:"5",path:["intake","draft","review"],outcomes:{intake:1,draft:1,review:0},corrected:{intake:1,draft:1,review:0}},
+    {task_id:"6",path:["intake","draft","review"],outcomes:{intake:1,draft:0,review:0},corrected:{intake:1,draft:1,review:1}}
+  ],null,1),
+  langgraph: JSON.stringify({nodes:[{id:"planner"},{id:"researcher"},{id:"writer"},{id:"reviewer"}],edges:[{source:"planner",target:"researcher"},{source:"researcher",target:"writer"},{source:"writer",target:"reviewer"}]},null,2),
+  nodes: JSON.stringify({nodes:[{id:"extract",sigma_skill:0.6,catch_rate:0.5},{id:"summarize",sigma_skill:0.5,catch_rate:0.55,parents:["extract"]},{id:"review",sigma_skill:0.85,catch_rate:0.8,parents:["summarize"]}]},null,2)
+};
+$("import-btn").addEventListener("click",function(){$("import-err").textContent="";$("import-modal").style.display="flex";});
+$("import-cancel").addEventListener("click",function(){$("import-modal").style.display="none";});
+$("import-modal").addEventListener("click",function(e){if(e.target===this)this.style.display="none";});
+[].forEach.call(document.querySelectorAll(".ex"),function(b){b.addEventListener("click",function(){$("import-text").value=IMPORT_SAMPLES[b.getAttribute("data-ex")];$("import-err").textContent="";});});
+$("import-go").addEventListener("click",function(){
+  var txt=$("import-text").value.trim();
+  try{
+    if(!txt)throw new Error("Paste your pipeline JSON first, or try a sample above.");
+    var parsed=MSOEstimate.buildPipeline(txt);
+    if(!parsed.nodes||!parsed.nodes.length)throw new Error("No nodes found in the input.");
+    $("import-modal").style.display="none";loadImported(parsed);
+  }catch(err){$("import-err").textContent="⚠ "+err.message;}
+});
 loadTemplate("sales");
 </script>
 </body>

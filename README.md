@@ -16,6 +16,22 @@ Companion package to *"Minimal Oversight: Uncertainty-Aware Governance for Deleg
 
 Current release tag: [`v0.1.3`](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.3) / PyPI package: [`minimal-oversight==0.1.3`](https://pypi.org/project/minimal-oversight/0.1.3/)
 
+## Try it on your pipeline
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crbazevedo/delegation-lab/blob/main/notebooks/00_quickstart_your_pipeline.ipynb)
+
+- **Live cockpit** → [crbazevedo.github.io/delegation-lab/app/widgets/cockpit.html](https://crbazevedo.github.io/delegation-lab/app/widgets/cockpit.html).
+  Click **⤓ Import your pipeline** and paste your traces, a LangGraph graph, or
+  plain nodes — the cockpit renders *your* graph and reads masking, bottlenecks,
+  and risk off it live.
+- **Colab quickstart** (button above) → governance for your pipeline in 5 minutes
+  from a trace log. The *same* trace JSON drives both, so the browser numbers
+  match `analyze_pipeline()` in Python.
+
+The only data you need to log, per task and per node: `outcome` (correct *before*
+review?) and `corrected` (correct *after* review?). That two-column contract is
+enough to estimate σ_raw, the masking index, and a prioritized fix list.
+
 ## What it does
 
 Delegated AI systems route uncertain work through pipelines: one model proposes,
@@ -44,9 +60,10 @@ that effort where the model and pipeline state make review most informative.
 A dependency-free, embeddable widget suite under [`web/`](web/) computes the
 paper's quantities **live in the browser** — the same equations as this package.
 Build or load a delegated workflow in the **governance cockpit** (connector
-library, editable graph, merge gates, review loops, didactic lessons) and read
-feasibility, masking, motifs, and risk off it; press **Run** to animate task
-tokens through the graph. Focused explainers cover the masking pathology
+library, editable graph, merge gates, review loops, didactic lessons) — or
+**import your own pipeline** from traces or LangGraph — and read feasibility,
+masking, motifs, and risk off it; press **Run** to animate task tokens through
+the graph. Focused explainers cover the masking pathology
 (`M*=1.83`), water-filling allocation, the **Return Operator run on time**, a
 **stochastic-Petri-net token simulation**, and a **water-filling-vs-baseline
 benchmark**.

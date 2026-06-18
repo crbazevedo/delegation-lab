@@ -8,6 +8,7 @@
  */
 const fs = require("fs");
 const MSO = require("../web/mso-core.js");
+const MSOEstimate = require("../web/mso-estimate.js");
 
 const inPath = process.argv[2];
 const outPath = process.argv[3];
@@ -20,6 +21,10 @@ out.volume = cases.volume.map((s) => MSO.fisherVolumeElement(s));
 out.sraw_fp = cases.sraw_fp.map((a) => MSO.sigmaRawFixedPoint(a[0], a[1], a[2], a[3]));
 out.scorr = cases.scorr.map((a) => MSO.sigmaCorrFixedPoint(a[0], a[1]));
 out.masking = cases.masking.map((a) => MSO.maskingIndex(a[0], a[1]));
+out.estimate = (cases.estimate || []).map((c) => {
+  const e = MSOEstimate.estimate(c.raw, c.corr);
+  return { sigma_raw: e.sigma_raw, sigma_corr: e.sigma_corr, masking: e.masking, catch: e.catch };
+});
 out.eff_skill = cases.eff_skill.map((a) => MSO.effectiveSkill(a[0], a[1], a[2]));
 out.opt_auth = cases.opt_auth.map((a) => MSO.optimalAuthority(a[0], a[1], a[2]));
 out.solve_lambda = cases.solve_lambda.map((a) => {
