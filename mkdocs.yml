@@ -65,6 +65,7 @@ nav:
     - Autonomy Time: concepts/autonomy.md
     - Topology as Governance: concepts/topology.md
   - Guides:
+    - The Questions It Answers: guides/questions.md
     - Analyzing a Pipeline: guides/analyze.md
     - Interactive Companion: guides/interactive.md
     - LangGraph Integration: guides/langgraph.md
