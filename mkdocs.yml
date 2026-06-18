@@ -71,6 +71,8 @@ nav:
     - ADK Integration: guides/adk.md
     - Calibrating from Traces: guides/traces.md
     - Reading the Report: guides/interpret.md
+  - Methodology:
+    - Priors Evidence Ledger: methodology/priors-evidence.md
   - Paper:
     - Validation (8 Experiments): paper/validation.md
     - Equation-to-Code Reference: paper/references.md
