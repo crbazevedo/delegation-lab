@@ -1,0 +1,99 @@
+# priors.yaml — cold-start task-competence priors for MSO.
+#
+# Each entry estimates a (model x task_type) cell. For generator task-types the
+# payload is `sigma_raw` (raw success probability BEFORE any review); for the
+# `review` task-type the payload is `catch_rate` (how well the model catches an
+# upstream node's errors). Both are LOW/MID/HIGH bands with provenance, never
+# point estimates.
+#
+# THESE ARE PRIORS: starting hypotheses to seed a cockpit/notebook node when the
+# user has no traces yet. They are meant to be refined by the user's own logged
+# outcomes (see minimal_oversight.estimation). A wide band == weak evidence.
+#
+# Normalization rules baked into the curated values:
+#   - ABSOLUTE metrics (pass@1, accuracy, F1) ~ success probability -> sigma_raw
+#     directly, with a modest domain-shift discount (recorded in the note).
+#   - RELATIVE metrics (Arena Elo, win-rates) are RANKINGS, never inverted into
+#     sigma. They only rank/interpolate models whose scale is pinned by an
+#     absolute benchmark. metric_kind=relative cells always carry a wider band.
+#   - review/catch_rate is the SOFTEST column (little public evidence) -> widest
+#     bands; treat as a placeholder until the user logs corrected outcomes.
+
+meta:
+  schema_version: 1
+  gamma: 0.8333333333333334   # return-operator fixed-point gain eta/(eta+delta)=10/12
+  # status flips to "curated" when the cited research-pass values land.
+  status: placeholder
+  generator_default_catch_rate: 0.0   # a generator does not correct its parent
+
+task_types:
+  - code_generation
+  - classification
+  - extraction
+  - drafting
+  - retrieval
+  - review        # catch-rate proxy
+
+# --- PLACEHOLDER ROWS (abstract model tiers, NOT real models) -----------------
+# These exist only to exercise the loader + tests until the cited per-model
+# values from the research pass replace them. Do not ship as real guidance.
+priors:
+  - model: _placeholder_frontier
+    task_type: code_generation
+    sigma_raw: { low: 0.60, mid: 0.70, high: 0.80 }
+    primary_benchmark: PLACEHOLDER
+    metric: pass@1
+    metric_kind: absolute
+    reported_value: null
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: placeholder row — replace with cited value
+
+  - model: _placeholder_frontier
+    task_type: classification
+    sigma_raw: { low: 0.70, mid: 0.80, high: 0.88 }
+    primary_benchmark: PLACEHOLDER
+    metric: accuracy
+    metric_kind: absolute
+    reported_value: null
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: placeholder row — replace with cited value
+
+  - model: _placeholder_frontier
+    task_type: review
+    catch_rate: { low: 0.40, mid: 0.60, high: 0.80 }
+    primary_benchmark: PLACEHOLDER
+    metric: judge_human_agreement
+    metric_kind: relative
+    reported_value: null
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: placeholder row — catch-rate is the softest column
+
+  - model: _placeholder_small
+    task_type: code_generation
+    sigma_raw: { low: 0.35, mid: 0.45, high: 0.55 }
+    primary_benchmark: PLACEHOLDER
+    metric: pass@1
+    metric_kind: absolute
+    reported_value: null
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: placeholder row — replace with cited value
+
+  - model: _placeholder_small
+    task_type: classification
+    sigma_raw: { low: 0.55, mid: 0.65, high: 0.74 }
+    primary_benchmark: PLACEHOLDER
+    metric: accuracy
+    metric_kind: absolute
+    reported_value: null
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: placeholder row — replace with cited value
