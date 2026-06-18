@@ -20,7 +20,7 @@ const out = {};
 out.fisher = cases.fisher.map((s) => MSO.fisherInformation(s));
 out.volume = cases.volume.map((s) => MSO.fisherVolumeElement(s));
 out.sraw_fp = cases.sraw_fp.map((a) => MSO.sigmaRawFixedPoint(a[0], a[1], a[2], a[3]));
-out.scorr = cases.scorr.map((a) => MSO.sigmaCorrFixedPoint(a[0], a[1]));
+out.scorr = cases.scorr.map((a) => MSO.sigmaCorrFixedPoint(a[0], a[1], a[2]));
 out.masking = cases.masking.map((a) => MSO.maskingIndex(a[0], a[1]));
 out.estimate = (cases.estimate || []).map((c) => {
   const e = MSOEstimate.estimate(c.raw, c.corr);

@@ -69,9 +69,16 @@ def estimate_catch_rate(
     raw_outcomes: list[float] | np.ndarray,
     corrected_outcomes: list[float] | np.ndarray,
 ) -> float | None:
-    """Infer corrector catch rate from paired pre/post-correction outcomes.
+    """Infer the *effective correction* from paired pre/post outcomes.
 
-    c = (σ_corr − σ_raw) / (1 − σ_raw)
+    c_eff = (σ_corr − σ_raw) / (1 − σ_raw)
+
+    This is the inverse of Equation 6. Pre/post outcomes alone cannot separate
+    *detection* (catch_rate, *c*) from *repair* (fix_rate, *f*) — they only
+    reveal the product ``c_eff = c × f``. When the reviewer's flag log is also
+    available, use :func:`estimate_fix_rate` to decompose them. When no separate
+    corrector exists (the node self-reviews and self-fixes), ``c_eff`` *is* the
+    catch_rate with fix_rate ≡ 1.
 
     Returns None if σ_raw ≈ 1 (no errors to catch).
     """
@@ -79,8 +86,37 @@ def estimate_catch_rate(
     s_corr = float(np.mean(corrected_outcomes))
     if (1.0 - s_raw) < 1e-8:
         return None
-    c = (s_corr - s_raw) / (1.0 - s_raw)
-    return float(np.clip(c, 0.0, 1.0))
+    c_eff = (s_corr - s_raw) / (1.0 - s_raw)
+    return float(np.clip(c_eff, 0.0, 1.0))
+
+
+def estimate_fix_rate(
+    flagged: list[float] | np.ndarray,
+    repaired: list[float] | np.ndarray,
+) -> float | None:
+    """Infer corrector repair-success rate *f* from the reviewer's flag log.
+
+    Given, for each item the reviewer *flagged* as an error, whether the
+    corrector's re-do/patch actually *succeeded*:
+
+        f = P(repair succeeds | error was flagged)
+          = mean(repaired over flagged items)
+
+    Args:
+        flagged: 1 if the reviewer flagged this item as an error, else 0.
+        repaired: 1 if the corrector's fix succeeded on this item, else 0.
+            Only entries where ``flagged == 1`` are counted.
+
+    Returns None if nothing was flagged (no repairs to score).
+    """
+    flagged_arr = np.asarray(flagged, dtype=float)
+    repaired_arr = np.asarray(repaired, dtype=float)
+    mask = flagged_arr > 0.5
+    n_flagged = int(np.sum(mask))
+    if n_flagged == 0:
+        return None
+    f = float(np.sum(repaired_arr[mask]) / n_flagged)
+    return float(np.clip(f, 0.0, 1.0))
 
 
 def estimate_process_entropy(

@@ -144,6 +144,45 @@ class TestCorrectorCapacity:
         assert threshold == 0.0
 
 
+class TestCorrectorDecomposition:
+    """Detection × fix-success generalization of Equation 6.
+
+    A reviewer detects errors (catch_rate); a corrector repairs flagged errors
+    (fix_rate). Effective correction is the product; fix_rate=1 recovers the
+    paper's single-number model.
+    """
+
+    def test_fix_rate_one_recovers_legacy(self):
+        # Default fix_rate=1.0 must reproduce the paper's worked example.
+        legacy = sigma_corr_fixed_point(0.667, catch_rate=0.70)
+        explicit = sigma_corr_fixed_point(0.667, catch_rate=0.70, fix_rate=1.0)
+        assert explicit == legacy
+        assert pytest.approx(explicit, rel=1e-2) == 0.900
+
+    def test_effective_correction_is_product(self):
+        # catch=0.70, fix=0.50 → c_eff=0.35 → σ_corr = 0.667 + 0.333*0.35
+        sc = sigma_corr_fixed_point(0.667, catch_rate=0.70, fix_rate=0.50)
+        expected = 0.667 + (1 - 0.667) * (0.70 * 0.50)
+        assert pytest.approx(sc, rel=1e-9) == expected
+
+    def test_zero_fix_rate_means_no_correction(self):
+        # A reviewer that catches everything but a corrector that never repairs
+        # leaves quality at raw.
+        sc = sigma_corr_fixed_point(0.60, catch_rate=1.0, fix_rate=0.0)
+        assert sc == 0.60
+
+    def test_partial_fix_needs_more_review(self):
+        # Halving fix_rate doubles the review fraction needed for the same target.
+        full = corrector_capacity_threshold(0.80, 0.60, catch_rate=0.50, fix_rate=1.0)
+        half = corrector_capacity_threshold(0.80, 0.60, catch_rate=0.50, fix_rate=0.5)
+        assert pytest.approx(half, rel=1e-9) == 2 * full
+
+    def test_chain_quality_degrades_with_lower_fix_rate(self):
+        strong = recursive_chain_quality(3, 0.55, 0.65, 10, 2, fix_rate=1.0)
+        weak = recursive_chain_quality(3, 0.55, 0.65, 10, 2, fix_rate=0.5)
+        assert strong > weak
+
+
 class TestSOTA:
     def test_score_increases_with_centrality(self):
         s1 = sota_priority_score(1.0, 1.35, 0.45)

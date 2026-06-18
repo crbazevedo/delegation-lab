@@ -50,8 +50,9 @@ def compute_node_capacity(
     """
     sigma_skill = node.sigma_skill if node.sigma_skill is not None else 0.55
     catch_rate = node.catch_rate if node.catch_rate is not None else 0.65
+    fix_rate = node.fix_rate if node.fix_rate is not None else 1.0
     sigma_raw_star = F.sigma_raw_fixed_point(sigma_skill, eta, delta, sigma_0=sigma_0)
-    return F.sigma_corr_fixed_point(sigma_raw_star, catch_rate)
+    return F.sigma_corr_fixed_point(sigma_raw_star, catch_rate, fix_rate)
 
 
 def compute_pipeline_capacity(
@@ -74,6 +75,7 @@ def compute_pipeline_capacity(
         node = pipeline.get_node(name)
         sigma_skill = node.sigma_skill if node.sigma_skill is not None else 0.55
         catch_rate = node.catch_rate if node.catch_rate is not None else 0.65
+        fix_rate = node.fix_rate if node.fix_rate is not None else 1.0
 
         # Effective skill incorporates parent corrected qualities
         parents = pipeline.parents(name)
@@ -87,7 +89,9 @@ def compute_pipeline_capacity(
         sigma_raw_star = F.sigma_raw_fixed_point(
             sigma_skill_eff, eta, delta, sigma_0=sigma_0
         )
-        sigma_corr_star = F.sigma_corr_fixed_point(sigma_raw_star, catch_rate)
+        sigma_corr_star = F.sigma_corr_fixed_point(
+            sigma_raw_star, catch_rate, fix_rate
+        )
 
         node_sigma_corr[name] = sigma_corr_star
         capacities[name] = sigma_corr_star

@@ -23,15 +23,24 @@ class AggregationType(Enum):
 
 @dataclass
 class Node:
-    """A single delegation node (agent + optional corrector).
+    """A single delegation node (an agent, with optional review + correction).
+
+    Oversight is decomposed into two independent stages. A **reviewer** (human,
+    or a model acting as LLM-as-judge) *detects* errors with probability
+    ``catch_rate`` (*c*). A **corrector** then *repairs* a flagged error with
+    probability ``fix_rate`` (*f*), either by re-doing the task or applying a
+    patch using the reviewer's feedback. The effective correction is the product
+    ``c × f``; the paper's single-number model is the special case ``f = 1``.
 
     Attributes:
         name: Human-readable identifier.
         sigma_skill: True competence (if known); often estimated.
         sigma_raw: Observed raw competence (pre-correction success rate).
         sigma_corr: Observed corrected quality (post-correction success rate).
-        catch_rate: Corrector's error-catch probability *c*.
-        review_capacity: Fraction of outputs the corrector reviews (*K/N*).
+        catch_rate: Reviewer's error-detection probability *c*.
+        fix_rate: Corrector's repair-success probability *f* given a flagged
+            error. Defaults to None → treated as 1.0 (caught errors are fixed).
+        review_capacity: Fraction of outputs the reviewer inspects (*K/N*).
         drift_rate: Estimated skill degradation rate *mu_eff*.
         noise_var: Estimated noise variance *nu_eff^2*.
         aggregation: How this node merges inputs (only relevant for merge nodes).
@@ -43,6 +52,7 @@ class Node:
     sigma_raw: float | None = None
     sigma_corr: float | None = None
     catch_rate: float | None = None
+    fix_rate: float | None = None
     review_capacity: float | None = None
     drift_rate: float | None = None
     noise_var: float | None = None

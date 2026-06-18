@@ -42,11 +42,12 @@ _AGG = {
 }
 
 
-def _nd(node_id, skill, catch, parents, agg="product"):
+def _nd(node_id, skill, catch, parents, agg="product", fix=None):
     return {
         "id": node_id,
         "sigma_skill": skill,
         "catch_rate": catch,
+        "fix_rate": fix,
         "parents": parents,
         "aggregation": agg,
     }
@@ -80,12 +81,24 @@ PIPE_LINE = {
         _nd("d", 0.66, 0.6, ["c"]),
     ]
 }
+# Reviewer detects (catch_rate) but the corrector only repairs a fraction
+# (fix_rate < 1). Exercises the detection × fix-success generalization of Eq. 6.
+PIPE_FIX = {
+    "nodes": [
+        _nd("gen", 0.62, 0.70, [], fix=0.5),
+        _nd("review_correct", 0.80, 0.65, ["gen"], fix=0.8),
+    ]
+}
 
 CASES = {
     "fisher": SIGMAS,
     "volume": SIGMAS,
     "sraw_fp": [[0.55, 10, 2, 0], [0.8, 10, 2, 0], [0.45, 10, 2, 0.1], [0.62, 8, 3, 0]],
-    "scorr": [[0.5167, 0.65], [0.375, 0.70], [0.708, 0.70], [0.2, 0.9]],
+    "scorr": [
+        [0.5167, 0.65], [0.375, 0.70], [0.708, 0.70], [0.2, 0.9],
+        # 3-arg form: fix_rate < 1 (corrector repairs only a fraction of catches)
+        [0.5167, 0.65, 0.5], [0.375, 0.70, 0.8], [0.2, 0.9, 1.0], [0.6, 0.5, 0.0],
+    ],
     "masking": [[0.83, 0.5167], [0.8125, 0.375], [0.9125, 0.708]],
     "eff_skill": [
         [0.85, [0.7012, 0.7908], "product"],
@@ -102,6 +115,7 @@ CASES = {
         {"pipeline": PIPE_SALES, "p_min": 0.80, "hw": 0.0},
         {"pipeline": PIPE_SALES, "p_min": 0.70, "hw": 1.5},
         {"pipeline": PIPE_CHAIN, "p_min": 0.75, "hw": 0.5},
+        {"pipeline": PIPE_FIX, "p_min": 0.70, "hw": 0.0},
     ],
     "centrality": [
         {"pipeline": PIPE_SALES, "names": [n["id"] for n in PIPE_SALES["nodes"]]},
@@ -161,6 +175,7 @@ def _build_graph(spec: dict) -> PipelineGraph:
             n["id"],
             sigma_skill=n["sigma_skill"],
             catch_rate=n["catch_rate"],
+            fix_rate=n.get("fix_rate"),
             aggregation=_AGG[n["aggregation"]],
         )
         for n in spec["nodes"]
@@ -175,8 +190,10 @@ def _build_graph(spec: dict) -> PipelineGraph:
 def _node_masking(spec: dict) -> dict:
     masking = {}
     for n in spec["nodes"]:
+        fix = n.get("fix_rate")
+        fix = 1.0 if fix is None else fix
         lsr = F.sigma_raw_fixed_point(n["sigma_skill"], 10, 2, 0)
-        lsc = F.sigma_corr_fixed_point(lsr, n["catch_rate"])
+        lsc = F.sigma_corr_fixed_point(lsr, n["catch_rate"], fix)
         masking[n["id"]] = F.masking_index(lsc, lsr)
     return masking
 
