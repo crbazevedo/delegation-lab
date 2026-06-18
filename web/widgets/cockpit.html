@@ -36,10 +36,10 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
 
 <div class="toolbar">
   <label class="hint">Load template
-    <select id="tpl"><optgroup label="Workflows"><option value="sales">Sales — lead to deal</option><option value="support">Customer support triage</option><option value="github">GitHub PR review</option><option value="rag">RAG research assistant</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option></optgroup><optgroup label="Lessons (try the hint)"><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><option value="blank">Blank canvas</option></select>
+    <select id="tpl"><optgroup label="Workflows"><option value="sales">Sales — lead to deal</option><option value="support">Customer support triage</option><option value="github">GitHub PR review</option><option value="rag">RAG research assistant</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option></optgroup><optgroup label="Lessons (try the hint)"><option value="reviewer_corrector">Lesson · reviewer ≠ corrector</option><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><option value="blank">Blank canvas</option></select>
   </label>
-  <span class="rng" style="gap:6px"><span class="hint">p_min</span><input type="range" id="pmin" min="0.50" max="0.95" step="0.01" value="0.80" style="width:110px"><b id="pminv">0.80</b></span>
-  <span class="rng" style="gap:6px"><span class="hint">H(W)</span><input type="range" id="hw" min="0" max="6" step="0.1" value="0" style="width:90px"><b id="hwv">0.0</b></span>
+  <span class="rng" style="gap:6px" title="p_min — the corrected quality the pipeline must sustain"><span class="hint">Quality target</span><input type="range" id="pmin" min="0.50" max="0.95" step="0.01" value="0.80" style="width:110px"><b id="pminv">0.80</b></span>
+  <span class="rng" style="gap:6px" title="H(W) — process complexity / entropy in bits; higher means more routing & drift"><span class="hint">Process complexity</span><input type="range" id="hw" min="0" max="6" step="0.1" value="0" style="width:90px"><b id="hwv">0.0</b></span>
   <span class="seg"><button id="zout" title="zoom out" aria-label="zoom out">−</button><button id="zfit" title="fit to view">Fit</button><button id="zin" title="zoom in" aria-label="zoom in">+</button></span>
   <button id="run" type="button">▶ Run tokens</button>
   <button id="import-btn" type="button" style="border-color:var(--blue);color:var(--blue)">⤓ Import your pipeline</button>
@@ -87,19 +87,20 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
   <div class="palette" id="palette"></div>
   <div class="canvas-wrap"><svg class="canvas" id="svg"></svg>
     <div style="display:flex;gap:14px;flex-wrap:wrap;padding:7px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--text-secondary)">
-      <span><svg width="22" height="13" style="vertical-align:middle"><rect x="1" y="1" width="20" height="11" rx="4" fill="#EF9F2722" stroke="#EF9F27"/></svg> AI agent</span>
-      <span><svg width="22" height="13" style="vertical-align:middle"><polygon points="3,1 19,1 21,6.5 19,12 3,12 1,6.5" fill="#378ADD22" stroke="#378ADD"/></svg> tool / connector</span>
+      <span><svg width="22" height="13" style="vertical-align:middle"><rect x="1" y="1" width="20" height="11" rx="4" fill="#EF9F2722" stroke="#EF9F27"/></svg> generator (LLM)</span>
+      <span><svg width="22" height="13" style="vertical-align:middle"><polygon points="4,1 21,1 18,12 1,12" fill="#2AA7C422" stroke="#2AA7C4"/></svg> retriever / reranker (not an LLM)</span>
+      <span><svg width="22" height="13" style="vertical-align:middle"><rect x="1" y="1" width="20" height="11" rx="4" fill="#C75DAB22" stroke="#C75DAB"/></svg> reviewer / corrector</span>
       <span><svg width="22" height="13" style="vertical-align:middle"><rect x="1" y="1" width="20" height="11" rx="5.5" fill="#63992222" stroke="#639922"/></svg> human</span>
-      <span><svg width="22" height="13" style="vertical-align:middle"><polygon points="4,1 21,1 18,12 1,12" fill="#88878022" stroke="#888780"/></svg> data</span>
+      <span><svg width="22" height="13" style="vertical-align:middle"><polygon points="3,1 19,1 21,6.5 19,12 3,12 1,6.5" fill="#378ADD22" stroke="#378ADD"/></svg> tool / data</span>
     </div>
   </div>
   <div class="panel">
     <div id="banner" class="banner" style="font-size:12px"></div>
     <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-      <div class="minicard"><div class="l">C_op</div><div class="v" id="cop">—</div></div>
-      <div class="minicard"><div class="l">B_eff</div><div class="v" id="beff">—</div></div>
-      <div class="minicard"><div class="l">worst M*</div><div class="v" id="mstar">—</div></div>
-      <div class="minicard"><div class="l">motifs</div><div class="v" id="nmotif">—</div></div>
+      <div class="minicard" title="C_op — the best corrected quality this pipeline can sustain"><div class="l">Capacity ceiling (C_op)</div><div class="v" id="cop">—</div></div>
+      <div class="minicard" title="B_eff — headroom above target after process complexity; ≤0 means at the autonomy cliff"><div class="l">Autonomy buffer (B_eff)</div><div class="v" id="beff">—</div></div>
+      <div class="minicard" title="M* = σ_corr/σ_raw — how much review is hiding weak raw competence (>1 = masking)"><div class="l">Worst masking (M*)</div><div class="v" id="mstar">—</div></div>
+      <div class="minicard" title="structural patterns that are fragile under delegation"><div class="l">Fragile motifs</div><div class="v" id="nmotif">—</div></div>
     </div>
     <div id="simrow" style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.</div>
     <div class="sec" id="inspector-sec" style="display:none">
@@ -112,33 +113,46 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
   </div>
 </div>
 
-<p class="foot">Every value is computed by <code>mso-core.js</code> (Fisher info, capacity propagation, masking, water-filling, motif detection, delegation centrality), pinned to <code>minimal-oversight==0.1.2</code> by the parity test. Connector parameters are illustrative defaults — edit any node to match your system.</p>
+<p class="foot">Every value is computed by <code>mso-core.js</code> (Fisher info, capacity propagation, masking, water-filling, motif detection, delegation centrality), pinned to <code>minimal-oversight==0.1.3</code> by the parity test. Component parameters are illustrative defaults — seed any node from public benchmarks (⊕) or edit to match your system. <a href="../../methodology/priors/" style="color:var(--text-secondary)">How the priors are built ↗</a></p>
 
 <script src="../mso-core.js"></script>
 <script src="../mso-sim.js"></script>
 <script src="../mso-estimate.js"></script>
 <script src="../mso-priors.js"></script>
 <script>
+// task = which prior column seeds this node (see mso-priors.js / methodology).
+// fix = corrector repair-success (f); catch = reviewer detection (c). σ_corr uses c·f.
 var CONN = {
-  hubspot:{label:"HubSpot",cat:"CRM",skill:0.85,catch:0.50,drift:0.02},
-  salesforce:{label:"Salesforce",cat:"CRM",skill:0.85,catch:0.50,drift:0.02},
-  github:{label:"GitHub",cat:"Dev",skill:0.88,catch:0.50,drift:0.02},
-  jira:{label:"Jira",cat:"Dev",skill:0.85,catch:0.50,drift:0.02},
-  ci:{label:"CI check",cat:"Dev",skill:0.9,catch:0.6,drift:0.01},
-  slack:{label:"Slack",cat:"Comms",skill:0.85,catch:0.50,drift:0.03},
-  zendesk:{label:"Zendesk",cat:"Comms",skill:0.85,catch:0.50,drift:0.03},
-  llm:{label:"LLM agent",cat:"AI",skill:0.50,catch:0.55,drift:0.12},
-  classifier:{label:"Classifier",cat:"AI",skill:0.62,catch:0.65,drift:0.05},
-  rag:{label:"RAG retriever",cat:"AI",skill:0.60,catch:0.60,drift:0.07},
-  reviewer:{label:"Human reviewer",cat:"Human",skill:0.90,catch:0.80,drift:0.01},
-  approver:{label:"Approver gate",cat:"Human",skill:0.92,catch:0.85,drift:0.01},
-  enrich:{label:"Enrichment",cat:"Data",skill:0.80,catch:0.60,drift:0.04},
-  db:{label:"Datastore",cat:"Data",skill:0.90,catch:0.50,drift:0.01}
+  // --- AI · Generate (language models that produce work) ---
+  llm:{label:"LLM drafter",cat:"Generate",skill:0.50,catch:0.55,fix:1.0,drift:0.12,task:"drafting"},
+  coder:{label:"Code generator",cat:"Generate",skill:0.55,catch:0.50,fix:1.0,drift:0.10,task:"code_generation"},
+  extractor:{label:"Extractor",cat:"Generate",skill:0.70,catch:0.50,fix:1.0,drift:0.06,task:"extraction"},
+  classifier:{label:"Classifier / router",cat:"Generate",skill:0.62,catch:0.65,fix:1.0,drift:0.05,task:"classification"},
+  reader:{label:"RAG reader (grounded)",cat:"Generate",skill:0.62,catch:0.55,fix:1.0,drift:0.08,task:"grounded_generation"},
+  // --- AI · Retrieve (NOT an LLM — embedding + vector search, then post-ranking) ---
+  embedder:{label:"Embedder / retriever",cat:"Retrieve",skill:0.80,catch:0.0,fix:1.0,drift:0.03,task:"retrieval"},
+  reranker:{label:"Reranker (post-rank)",cat:"Retrieve",skill:0.84,catch:0.0,fix:1.0,drift:0.04,task:"reranking"},
+  // --- AI · Govern (oversight: detect vs repair are SEPARATE) ---
+  model_reviewer:{label:"Model reviewer (LLM-judge)",cat:"Govern",skill:0.85,catch:0.68,fix:1.0,drift:0.05,task:"review"},
+  corrector:{label:"Corrector (re-do / patch)",cat:"Govern",skill:0.70,catch:0.30,fix:0.70,drift:0.05,task:"correction"},
+  // --- Human ---
+  reviewer:{label:"Human reviewer",cat:"Human",skill:0.90,catch:0.85,fix:1.0,drift:0.01,task:"review"},
+  approver:{label:"Approver gate",cat:"Human",skill:0.92,catch:0.85,fix:1.0,drift:0.01,task:"review"},
+  // --- Tools / systems (deterministic connectors) ---
+  hubspot:{label:"HubSpot",cat:"CRM",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  salesforce:{label:"Salesforce",cat:"CRM",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  github:{label:"GitHub",cat:"Dev",skill:0.88,catch:0.50,fix:1.0,drift:0.02},
+  jira:{label:"Jira",cat:"Dev",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  ci:{label:"CI check",cat:"Dev",skill:0.9,catch:0.6,fix:1.0,drift:0.01},
+  slack:{label:"Slack",cat:"Comms",skill:0.85,catch:0.50,fix:1.0,drift:0.03},
+  zendesk:{label:"Zendesk",cat:"Comms",skill:0.85,catch:0.50,fix:1.0,drift:0.03},
+  enrich:{label:"Enrichment",cat:"Data",skill:0.80,catch:0.60,fix:1.0,drift:0.04},
+  db:{label:"Datastore",cat:"Data",skill:0.90,catch:0.50,fix:1.0,drift:0.01}
 };
-var CAT_COLOR = {CRM:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",AI:"#EF9F27",Human:"#639922",Data:"#888780"};
+var CAT_COLOR = {Generate:"#EF9F27",Retrieve:"#2AA7C4",Govern:"#C75DAB",CRM:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",Human:"#639922",Data:"#888780"};
 var MOTIF_COLOR = {chain:"#888780",fan_out:"#EF9F27",merge:"#7F77DD",diamond:"#E24B4A",single:"#888780"};
 
-function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];return {id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1};}
+function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];return {id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,fix_rate:over.fix!=null?over.fix:(c.fix!=null?c.fix:1.0),drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1};}
 var AGG_LABEL={product:"all-required",min:"weakest-link",mean:"vote / redundant"};
 var TEMPLATES = {
   sales: function(){var n=[
@@ -152,7 +166,7 @@ var TEMPLATES = {
     nd("intake","zendesk",20,200,[],{label:"Ticket intake"}),
     nd("triage","llm",165,200,["intake"],{label:"LLM triage",skill:0.55}),
     nd("billing","llm",310,108,["triage"],{label:"Billing agent",skill:0.5}),
-    nd("tech","rag",310,300,["triage"],{label:"Tech agent",skill:0.58}),
+    nd("tech","llm",310,300,["triage"],{label:"Tech agent",skill:0.58}),
     nd("review","reviewer",455,200,["billing","tech"],{label:"Human review"}),
     nd("notify","slack",600,200,["review"],{label:"Notify customer"})];return n;},
   github: function(){var n=[
@@ -163,11 +177,11 @@ var TEMPLATES = {
     nd("merge","github",600,200,["approve"],{label:"Merge"})];return n;},
   rag: function(){var n=[
     nd("query","db",20,200,[],{label:"User query"}),
-    nd("retriever","rag",165,200,["query"],{label:"Retriever",skill:0.6}),
-    nd("web","rag",310,108,["retriever"],{label:"Web search",skill:0.55}),
-    nd("kb","rag",310,300,["retriever"],{label:"KB search",skill:0.65}),
-    nd("synth","llm",455,200,["web","kb"],{label:"Synthesize",skill:0.5}),
-    nd("factcheck","llm",600,200,["synth"],{label:"Fact check",skill:0.55,catch:0.7}),
+    nd("web","embedder",165,108,["query"],{label:"Web search",skill:0.74}),
+    nd("kb","embedder",165,300,["query"],{label:"KB search",skill:0.82}),
+    nd("rerank","reranker",310,200,["web","kb"],{label:"Reranker",skill:0.85}),
+    nd("synth","reader",455,200,["rerank"],{label:"Grounded answer",skill:0.62}),
+    nd("factcheck","model_reviewer",600,200,["synth"],{label:"Groundedness judge",catch:0.7}),
     nd("answer","db",745,200,["factcheck"],{label:"Answer"})];return n;},
   content: function(){var n=[
     nd("brief","db",20,200,[],{label:"Brief"}),
@@ -178,7 +192,7 @@ var TEMPLATES = {
   incident: function(){var n=[
     nd("alert","slack",20,200,[],{label:"Alert"}),
     nd("triage","llm",165,200,["alert"],{label:"Triage",skill:0.55}),
-    nd("investigate","rag",310,108,["triage"],{label:"Investigate",skill:0.58}),
+    nd("investigate","llm",310,108,["triage"],{label:"Investigate",skill:0.58}),
     nd("mitigate","llm",310,300,["triage"],{label:"Mitigate",skill:0.5}),
     nd("review","reviewer",455,200,["investigate","mitigate"],{label:"IC review"}),
     nd("postmortem","llm",600,200,["review"],{label:"Postmortem",skill:0.6})];return n;},
@@ -214,6 +228,11 @@ var TEMPLATES = {
     nd("c","llm",280,200,["b"],{label:"Agent 3",skill:0.7}),
     nd("d","llm",410,200,["c"],{label:"Agent 4",skill:0.7}),
     nd("e","llm",540,200,["d"],{label:"Agent 5",skill:0.7})];},
+  reviewer_corrector: function(){return [
+    nd("req","db",20,200,[],{label:"Request"}),
+    nd("gen","llm",175,200,["req"],{label:"Draft agent",skill:0.45}),
+    nd("judge","model_reviewer",340,200,["gen"],{label:"Judge — detects",catch:0.80,fix:0.0}),
+    nd("corr","corrector",520,200,["judge"],{label:"Corrector — repairs",catch:0.30,fix:0.20})];},
   blank: function(){return [];}
 };
 var TEMPLATE_HINTS={
@@ -221,12 +240,15 @@ var TEMPLATE_HINTS={
   reviewer_competence:{title:"Reviewer competence.",body:"C_op falls just short: the reviewer's catch rate c is too low to correct the weak draft (σ_corr = σ_raw + (1−σ_raw)·c). Select the reviewer and raise c — or click below — and watch B_eff cross zero.",actions:[{label:"Raise reviewer catch → 0.85",fn:function(){var r=byId("reviewer");if(r)r.catch_rate=0.85;}}]},
   merge_gate:{title:"Merge gate.",body:"The merge is set to ALL-REQUIRED: both branches must be right, so independent errors compound → INFEASIBLE. When the branches do the same job, redesign the merge to take a VOTE (redundant) so a wrong branch is outvoted instead of poisoning the result.",actions:[{label:"Make merge a vote",fn:function(){var g=byId("merge");if(g)g.aggregation="mean";}}]},
   review_loop:{title:"Review loop.",body:"One review pass leaves errors uncaught. A rework loop sends failures back to the agent; each pass compounds the catch rate as 1−(1−c)^k. Raise the reviewer's rework passes and C_op climbs. Loops are modeled by this steady-state effect on effective catch — MSO analyzes the acyclic projection (the package's review edges are metadata, not forward DAG edges).",actions:[{label:"Set review loop → ×3",fn:function(){var r=byId("reviewer");if(r)r.rework=3;}}]},
-  chain_depth:{title:"Chain depth & masking.",body:"Every delegation hop multiplies effective skill and compounds masking (paper Exp. 4). At depth 5 even capable agents decay below target. Remove hops and watch C_op climb toward the single-agent ceiling — only at depth 1 does it clear p_min. Depth itself is the constraint, not any one agent.",actions:[{label:"Remove last hop",fn:function(){var order=["e","d","c","b"];for(var i=0;i<order.length;i++){if(byId(order[i])){var rm=order[i];state.nodes=state.nodes.filter(function(n){return n.id!==rm;});state.nodes.forEach(function(n){n.parents=(n.parents||[]).filter(function(p){return p!==rm;});});break;}}}}]}
+  chain_depth:{title:"Chain depth & masking.",body:"Every delegation hop multiplies effective skill and compounds masking (paper Exp. 4). At depth 5 even capable agents decay below target. Remove hops and watch C_op climb toward the single-agent ceiling — only at depth 1 does it clear p_min. Depth itself is the constraint, not any one agent.",actions:[{label:"Remove last hop",fn:function(){var order=["e","d","c","b"];for(var i=0;i<order.length;i++){if(byId(order[i])){var rm=order[i];state.nodes=state.nodes.filter(function(n){return n.id!==rm;});state.nodes.forEach(function(n){n.parents=(n.parents||[]).filter(function(p){return p!==rm;});});break;}}}}]},
+  reviewer_corrector:{title:"Reviewer ≠ corrector.",body:"Detection is not correction. The judge catches errors well (high catch rate c) but the corrector can barely repair them (low fix rate f), so corrected quality stays stuck: σ_corr = σ_raw + (1−σ_raw)·c·f. A reviewer that only flags adds nothing without repair capacity. Raise the corrector's fix rate (f) and watch B_eff cross zero — this is why the framework models detection and repair as separate competences. (The cockpit applies c·f locally per node — a faithful approximation of a reviewer→corrector pair.)",actions:[{label:"Give the corrector real repair capacity (f → 0.8)",fn:function(){var c=byId("corr");if(c)c.fix_rate=0.8;}},{label:"Or: make the judge self-fix (f → 1.0)",fn:function(){var j=byId("judge");if(j)j.fix_rate=1.0;}}]}
 };
 
 var state = {nodes:[], selected:null};
 var W=108, H=40, NS="http://www.w3.org/2000/svg";
-var CAT_SHAPE={AI:"agent",CRM:"tool",Dev:"tool",Comms:"tool",Human:"human",Data:"data"};
+// Retrieve uses the data (parallelogram) shape to reinforce that it is NOT an
+// agent — it's a vector index + search, not a language model.
+var CAT_SHAPE={Generate:"agent",Govern:"agent",Retrieve:"data",CRM:"tool",Dev:"tool",Comms:"tool",Human:"human",Data:"data"};
 var view={k:1,x:0,y:0};
 var svg=document.getElementById("svg"), $=function(id){return document.getElementById(id);};
 var drag=null, draw=null, pan=null, counter=0;
@@ -243,7 +265,7 @@ function el(tag,attrs){var e=document.createElementNS(NS,tag);for(var k in attrs
 function edges(){var es=[];state.nodes.forEach(function(n){(n.parents||[]).forEach(function(p){es.push({from:p,to:n.id});});});return es;}
 function byId(id){for(var i=0;i<state.nodes.length;i++)if(state.nodes[i].id===id)return state.nodes[i];return null;}
 function effCatch(n){var k=n.rework||1;return k>1?1-Math.pow(1-n.catch_rate,k):n.catch_rate;}
-function pipeline(){return {nodes:state.nodes.map(function(n){return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:effCatch(n),parents:(n.parents||[]).slice(),aggregation:n.aggregation};})};}
+function pipeline(){return {nodes:state.nodes.map(function(n){return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:effCatch(n),fix_rate:n.fix_rate==null?1.0:n.fix_rate,parents:(n.parents||[]).slice(),aggregation:n.aggregation};})};}
 function reaches(from,to){var es=edges(),adj={};es.forEach(function(e){(adj[e.from]=adj[e.from]||[]).push(e.to);});var seen={},q=[from];while(q.length){var x=q.shift();if(x===to)return true;(adj[x]||[]).forEach(function(y){if(!seen[y]){seen[y]=true;q.push(y);}});}return false;}
 function evtPt(e){var r=svg.getBoundingClientRect();return {x:(e.clientX-r.left-view.x)/view.k,y:(e.clientY-r.top-view.y)/view.k};}
 
@@ -319,7 +341,7 @@ function deleteSelected(){var s=state.selected;if(!s)return;
 function addNode(type){counter++;var id=type+"_"+counter;var cw=svg.clientWidth||666;var x=(cw/2-view.x)/view.k-W/2+((counter%3)*22-22);var y=(220-view.y)/view.k+((counter%3)*18);state.nodes.push(nd(id,type,x,y,[]));state.selected={kind:"node",id:id};render();analyze();showInspector();}
 
 function buildPalette(){var cats={};Object.keys(CONN).forEach(function(t){var c=CONN[t].cat;(cats[c]=cats[c]||[]).push(t);});
-  var html="";["AI","Human","CRM","Dev","Comms","Data"].forEach(function(cat){if(!cats[cat])return;html+="<h3>"+cat+"</h3>";cats[cat].forEach(function(t){html+='<button class="chip" data-add="'+t+'"><span class="dot" style="background:'+CAT_COLOR[cat]+'"></span>'+CONN[t].label+'</button>';});});
+  var html="";["Generate","Retrieve","Govern","Human","CRM","Dev","Comms","Data"].forEach(function(cat){if(!cats[cat])return;html+="<h3>"+cat+"</h3>";cats[cat].forEach(function(t){html+='<button class="chip" data-add="'+t+'"><span class="dot" style="background:'+CAT_COLOR[cat]+'"></span>'+CONN[t].label+'</button>';});});
   $("palette").innerHTML=html;
   $("palette").querySelectorAll("[data-add]").forEach(function(b){b.addEventListener("click",function(){addNode(b.getAttribute("data-add"));});});}
 
@@ -328,22 +350,25 @@ function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
   var n=byId(state.selected.id);if(!n){sec.style.display="none";return;}sec.style.display="block";
   var opts=Object.keys(CONN).map(function(t){return '<option value="'+t+'"'+(t===n.type?" selected":"")+'>'+CONN[t].label+'</option>';}).join("");
   var aggs=["product","min","mean"].map(function(a){return '<option value="'+a+'"'+(a===n.aggregation?" selected":"")+'>'+AGG_LABEL[a]+'</option>';}).join("");
+  var fix=n.fix_rate==null?1.0:n.fix_rate;
   box.innerHTML='<div class="field"><label>Name</label><input type="text" id="f-label" value="'+n.label.replace(/"/g,"&quot;")+'"></div>'+
-    '<div class="field"><label>Connector</label><select id="f-type">'+opts+'</select></div>'+
-    '<div class="field"><label>Agent skill σ_skill</label><div class="rng"><input type="range" id="f-skill" min="0.2" max="0.98" step="0.01" value="'+n.sigma_skill+'"><b id="f-skillv">'+n.sigma_skill.toFixed(2)+'</b></div></div>'+
-    '<div class="field"><label>Corrector catch c</label><div class="rng"><input type="range" id="f-catch" min="0.2" max="0.95" step="0.01" value="'+n.catch_rate+'"><b id="f-catchv">'+n.catch_rate.toFixed(2)+'</b></div></div>'+
-    '<div class="field"><label>Drift σ_drift</label><div class="rng"><input type="range" id="f-drift" min="0" max="0.3" step="0.01" value="'+n.drift_rate+'"><b id="f-driftv">'+n.drift_rate.toFixed(2)+'</b></div></div>'+
-    '<div class="field"><label>Merge aggregation (gate)</label><select id="f-agg">'+aggs+'</select></div>'+
-    '<div class="field"><label>Review rework passes (loop) — c_eff='+effCatch(n).toFixed(2)+'</label><div class="rng"><input type="range" id="f-rework" min="1" max="4" step="1" value="'+(n.rework||1)+'"><b id="f-reworkv">×'+(n.rework||1)+'</b></div></div>'+
+    '<div class="field"><label>Component</label><select id="f-type">'+opts+'</select></div>'+
+    '<div class="field"><label>Raw competence — agent skill (σ_skill)</label><div class="rng"><input type="range" id="f-skill" min="0.05" max="0.98" step="0.01" value="'+n.sigma_skill+'"><b id="f-skillv">'+n.sigma_skill.toFixed(2)+'</b></div></div>'+
+    '<div class="field"><label>Reviewer catch rate — detection (c)</label><div class="rng"><input type="range" id="f-catch" min="0" max="0.98" step="0.01" value="'+n.catch_rate+'"><b id="f-catchv">'+n.catch_rate.toFixed(2)+'</b></div></div>'+
+    '<div class="field"><label>Corrector fix rate — repair (f)</label><div class="rng"><input type="range" id="f-fix" min="0" max="1" step="0.01" value="'+fix+'"><b id="f-fixv">'+fix.toFixed(2)+'</b></div></div>'+
+    '<div class="field"><label>Drift rate (σ_drift)</label><div class="rng"><input type="range" id="f-drift" min="0" max="0.3" step="0.01" value="'+n.drift_rate+'"><b id="f-driftv">'+n.drift_rate.toFixed(2)+'</b></div></div>'+
+    '<div class="field"><label>Merge rule for a gate (aggregation)</label><select id="f-agg">'+aggs+'</select></div>'+
+    '<div class="field"><label>Review rework passes (loop) — effective correction c·f='+(effCatch(n)*fix).toFixed(2)+'</label><div class="rng"><input type="range" id="f-rework" min="1" max="4" step="1" value="'+(n.rework||1)+'"><b id="f-reworkv">×'+(n.rework||1)+'</b></div></div>'+
     '<button id="f-del" style="color:var(--tx-danger)">Delete node</button>'+
     '<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px">' +
       (n._prior ? priorChip(n._prior) : '') +
-      '<button id="f-seed-btn" style="width:100%;font-size:12px;margin-top:'+(n._prior?'6px':'0')+'" title="Seed σ_skill or catch_rate from public benchmark table">⊕ Seed from model &amp; task…</button>' +
+      '<button id="f-seed-btn" style="width:100%;font-size:12px;margin-top:'+(n._prior?'6px':'0')+'" title="Seed skill / catch rate / fix rate from public benchmark table">⊕ Seed from model &amp; task…</button>' +
     '</div>';
   $("f-label").addEventListener("input",function(){n.label=this.value;render();});
   $("f-type").addEventListener("change",function(){n.type=this.value;render();analyze();});
   $("f-skill").addEventListener("input",function(){n.sigma_skill=+this.value;$("f-skillv").textContent=n.sigma_skill.toFixed(2);n._prior=null;render();analyze();});
   $("f-catch").addEventListener("input",function(){n.catch_rate=+this.value;$("f-catchv").textContent=n.catch_rate.toFixed(2);n._prior=null;render();analyze();});
+  $("f-fix").addEventListener("input",function(){n.fix_rate=+this.value;$("f-fixv").textContent=(+this.value).toFixed(2);n._prior=null;render();analyze();});
   $("f-drift").addEventListener("input",function(){n.drift_rate=+this.value;$("f-driftv").textContent=n.drift_rate.toFixed(2);});
   $("f-agg").addEventListener("change",function(){n.aggregation=this.value;render();analyze();});
   $("f-rework").addEventListener("input",function(){n.rework=+this.value;$("f-reworkv").textContent="×"+n.rework;render();analyze();});
@@ -360,28 +385,39 @@ function priorChip(p) {
       '<span style="font-weight:500">Prior — '+p.model+' / '+p.task_type.replace(/_/g,' ')+'</span>'+
       '<span style="color:'+col+';font-size:10px">'+bw+'% conf'+mk+'</span>'+
     '</div>'+
-    '<div style="color:var(--text-secondary)">σ_raw '+p.band.low.toFixed(2)+'–'+p.band.mid.toFixed(2)+'–'+p.band.high.toFixed(2)+
-      (p.seeds==="catch_rate"?' (→ catch_rate)':' (→ σ_skill)')+
+    '<div style="color:var(--text-secondary)">'+
+      (p.seeds==="catch_rate"?'catch rate (c)':p.seeds==="fix_rate"?'fix rate (f)':'σ_raw')+' '+
+      p.band.low.toFixed(2)+'–'+p.band.mid.toFixed(2)+'–'+p.band.high.toFixed(2)+
+      (p.seeds==="catch_rate"?' (→ reviewer detection)':p.seeds==="fix_rate"?' (→ corrector repair)':' (→ σ_skill)')+
     '</div>'+
     '<div style="color:var(--text-tertiary);margin-top:2px">'+p.benchmark+'</div>'+
     '<div style="color:var(--tx-warning);font-size:10px;margin-top:3px">Refine with your traces — edit sliders to clear</div>'+
   '</div>';
 }
 
+function fillSeedTasks(model, preferred) {
+  // Only offer tasks the chosen model actually has a prior for.
+  var tSel=$("seed-task");
+  var tasks=MSO_Priors.tasksForModel(model);
+  if(!tasks.length)tasks=MSO_Priors.listTaskTypes();
+  tSel.innerHTML=tasks.map(function(t){return '<option value="'+t+'">'+t.replace(/_/g,' ')+'</option>';}).join("");
+  if(preferred&&tasks.indexOf(preferred)>=0)tSel.value=preferred;
+}
 function openSeedModal(n) {
-  var mSel=$("seed-model"), tSel=$("seed-task");
+  var mSel=$("seed-model");
   mSel.innerHTML=MSO_Priors.listModels().map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join("");
-  tSel.innerHTML=MSO_Priors.listTaskTypes().map(function(t){return '<option value="'+t+'">'+t.replace(/_/g,' ')+'</option>';}).join("");
-  // guess model from node label
+  // preferred task = the component's declared task (CONN[type].task)
+  var preferred=(CONN[n.type]&&CONN[n.type].task)||null;
+  // default the model to one that actually has the node's task, then refine by label
+  var pool=preferred?MSO_Priors.modelsForTask(preferred):MSO_Priors.listModels();
+  if(pool.length)mSel.value=pool[0];
   var lbl=(n.label||"").toLowerCase();
-  MSO_Priors.listModels().forEach(function(m){if(lbl.indexOf(m.split("-")[0])>=0)mSel.value=m;});
-  // guess task from connector type
-  var typeMap={llm:"drafting",rag:"retrieval",classifier:"classification",reviewer:"review",db:"extraction"};
-  if(typeMap[n.type])tSel.value=typeMap[n.type];
+  (pool.length?pool:MSO_Priors.listModels()).forEach(function(m){if(lbl.indexOf(m.split("-")[0])>=0)mSel.value=m;});
+  fillSeedTasks(mSel.value, preferred);
   updateSeedPreview();
   $("seed-modal").style.display="flex";
-  mSel.addEventListener("change",updateSeedPreview);
-  tSel.addEventListener("change",updateSeedPreview);
+  mSel.onchange=function(){fillSeedTasks(mSel.value, preferred);updateSeedPreview();};
+  $("seed-task").onchange=updateSeedPreview;
 }
 
 function updateSeedPreview(){
@@ -391,9 +427,12 @@ function updateSeedPreview(){
   var s=MSO_Priors.seedNode(m,t);
   var p=s.provenance, bw=Math.round(p.confidence*100);
   var relWarn=p.metric_kind==="relative"?'<div style="color:var(--tx-warning);margin-top:4px">⚠ relative evidence — widen your assumptions</div>':'';
-  var seededVal=s.seeds==="catch_rate"?"catch_rate = "+s.catch_rate.toFixed(3):"σ_skill = "+s.sigma_skill.toFixed(3)+" (→ σ_raw ≈ "+((s.sigma_skill||0)*MSO_Priors.GAMMA).toFixed(3)+")";
+  var seededVal, bandLabel;
+  if(s.seeds==="catch_rate"){seededVal="reviewer catch rate (c) = "+s.catch_rate.toFixed(3);bandLabel="catch-rate band";}
+  else if(s.seeds==="fix_rate"){seededVal="corrector fix rate (f) = "+s.fix_rate.toFixed(3);bandLabel="fix-rate band";}
+  else{seededVal="agent skill (σ_skill) = "+s.sigma_skill.toFixed(3)+" (→ σ_raw ≈ "+((s.sigma_skill||0)*MSO_Priors.GAMMA).toFixed(3)+")";bandLabel="σ_raw band";}
   box.innerHTML='<div style="font-weight:500;margin-bottom:4px">'+seededVal+' <span style="font-weight:400;color:var(--text-secondary)">· '+bw+'% confidence</span></div>'+
-    '<div style="margin-bottom:3px">σ_raw band: '+p.band.low.toFixed(2)+' / '+p.band.mid.toFixed(2)+' / '+p.band.high.toFixed(2)+
+    '<div style="margin-bottom:3px">'+bandLabel+': '+p.band.low.toFixed(2)+' / '+p.band.mid.toFixed(2)+' / '+p.band.high.toFixed(2)+
       ' <span style="font-size:10px;color:var(--text-tertiary)">[low/mid/high]</span></div>'+
     '<div style="color:var(--text-secondary)">'+p.benchmark+'</div>'+
     '<div style="color:var(--text-tertiary);font-size:11px;margin-top:3px">'+p.note.slice(0,110)+(p.note.length>110?"…":"")+'</div>'+
@@ -490,6 +529,7 @@ $("seed-apply").addEventListener("click",function(){
   if(!n)return;
   var s=MSO_Priors.seedNode(m,t);
   if(s.seeds==="sigma_skill"){n.sigma_skill=s.sigma_skill;n.catch_rate=s.catch_rate;}
+  else if(s.seeds==="fix_rate"){n.fix_rate=s.fix_rate;}
   else{n.catch_rate=s.catch_rate;}
   n._prior={model:m,task_type:t,band:s.provenance.band,seeds:s.seeds,benchmark:s.provenance.benchmark,metric_kind:s.provenance.metric_kind,note:s.provenance.note};
   $("seed-modal").style.display="none";
