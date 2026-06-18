@@ -72,6 +72,7 @@ nav:
     - Calibrating from Traces: guides/traces.md
     - Reading the Report: guides/interpret.md
   - Methodology:
+    - How the Priors Are Built: methodology/priors.md
     - Priors Evidence Ledger: methodology/priors-evidence.md
   - Paper:
     - Validation (8 Experiments): paper/validation.md
