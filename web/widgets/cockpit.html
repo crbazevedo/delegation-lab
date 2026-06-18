@@ -67,6 +67,22 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
   </div>
 </div>
 
+<div id="seed-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:520px;width:92%;padding:20px 22px">
+    <div style="font-size:17px;font-weight:500;margin-bottom:4px">Seed node from public benchmark data</div>
+    <p class="muted" style="margin:0 0 14px;font-size:13px">Pick a model and the task this node performs. σ_skill or catch_rate will be set from cited benchmark evidence and labeled as a prior. Refine it with your own traces anytime.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="field"><label>Model</label><select id="seed-model" style="width:100%;font:inherit;font-size:13px;padding:5px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg-page);color:var(--text-primary)"></select></div>
+      <div class="field"><label>Task type</label><select id="seed-task" style="width:100%;font:inherit;font-size:13px;padding:5px 7px;border:1px solid var(--border);border-radius:6px;background:var(--bg-page);color:var(--text-primary)"></select></div>
+    </div>
+    <div id="seed-preview" style="background:var(--bg-surface);border-radius:var(--radius);padding:10px 12px;font-size:12px;min-height:64px;line-height:1.5"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+      <button type="button" id="seed-cancel">Cancel</button>
+      <button type="button" id="seed-apply" class="on">Apply prior to node</button>
+    </div>
+  </div>
+</div>
+
 <div class="cockpit">
   <div class="palette" id="palette"></div>
   <div class="canvas-wrap"><svg class="canvas" id="svg"></svg>
@@ -101,6 +117,7 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
 <script src="../mso-core.js"></script>
 <script src="../mso-sim.js"></script>
 <script src="../mso-estimate.js"></script>
+<script src="../mso-priors.js"></script>
 <script>
 var CONN = {
   hubspot:{label:"HubSpot",cat:"CRM",skill:0.85,catch:0.50,drift:0.02},
@@ -318,15 +335,69 @@ function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
     '<div class="field"><label>Drift σ_drift</label><div class="rng"><input type="range" id="f-drift" min="0" max="0.3" step="0.01" value="'+n.drift_rate+'"><b id="f-driftv">'+n.drift_rate.toFixed(2)+'</b></div></div>'+
     '<div class="field"><label>Merge aggregation (gate)</label><select id="f-agg">'+aggs+'</select></div>'+
     '<div class="field"><label>Review rework passes (loop) — c_eff='+effCatch(n).toFixed(2)+'</label><div class="rng"><input type="range" id="f-rework" min="1" max="4" step="1" value="'+(n.rework||1)+'"><b id="f-reworkv">×'+(n.rework||1)+'</b></div></div>'+
-    '<button id="f-del" style="color:var(--tx-danger)">Delete node</button>';
+    '<button id="f-del" style="color:var(--tx-danger)">Delete node</button>'+
+    '<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px">' +
+      (n._prior ? priorChip(n._prior) : '') +
+      '<button id="f-seed-btn" style="width:100%;font-size:12px;margin-top:'+(n._prior?'6px':'0')+'" title="Seed σ_skill or catch_rate from public benchmark table">⊕ Seed from model &amp; task…</button>' +
+    '</div>';
   $("f-label").addEventListener("input",function(){n.label=this.value;render();});
   $("f-type").addEventListener("change",function(){n.type=this.value;render();analyze();});
-  $("f-skill").addEventListener("input",function(){n.sigma_skill=+this.value;$("f-skillv").textContent=n.sigma_skill.toFixed(2);render();analyze();});
-  $("f-catch").addEventListener("input",function(){n.catch_rate=+this.value;$("f-catchv").textContent=n.catch_rate.toFixed(2);render();analyze();});
+  $("f-skill").addEventListener("input",function(){n.sigma_skill=+this.value;$("f-skillv").textContent=n.sigma_skill.toFixed(2);n._prior=null;render();analyze();});
+  $("f-catch").addEventListener("input",function(){n.catch_rate=+this.value;$("f-catchv").textContent=n.catch_rate.toFixed(2);n._prior=null;render();analyze();});
   $("f-drift").addEventListener("input",function(){n.drift_rate=+this.value;$("f-driftv").textContent=n.drift_rate.toFixed(2);});
   $("f-agg").addEventListener("change",function(){n.aggregation=this.value;render();analyze();});
   $("f-rework").addEventListener("input",function(){n.rework=+this.value;$("f-reworkv").textContent="×"+n.rework;render();analyze();});
   $("f-del").addEventListener("click",deleteSelected);
+  $("f-seed-btn").addEventListener("click",function(){openSeedModal(n);});
+}
+
+function priorChip(p) {
+  var bw = Math.round((1-(p.band.high-p.band.low))*100);
+  var mk = p.metric_kind==="relative" ? " · ⚠ relative" : "";
+  var col = p.metric_kind==="relative" ? "var(--tx-warning)" : "var(--tx-success)";
+  return '<div style="background:var(--bg-surface);border-radius:6px;padding:7px 9px;font-size:11px;line-height:1.5">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'+
+      '<span style="font-weight:500">Prior — '+p.model+' / '+p.task_type.replace(/_/g,' ')+'</span>'+
+      '<span style="color:'+col+';font-size:10px">'+bw+'% conf'+mk+'</span>'+
+    '</div>'+
+    '<div style="color:var(--text-secondary)">σ_raw '+p.band.low.toFixed(2)+'–'+p.band.mid.toFixed(2)+'–'+p.band.high.toFixed(2)+
+      (p.seeds==="catch_rate"?' (→ catch_rate)':' (→ σ_skill)')+
+    '</div>'+
+    '<div style="color:var(--text-tertiary);margin-top:2px">'+p.benchmark+'</div>'+
+    '<div style="color:var(--tx-warning);font-size:10px;margin-top:3px">Refine with your traces — edit sliders to clear</div>'+
+  '</div>';
+}
+
+function openSeedModal(n) {
+  var mSel=$("seed-model"), tSel=$("seed-task");
+  mSel.innerHTML=MSO_Priors.listModels().map(function(m){return '<option value="'+m+'">'+m+'</option>';}).join("");
+  tSel.innerHTML=MSO_Priors.listTaskTypes().map(function(t){return '<option value="'+t+'">'+t.replace(/_/g,' ')+'</option>';}).join("");
+  // guess model from node label
+  var lbl=(n.label||"").toLowerCase();
+  MSO_Priors.listModels().forEach(function(m){if(lbl.indexOf(m.split("-")[0])>=0)mSel.value=m;});
+  // guess task from connector type
+  var typeMap={llm:"drafting",rag:"retrieval",classifier:"classification",reviewer:"review",db:"extraction"};
+  if(typeMap[n.type])tSel.value=typeMap[n.type];
+  updateSeedPreview();
+  $("seed-modal").style.display="flex";
+  mSel.addEventListener("change",updateSeedPreview);
+  tSel.addEventListener("change",updateSeedPreview);
+}
+
+function updateSeedPreview(){
+  var m=$("seed-model").value, t=$("seed-task").value;
+  var box=$("seed-preview");
+  if(!MSO_Priors.hasCell(m,t)){box.innerHTML='<span style="color:var(--text-tertiary)">No prior for this combination.</span>';return;}
+  var s=MSO_Priors.seedNode(m,t);
+  var p=s.provenance, bw=Math.round(p.confidence*100);
+  var relWarn=p.metric_kind==="relative"?'<div style="color:var(--tx-warning);margin-top:4px">⚠ relative evidence — widen your assumptions</div>':'';
+  var seededVal=s.seeds==="catch_rate"?"catch_rate = "+s.catch_rate.toFixed(3):"σ_skill = "+s.sigma_skill.toFixed(3)+" (→ σ_raw ≈ "+((s.sigma_skill||0)*MSO_Priors.GAMMA).toFixed(3)+")";
+  box.innerHTML='<div style="font-weight:500;margin-bottom:4px">'+seededVal+' <span style="font-weight:400;color:var(--text-secondary)">· '+bw+'% confidence</span></div>'+
+    '<div style="margin-bottom:3px">σ_raw band: '+p.band.low.toFixed(2)+' / '+p.band.mid.toFixed(2)+' / '+p.band.high.toFixed(2)+
+      ' <span style="font-size:10px;color:var(--text-tertiary)">[low/mid/high]</span></div>'+
+    '<div style="color:var(--text-secondary)">'+p.benchmark+'</div>'+
+    '<div style="color:var(--text-tertiary);font-size:11px;margin-top:3px">'+p.note.slice(0,110)+(p.note.length>110?"…":"")+'</div>'+
+    relWarn;
 }
 
 var lastRisk=null, lastBottleneck=null;
@@ -409,6 +480,20 @@ $("import-go").addEventListener("click",function(){
     if(!parsed.nodes||!parsed.nodes.length)throw new Error("No nodes found in the input.");
     $("import-modal").style.display="none";loadImported(parsed);
   }catch(err){$("import-err").textContent="⚠ "+err.message;}
+});
+$("seed-cancel").addEventListener("click",function(){$("seed-modal").style.display="none";});
+$("seed-modal").addEventListener("click",function(e){if(e.target===this)this.style.display="none";});
+$("seed-apply").addEventListener("click",function(){
+  var m=$("seed-model").value, t=$("seed-task").value;
+  if(!MSO_Priors.hasCell(m,t))return;
+  var n=state.selected&&state.selected.kind==="node"?byId(state.selected.id):null;
+  if(!n)return;
+  var s=MSO_Priors.seedNode(m,t);
+  if(s.seeds==="sigma_skill"){n.sigma_skill=s.sigma_skill;n.catch_rate=s.catch_rate;}
+  else{n.catch_rate=s.catch_rate;}
+  n._prior={model:m,task_type:t,band:s.provenance.band,seeds:s.seeds,benchmark:s.provenance.benchmark,metric_kind:s.provenance.metric_kind,note:s.provenance.note};
+  $("seed-modal").style.display="none";
+  render();analyze();showInspector();
 });
 loadTemplate("sales");
 </script>

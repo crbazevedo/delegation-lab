@@ -20,6 +20,7 @@ import pytest
 from minimal_oversight import _formulae as F
 from minimal_oversight import analyze_pipeline
 from minimal_oversight import estimation as E
+from minimal_oversight import priors as P
 from minimal_oversight.allocation import select_scope
 from minimal_oversight.capacity import check_feasibility
 from minimal_oversight.models import AggregationType, Node, PipelineGraph
@@ -121,6 +122,14 @@ CASES = {
     "scope": [
         {"sigma": [0.667, 0.517, 0.417, 0.375, 0.708, 0.542], "p_min": 0.5, "coverage": 0.0},
         {"sigma": [0.8, 0.4, 0.6, 0.3, 0.7], "p_min": 0.6, "coverage": 0.5},
+    ],
+    # mso-priors.js seeds a node from (model × task) benchmark priors.
+    # Covers generator branch (sigma_skill) and review branch (catch_rate).
+    "seed_node": [
+        {"model": "claude-opus-4", "task_type": "code_generation"},
+        {"model": "gpt-4o", "task_type": "drafting"},
+        {"model": "gemini-2-flash", "task_type": "review"},
+        {"model": "deepseek-r1", "task_type": "extraction"},
     ],
     # web/mso-estimate.js turns a practitioner's real outcomes into per-node
     # sigma_raw / sigma_corr / catch / masking. Pin those to estimation.py.
@@ -250,6 +259,19 @@ def _python_expected() -> dict:
             }
             for r in rep.node_risks
         ])
+    exp["seed_node"] = []
+    for c in CASES["seed_node"]:
+        s = P.seed_node(c["model"], c["task_type"])
+        prov = s["provenance"]
+        exp["seed_node"].append({
+            "seeds": s["seeds"],
+            "sigma_skill": s.get("sigma_skill"),
+            "catch_rate": s["catch_rate"],
+            "confidence": prov["confidence"],
+            "band_low": prov["band"]["low"],
+            "band_mid": prov["band"]["mid"],
+            "band_high": prov["band"]["high"],
+        })
     return exp
 
 
@@ -318,3 +340,13 @@ def test_browser_port_matches_python_reference():
             assert gn["fi"] == en["fi"] and gn["fo"] == en["fo"] and gn["bott"] == en["bott"]
             for k in ["sota", "dc", "masking"]:
                 assert _close(gn[k], en[k]), f"risk {en['name']} {k} mismatch"
+
+    for i, (g, e) in enumerate(zip(got["seed_node"], exp["seed_node"])):
+        c = CASES["seed_node"][i]
+        label = f"{c['model']}|{c['task_type']}"
+        assert g["seeds"] == e["seeds"], f"seed_node seeds mismatch for {label}"
+        for k in ["band_low", "band_mid", "band_high", "confidence"]:
+            assert _close(g[k], e[k]), f"seed_node {k} mismatch for {label}"
+        if e["sigma_skill"] is not None:
+            assert _close(g["sigma_skill"], e["sigma_skill"]), f"seed_node sigma_skill mismatch for {label}"
+        assert _close(g["catch_rate"], e["catch_rate"]), f"seed_node catch_rate mismatch for {label}"
