@@ -462,10 +462,19 @@ function analyze(){
   $("motifs").innerHTML=motifs.length?motifs.map(function(m){var desc=m.risk_description.split(". ")[0];Object.keys(labelOf).sort(function(a,b){return b.length-a.length;}).forEach(function(id){desc=desc.replace(new RegExp('\\b'+id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g'),labelOf[id]);});return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.4"><span class="mtag" style="background:'+MOTIF_COLOR[m.motif]+'22;color:'+MOTIF_COLOR[m.motif]+'">'+m.motif+'</span> '+desc+'.</div>';}).join(""):'<span class="hint">none</span>';
   $("risk").innerHTML=risks.slice(0,5).map(function(x){return '<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px"><span>'+(x.is_bottleneck?'<span style="color:var(--tx-danger)">●</span> ':'')+labelOf[x.name]+'</span><span class="hint">M*'+x.masking_index.toFixed(2)+' · DC'+x.delegation_centrality.toFixed(1)+' · S'+x.sota_score.toFixed(1)+'</span></div>';}).join("");
   var rx=[];
-  if(!r.feasible)rx.push("Redesign: "+labelOf[r.bottleneck]+" caps C_op at "+r.cop.toFixed(3)+". Strengthen it, add a corrector, or lower p_min.");
-  risks.filter(function(x){return x.masking_index>1.4;}).slice(0,2).forEach(function(x){rx.push("Add a blind audit at "+labelOf[x.name]+" (M*="+x.masking_index.toFixed(2)+", DC="+x.delegation_centrality.toFixed(1)+") — review alone masks competence.");});
-  motifs.filter(function(m){return m.motif==="diamond";}).slice(0,1).forEach(function(m){rx.push("Diamond detected — correct the shared source ("+(labelOf[m.nodes[0]]||m.nodes[0])+"), not the merge.");});
-  $("rx").innerHTML=rx.length?rx.slice(0,3).map(function(t){return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.45">→ '+t+'</div>';}).join(""):'<span class="hint">no actions — healthy pipeline</span>';
+  if(!r.feasible)rx.push("Block autonomy / redesign: "+labelOf[r.bottleneck]+" caps C_op at "+r.cop.toFixed(3)+" below target. Strengthen it, add a corrector, or lower the quality target before expanding autonomy.");
+  // Where oversight has highest marginal value: high masking + central nodes.
+  risks.filter(function(x){return x.masking_index>1.4;}).slice(0,2).forEach(function(x){rx.push("Keep review at "+labelOf[x.name]+" (M*="+x.masking_index.toFixed(2)+", DC="+x.delegation_centrality.toFixed(1)+") — corrected quality is masking weak raw competence here.");});
+  // Intervene upstream: a fragile shared source compounds downstream.
+  motifs.filter(function(m){return m.motif==="diamond";}).slice(0,1).forEach(function(m){rx.push("Intervene upstream — diamond detected; correct the shared source ("+(labelOf[m.nodes[0]]||m.nodes[0])+") so both branches inherit the fix, instead of patching the merge.");});
+  // Where autonomy can EXPAND (the MSO principle's positive direction): a
+  // reviewed node whose review is barely lifting quality is a place to reclaim
+  // oversight — only suggested when the pipeline has buffer to spare.
+  if(r.feasible&&r.beff>0){
+    risks.filter(function(x){var nn=byId(x.name);return nn&&(nn.catch_rate>0.1)&&x.masking_index<1.12&&x.name!==r.bottleneck;}).slice(0,1).forEach(function(x){
+      rx.push("Autonomy can expand at "+labelOf[x.name]+" — review is barely lifting it (M*="+x.masking_index.toFixed(2)+"). Reclaim that oversight budget for the high-masking nodes above.");});
+  }
+  $("rx").innerHTML=rx.length?rx.slice(0,4).map(function(t){return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.45">→ '+t+'</div>';}).join(""):'<span class="hint">no actions — healthy pipeline</span>';
   render();
 }
 ["pmin","hw"].forEach(function(id){$(id).addEventListener("input",analyze);});
