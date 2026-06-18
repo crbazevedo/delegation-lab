@@ -76,16 +76,33 @@ def sigma_raw_fixed_point(
 def sigma_corr_fixed_point(
     sigma_raw_star: float,
     catch_rate: float,
+    fix_rate: float = 1.0,
 ) -> float:
-    """Fixed-point corrected quality: σ*_corr = σ*_raw + (1 − σ*_raw) × c.
+    """Fixed-point corrected quality: σ*_corr = σ*_raw + (1 − σ*_raw) × c_eff.
 
-    Ref: Equation 6.
+    The effective correction is decomposed into two independent stages:
+
+        c_eff = catch_rate × fix_rate
+
+    where ``catch_rate`` (*c*) is the **reviewer's** probability of *detecting*
+    an error, and ``fix_rate`` (*f*) is the **corrector's** probability of
+    *successfully repairing* an error that was flagged. The paper's single-number
+    correction model is the special case ``fix_rate = 1`` — i.e. every caught
+    error is perfectly fixed. Separating detection from repair lets a workflow
+    model a reviewer (human or LLM-as-judge) that only produces a verdict, paired
+    with a distinct corrector that consumes that verdict and re-does or patches
+    the work.
+
+    Ref: Equation 6 (with the detection × fix-success generalization).
 
     Args:
         sigma_raw_star: Fixed-point raw competence.
-        catch_rate: Corrector catch probability *c*.
+        catch_rate: Reviewer error-detection probability *c*.
+        fix_rate: Corrector repair-success probability *f* given a flagged error.
+            Defaults to 1.0 (reviewer's catch is perfectly corrected).
     """
-    return sigma_raw_star + (1.0 - sigma_raw_star) * catch_rate
+    c_eff = catch_rate * fix_rate
+    return sigma_raw_star + (1.0 - sigma_raw_star) * c_eff
 
 
 def masking_index(sigma_corr: float, sigma_raw: float) -> float:
@@ -239,6 +256,7 @@ def recursive_chain_quality(
     eta: float,
     delta: float,
     sigma_0: float = 0.0,
+    fix_rate: float = 1.0,
 ) -> float:
     """Recursive chain quality C_op(D) for a linear chain of identical layers.
 
@@ -252,7 +270,9 @@ def recursive_chain_quality(
         sigma_raw_star = sigma_raw_fixed_point(
             sigma_skill_eff, eta, delta, sigma_0=sigma_0
         )
-        sigma_corr_prev = sigma_corr_fixed_point(sigma_raw_star, catch_rate)
+        sigma_corr_prev = sigma_corr_fixed_point(
+            sigma_raw_star, catch_rate, fix_rate
+        )
     return sigma_corr_prev
 
 
@@ -345,6 +365,7 @@ def max_pipeline_depth(
     delta: float = 2.0,
     sigma_0: float = 0.0,
     max_depth: int = 100,
+    fix_rate: float = 1.0,
 ) -> float:
     """Maximum target-feasible depth under the recursive chain model.
 
@@ -362,7 +383,8 @@ def max_pipeline_depth(
     d_max = 0
     for depth in range(1, max_depth + 1):
         quality = recursive_chain_quality(
-            depth, sigma_skill, catch_rate, eta, delta, sigma_0=sigma_0
+            depth, sigma_skill, catch_rate, eta, delta,
+            sigma_0=sigma_0, fix_rate=fix_rate,
         )
         if quality >= p_min:
             d_max = depth
@@ -371,7 +393,8 @@ def max_pipeline_depth(
 
     if d_max == max_depth:
         next_quality = recursive_chain_quality(
-            max_depth + 1, sigma_skill, catch_rate, eta, delta, sigma_0=sigma_0
+            max_depth + 1, sigma_skill, catch_rate, eta, delta,
+            sigma_0=sigma_0, fix_rate=fix_rate,
         )
         if next_quality >= p_min:
             return float("inf")
@@ -386,19 +409,25 @@ def corrector_capacity_threshold(
     p_min: float,
     sigma_raw_star: float,
     catch_rate: float,
+    fix_rate: float = 1.0,
 ) -> float:
     """Minimum review fraction K/N for a target to be feasible.
 
-    K/N >= max(0, (p_min − σ*_raw) / [(1 − σ*_raw) × c])
+    K/N >= max(0, (p_min − σ*_raw) / [(1 − σ*_raw) × c_eff])
+
+    where ``c_eff = catch_rate × fix_rate``. A corrector that only repairs a
+    fraction of the errors its reviewer flags (``fix_rate < 1``) needs a
+    proportionally larger review fraction to hit the same target.
 
     Ref: Section 1, Euler-Lagrange Solution.
     """
     sigma_star = float(np.clip(sigma_raw_star, 0.0, 1.0))
     if p_min <= sigma_star:
         return 0.0
-    if catch_rate <= 0 or (1 - sigma_star) <= 0:
+    c_eff = catch_rate * fix_rate
+    if c_eff <= 0 or (1 - sigma_star) <= 0:
         return float("inf")
-    threshold = (p_min - sigma_star) / ((1 - sigma_star) * catch_rate)
+    threshold = (p_min - sigma_star) / ((1 - sigma_star) * c_eff)
     return max(0.0, threshold)
 
 

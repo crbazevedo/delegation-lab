@@ -2,11 +2,32 @@
 
 from __future__ import annotations
 
+import importlib.util
 import textwrap
+from pathlib import Path
 
 import pytest
 
 from minimal_oversight import priors as P
+
+_REPO = Path(__file__).resolve().parents[1]
+
+
+def test_js_bundle_is_regenerated_from_yaml():
+    """web/mso-priors.js must be freshly generated from priors.yaml.
+
+    Guards against editing priors.yaml without running scripts/gen_priors_js.py.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "gen_priors_js", _REPO / "scripts" / "gen_priors_js.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    generated = mod.build()
+    on_disk = (_REPO / "web" / "mso-priors.js").read_text()
+    assert generated == on_disk, (
+        "web/mso-priors.js is stale — run: python scripts/gen_priors_js.py"
+    )
 
 
 def test_table_loads_and_lists():
@@ -22,7 +43,7 @@ def test_generator_seed_reproduces_sigma_raw_at_fixed_point():
     data = P.load_priors()
     gamma = data["gamma"]
     for (model, task), cell in data["cells"].items():
-        if task == "review":
+        if task in ("review", "correction"):
             continue
         seed = P.seed_node(model, task)
         assert seed["seeds"] == "sigma_skill"
@@ -42,6 +63,24 @@ def test_review_seed_yields_catch_rate():
         assert seed["seeds"] == "catch_rate"
         assert 0.0 <= seed["catch_rate"] <= 1.0
         assert "sigma_skill" not in seed
+
+
+def test_correction_seed_yields_fix_rate():
+    correction_cells = [(m, t) for (m, t) in P.load_priors()["cells"] if t == "correction"]
+    assert correction_cells, "expected at least one correction cell"
+    for model, _ in correction_cells:
+        seed = P.seed_node(model, "correction")
+        assert seed["seeds"] == "fix_rate"
+        assert 0.0 <= seed["fix_rate"] <= 1.0
+        assert "sigma_skill" not in seed
+        assert "catch_rate" not in seed
+
+
+def test_corrector_no_feedback_is_low_fix_rate():
+    """The headline finding: a corrector with no reviewer feedback is unreliable."""
+    no_fb = P.seed_node("corrector-no-feedback", "correction")["fix_rate"]
+    with_fb = P.seed_node("corrector-with-feedback", "correction")["fix_rate"]
+    assert no_fb < with_fb, "self-correction without feedback must be a weaker prior"
 
 
 def test_provenance_block_is_well_formed():

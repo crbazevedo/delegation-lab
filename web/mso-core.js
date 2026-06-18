@@ -42,9 +42,12 @@
     if (denom <= 0) throw new Error("eta + delta must be positive");
     return (eta * sigmaSkill + delta * sigma0) / denom;
   }
-  // Fixed-point corrected quality: σ*_corr = σ_raw + (1−σ_raw)·c (Eq. 6)
-  function sigmaCorrFixedPoint(sigmaRaw, catchRate) {
-    return sigmaRaw + (1 - sigmaRaw) * catchRate;
+  // Fixed-point corrected quality: σ*_corr = σ_raw + (1−σ_raw)·c_eff (Eq. 6).
+  // c_eff = catchRate (reviewer detection) × fixRate (corrector repair).
+  // fixRate defaults to 1 → the paper's single-number model (caught == fixed).
+  function sigmaCorrFixedPoint(sigmaRaw, catchRate, fixRate) {
+    var f = fixRate == null ? 1 : fixRate;
+    return sigmaRaw + (1 - sigmaRaw) * catchRate * f;
   }
   // Masking index M* = σ_corr/σ_raw; > 1 indicates masking
   function maskingIndex(sigmaCorr, sigmaRaw) {
@@ -185,6 +188,7 @@
       var n = byId[id];
       var skill = n.sigma_skill == null ? 0.55 : n.sigma_skill;
       var c = n.catch_rate == null ? 0.65 : n.catch_rate;
+      var f = n.fix_rate == null ? 1 : n.fix_rate;
       var parents = n.parents || [];
       var skillEff;
       if (parents.length) {
@@ -192,7 +196,7 @@
         skillEff = effectiveSkill(skill, pc, n.aggregation || "product");
       } else skillEff = skill;
       var sr = sigmaRawFixedPoint(skillEff, eta, delta, s0);
-      var sc = sigmaCorrFixedPoint(sr, c);
+      var sc = sigmaCorrFixedPoint(sr, c, f);
       corr[id] = sc; caps[id] = sc;
     });
     return caps;
@@ -220,8 +224,9 @@
     var perNode = {};
     nodes.forEach(function (n) {
       var c = n.catch_rate == null ? 0.65 : n.catch_rate;
+      var f = n.fix_rate == null ? 1 : n.fix_rate;
       var lsr = sigmaRawFixedPoint(n.sigma_skill == null ? 0.55 : n.sigma_skill, eta, delta, s0);
-      var lsc = sigmaCorrFixedPoint(lsr, c);
+      var lsc = sigmaCorrFixedPoint(lsr, c, f);
       perNode[n.id] = {
         sigma_raw: lsr, sigma_corr: lsc, masking: maskingIndex(lsc, lsr),
         fisher: fisherInformation(lsr), capacity: caps[n.id]

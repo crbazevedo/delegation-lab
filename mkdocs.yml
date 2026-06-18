@@ -65,12 +65,16 @@ nav:
     - Autonomy Time: concepts/autonomy.md
     - Topology as Governance: concepts/topology.md
   - Guides:
+    - The Questions It Answers: guides/questions.md
     - Analyzing a Pipeline: guides/analyze.md
     - Interactive Companion: guides/interactive.md
     - LangGraph Integration: guides/langgraph.md
     - ADK Integration: guides/adk.md
     - Calibrating from Traces: guides/traces.md
     - Reading the Report: guides/interpret.md
+  - Methodology:
+    - How the Priors Are Built: methodology/priors.md
+    - Priors Evidence Ledger: methodology/priors-evidence.md
   - Paper:
     - Validation (8 Experiments): paper/validation.md
     - Equation-to-Code Reference: paper/references.md
