@@ -5,6 +5,33 @@ The repository ships a dependency-free, embeddable widget suite under
 computes the paper's quantities **live in the browser** — the same equations as
 this package, validated against it.
 
+## Try it now
+
+- **Live governance cockpit:**
+  [crbazevedo.github.io/delegation-lab/app/widgets/cockpit.html](https://crbazevedo.github.io/delegation-lab/app/widgets/cockpit.html)
+  — build or load a delegated workflow and read the governance off it live.
+- **Widget gallery:**
+  [crbazevedo.github.io/delegation-lab/app/](https://crbazevedo.github.io/delegation-lab/app/)
+- **Quickstart on *your* pipeline (Colab):**
+  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/crbazevedo/delegation-lab/blob/main/notebooks/00_quickstart_your_pipeline.ipynb)
+
+### Import your own pipeline
+
+The cockpit's **⤓ Import your pipeline** button turns *your* real workflow into a
+governed graph. Paste any of:
+
+- **Trace events** — `[{"task_id", "node_id", "outcome", "corrected"}, ...]`,
+  where `outcome` is the step's success *before* review and `corrected` is
+  success *after*. The cockpit estimates σ_raw, σ_corr, the catch rate, and the
+  masking index per node, and infers edges from the order steps appear.
+- **A LangGraph graph** — `app.get_graph().to_json()`.
+- **Plain nodes** — `{"nodes": [...], "edges": [...]}`.
+
+The exact same trace JSON drives the
+[Colab quickstart](https://colab.research.google.com/github/crbazevedo/delegation-lab/blob/main/notebooks/00_quickstart_your_pipeline.ipynb),
+so the numbers you see in the browser match `analyze_pipeline()` in Python. The
+estimation is pinned to `minimal_oversight.estimation` by `tests/test_parity.py`.
+
 ## Run it locally
 
 No build step required:
@@ -17,7 +44,7 @@ cd web && python -m http.server 8000   # then open http://localhost:8000
 
 | Widget | Demonstrates |
 |--------|--------------|
-| **Governance cockpit** | Build or load a delegated workflow from a connector library (HubSpot, Salesforce, GitHub, Jira, Slack, LLM, human review…), edit the graph, and read feasibility (`C_op`), the bottleneck, masking, motifs, delegation centrality, and risk off it live. Includes merge gates, review loops, didactic lessons, and a **Run** mode that animates task tokens through the graph. |
+| **Governance cockpit** | Build or load a delegated workflow from a connector library (HubSpot, Salesforce, GitHub, Jira, Slack, LLM, human review…), **or import your own pipeline** from traces / LangGraph, edit the graph, and read feasibility (`C_op`), the bottleneck, masking, motifs, delegation centrality, and risk off it live. Includes merge gates, review loops, didactic lessons, and a **Run** mode that animates task tokens through the graph. |
 | **Feasibility & oversight cockpit** | `C_op` vs `p_min`, autonomy buffer `B_eff`, capacity cliff `H_crit`, per-node masking. |
 | **The masking pathology** | `M* = σ_corr/σ_raw`, reproducing the paper's `M*=1.83`. |
 | **Water-filling oversight** | The Euler–Lagrange allocation `α*(x)` at least cost. |

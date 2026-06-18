@@ -130,9 +130,19 @@
     });
   }
 
+  // Parse JSON, but tolerate a pasted Python/JS literal with trailing commas
+  // (e.g. copying an EVENTS = [...] list straight out of a notebook).
+  function lenientParse(text) {
+    try { return JSON.parse(text); }
+    catch (e) {
+      var cleaned = text.replace(/,(\s*[}\]])/g, "$1");
+      return JSON.parse(cleaned);
+    }
+  }
+
   // Main entry: parse arbitrary input text/JSON → cockpit nodes + a source label.
   function buildPipeline(input) {
-    var data = typeof input === "string" ? JSON.parse(input) : input;
+    var data = typeof input === "string" ? lenientParse(input) : input;
     if (Array.isArray(data)) {
       // events or structured traces
       var traces = (data.length && (data[0].node_id != null || data[0].nodeId != null))

@@ -8,6 +8,7 @@ on:
       - "docs/**"
       - "mkdocs.yml"
       - "src/**"
+      - "web/**"
 
 permissions:
   contents: write
@@ -25,6 +26,11 @@ jobs:
 
       - name: Install dependencies
         run: pip install -e ".[dev]" mkdocs-material "mkdocstrings[python]"
+
+      - name: Stage the interactive widgets into the docs site (served at /app/)
+        run: |
+          cp -r web docs/app
+          rm -f docs/app/README.md
 
       - name: Deploy to GitHub Pages
         run: mkdocs gh-deploy --force

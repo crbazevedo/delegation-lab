@@ -57,6 +57,7 @@ extra_javascript:
 nav:
   - Home: index.md
   - Quick Start: quickstart.md
+  - Try it live ↗: https://crbazevedo.github.io/delegation-lab/app/widgets/cockpit.html
   - Concepts:
     - What is a Delegation?: concepts/delegation.md
     - The Masking Problem: concepts/masking.md
