@@ -18,12 +18,23 @@
 #     absolute benchmark. metric_kind=relative cells always carry a wider band.
 #   - review/catch_rate is the SOFTEST column (little public evidence) -> widest
 #     bands; treat as a placeholder until the user logs corrected outcomes.
+#
+# Sources:
+#   LiveBench Coding: https://livebench.ai/livebench.pdf (June-2024, arXiv 2406.19314)
+#   JSONSchemaBench: https://arxiv.org/abs/2501.10868 (EPFL-DLab, Feb 2025)
+#   Vectara HHEM: https://github.com/vectara/hallucination-leaderboard
+#   FaithBench/RAGTruth: https://arxiv.org/abs/2505.04847 (EMNLP 2025)
+#   AlpacaEval LC: https://arxiv.org/abs/2404.04475
+#   MT-Bench: https://arxiv.org/abs/2306.05685
+#   RewardBench-2: https://arxiv.org/abs/2506.01937
+#   CriticBench: https://arxiv.org/pdf/2402.14809
+#   FaithJudge: https://arxiv.org/abs/2505.04847
 
 meta:
   schema_version: 1
   gamma: 0.8333333333333334   # return-operator fixed-point gain eta/(eta+delta)=10/12
-  # status flips to "curated" when the cited research-pass values land.
-  status: placeholder
+  status: curated              # placeholder -> curated after research pass (2026-06-17)
+  observed_date: "2026-06-17"  # date this table was compiled; check for staleness
   generator_default_catch_rate: 0.0   # a generator does not correct its parent
 
 task_types:
@@ -34,66 +45,1001 @@ task_types:
   - retrieval
   - review        # catch-rate proxy
 
-# --- PLACEHOLDER ROWS (abstract model tiers, NOT real models) -----------------
-# These exist only to exercise the loader + tests until the cited per-model
-# values from the research pass replace them. Do not ship as real guidance.
+# ---- CODE GENERATION ----------------------------------------------------------
+# Anchor: LiveBench Coding (contamination-limited, ground-truth scored, no LLM
+# judge, LCB-anchored pass-style). Scores in [0,100]; mapped to sigma_raw with
+# ~10% domain-shift discount and widened bands. Frontier 2026 models (Opus/
+# Sonnet 4.x, o-series, Gemini 2.x) lack clean 2026 absolute numbers and are
+# interpolated up from June-2024 snapshots via relative leaderboards — flagged.
+# HumanEval cross-check: confirms small-model HumanEval inflates (~87% → SWE-
+# bench-Verified ~23%), so bands are wide to capture both saturation cases.
+# Source: https://livebench.ai/livebench.pdf (Table 1, June 2024)
 priors:
-  - model: _placeholder_frontier
+  - model: claude-opus-4
     task_type: code_generation
-    sigma_raw: { low: 0.60, mid: 0.70, high: 0.80 }
-    primary_benchmark: PLACEHOLDER
+    sigma_raw: { low: 0.62, mid: 0.74, high: 0.86 }
+    primary_benchmark: LiveBench-Coding
+    metric: pass@1 (LCB-style, ground-truth)
+    metric_kind: absolute
+    reported_value: "63.2 (claude-3.5-sonnet anchor) + upward interpolation"
+    sample_size: "~500 problems (LiveCodeBench)"
+    observed_date: "2024-06"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: interpolated above claude-3.5-sonnet 63.2 via relative leaderboard; 10% domain-shift discount; wide band
+
+  - model: claude-sonnet-4
+    task_type: code_generation
+    sigma_raw: { low: 0.58, mid: 0.70, high: 0.83 }
+    primary_benchmark: LiveBench-Coding
+    metric: pass@1 (LCB-style, ground-truth)
+    metric_kind: absolute
+    reported_value: "63.2 (claude-3.5-sonnet best snapshot)"
+    sample_size: "~500 problems (LiveCodeBench)"
+    observed_date: "2024-06"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: anchored to claude-3.5-sonnet 63.2; 10% domain-shift discount; Sonnet-4 interpolated near that anchor
+
+  - model: claude-haiku-4
+    task_type: code_generation
+    sigma_raw: { low: 0.30, mid: 0.45, high: 0.62 }
+    primary_benchmark: LiveBench-Coding
+    metric: pass@1 (LCB-style, ground-truth)
+    metric_kind: absolute
+    reported_value: "24.5 (claude-3-haiku LiveBench); HumanEval 75.9 (saturated)"
+    sample_size: "~500 problems"
+    observed_date: "2024-06"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: anchored claude-3-haiku 24.5; HumanEval 75.9 inflates vs SWE-bench ~23%; wide band captures both
+
+  - model: gpt-4o
+    task_type: code_generation
+    sigma_raw: { low: 0.40, mid: 0.50, high: 0.62 }
+    primary_benchmark: LiveBench-Coding
+    metric: pass@1 (LCB-style, ground-truth)
+    metric_kind: absolute
+    reported_value: "46.4 (gpt-4o Jun-2024)"
+    sample_size: "~500 problems"
+    observed_date: "2024-06"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: direct read from Table 1; 10% domain-shift discount; model may have since improved
+
+  - model: gpt-4o-mini
+    task_type: code_generation
+    sigma_raw: { low: 0.32, mid: 0.46, high: 0.62 }
+    primary_benchmark: LiveBench-Coding + HumanEval cross-check
     metric: pass@1
     metric_kind: absolute
-    reported_value: null
+    reported_value: "HumanEval 87.2% (vendor); SWE-bench-Verified ~23% (harder); LiveBench interpolated"
     sample_size: null
-    observed_date: null
-    source_url: null
-    normalization_note: placeholder row — replace with cited value
+    observed_date: "2024-07"
+    source_url: https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/
+    normalization_note: HumanEval 87.2 inflates vs SWE-bench-Verified ~23%; mid splits the difference; wide band
 
-  - model: _placeholder_frontier
-    task_type: classification
-    sigma_raw: { low: 0.70, mid: 0.80, high: 0.88 }
-    primary_benchmark: PLACEHOLDER
-    metric: accuracy
-    metric_kind: absolute
-    reported_value: null
-    sample_size: null
-    observed_date: null
-    source_url: null
-    normalization_note: placeholder row — replace with cited value
-
-  - model: _placeholder_frontier
-    task_type: review
-    catch_rate: { low: 0.40, mid: 0.60, high: 0.80 }
-    primary_benchmark: PLACEHOLDER
-    metric: judge_human_agreement
+  - model: openai-o3
+    task_type: code_generation
+    sigma_raw: { low: 0.55, mid: 0.68, high: 0.84 }
+    primary_benchmark: LiveBench-Coding (interpolated)
+    metric: pass@1 (interpolated via relative leaderboard)
     metric_kind: relative
-    reported_value: null
+    reported_value: "no clean 2026 absolute snapshot; interpolated as reasoning-leader"
     sample_size: null
-    observed_date: null
-    source_url: null
-    normalization_note: placeholder row — catch-rate is the softest column
+    observed_date: "2025-12"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: relative-only interpolation; reasoning models excel on coding; wide band mandatory
 
-  - model: _placeholder_small
+  - model: gemini-2-pro
     task_type: code_generation
-    sigma_raw: { low: 0.35, mid: 0.45, high: 0.55 }
-    primary_benchmark: PLACEHOLDER
-    metric: pass@1
+    sigma_raw: { low: 0.45, mid: 0.58, high: 0.74 }
+    primary_benchmark: LiveBench-Coding
+    metric: pass@1 (LCB-style, ground-truth)
     metric_kind: absolute
-    reported_value: null
-    sample_size: null
-    observed_date: null
-    source_url: null
-    normalization_note: placeholder row — replace with cited value
+    reported_value: "32.8 (gemini-1.5-pro anchor) + upward interpolation"
+    sample_size: "~500 problems"
+    observed_date: "2024-06"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: interpolated above gemini-1.5-pro 32.8; Gemini 2.x generation boost assumed modest
 
-  - model: _placeholder_small
-    task_type: classification
-    sigma_raw: { low: 0.55, mid: 0.65, high: 0.74 }
-    primary_benchmark: PLACEHOLDER
-    metric: accuracy
+  - model: gemini-2-flash
+    task_type: code_generation
+    sigma_raw: { low: 0.35, mid: 0.48, high: 0.62 }
+    primary_benchmark: LiveBench-Coding
+    metric: pass@1 (LCB-style, ground-truth)
     metric_kind: absolute
-    reported_value: null
+    reported_value: "39.1 (gemini-1.5-flash Jun-2024)"
+    sample_size: "~500 problems"
+    observed_date: "2024-06"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: anchored to gemini-1.5-flash 39.1; 2.0/2.5 Flash improvements likely push mid up; widen
+
+  - model: llama-3.3-70b
+    task_type: code_generation
+    sigma_raw: { low: 0.35, mid: 0.48, high: 0.62 }
+    primary_benchmark: LiveBench-Coding (interpolated)
+    metric: pass@1 (interpolated)
+    metric_kind: relative
+    reported_value: "interpolated; no clean LiveBench row for llama-3.3-70b"
+    sample_size: null
+    observed_date: "2024-12"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: relative-only interpolation from model-class ranking; wide band
+
+  - model: deepseek-v3
+    task_type: code_generation
+    sigma_raw: { low: 0.42, mid: 0.55, high: 0.70 }
+    primary_benchmark: LiveBench-Coding
+    metric: pass@1 (LCB-style)
+    metric_kind: absolute
+    reported_value: "41.1 (deepseek-coder-v2) + upward interpolation for V3"
+    sample_size: "~500 problems"
+    observed_date: "2024-06"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: anchored deepseek-coder-v2 41.1; V3 and R1 interpolated up; coding-focused model widens high end
+
+  - model: deepseek-r1
+    task_type: code_generation
+    sigma_raw: { low: 0.48, mid: 0.62, high: 0.78 }
+    primary_benchmark: LiveBench-Coding (interpolated)
+    metric: pass@1 (interpolated via reasoning premium)
+    metric_kind: relative
+    reported_value: "deepseek-coder-v2 41.1 + reasoning-model premium interpolation"
+    sample_size: null
+    observed_date: "2025-01"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: R1 reasoning premium likely lifts coding above V3 base; no clean 2025 absolute snapshot
+
+  - model: qwen2.5-72b
+    task_type: code_generation
+    sigma_raw: { low: 0.32, mid: 0.45, high: 0.60 }
+    primary_benchmark: LiveBench-Coding
+    metric: pass@1 (LCB-style)
+    metric_kind: absolute
+    reported_value: "31.8 (qwen2-72b Jun-2024)"
+    sample_size: "~500 problems"
+    observed_date: "2024-06"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: anchored qwen2-72b 31.8; Qwen2.5 improvements likely push mid up modestly
+
+  - model: mistral-large
+    task_type: code_generation
+    sigma_raw: { low: 0.32, mid: 0.45, high: 0.60 }
+    primary_benchmark: LiveBench-Coding (interpolated)
+    metric: pass@1 (interpolated)
+    metric_kind: relative
+    reported_value: "no clean LiveBench row; interpolated from class ranking"
+    sample_size: null
+    observed_date: "2024-12"
+    source_url: https://livebench.ai/livebench.pdf
+    normalization_note: relative-only interpolation; no direct LiveBench measurement found
+
+# ---- CLASSIFICATION / ROUTING / INTENT ----------------------------------------
+# CAUTION: NO surviving absolute benchmark in the verified set. The MMLU vendor
+# proxy (GPT-4o-mini 82.0%) was REFUTED 2-1 (vendor-optimism + contamination).
+# Cells below are conservative interpolations from coding/faithfulness model
+# orderings. This is the second-softest task-type after review/critique.
+# Refine from traces immediately — do not trust these numbers past 5 observations.
+# Source: derived conservatively; see research caveats
+
+  - model: claude-opus-4
+    task_type: classification
+    sigma_raw: { low: 0.85, mid: 0.92, high: 0.97 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; frontier tier well-specified task"
     sample_size: null
     observed_date: null
     source_url: null
-    normalization_note: placeholder row — replace with cited value
+    normalization_note: NO absolute benchmark survived verification; frontier tier conservative interpolation; refine immediately
+
+  - model: claude-sonnet-4
+    task_type: classification
+    sigma_raw: { low: 0.78, mid: 0.87, high: 0.94 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; mid tier well-specified task"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO absolute benchmark survived verification; mid tier conservative interpolation; refine immediately
+
+  - model: claude-haiku-4
+    task_type: classification
+    sigma_raw: { low: 0.70, mid: 0.82, high: 0.92 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; small tier well-specified task"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO absolute benchmark survived verification; small tier conservative interpolation; refine immediately
+
+  - model: gpt-4o
+    task_type: classification
+    sigma_raw: { low: 0.78, mid: 0.87, high: 0.94 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; mid tier well-specified task"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: MMLU vendor proxy refuted; mid tier conservative interpolation; wide band
+
+  - model: gpt-4o-mini
+    task_type: classification
+    sigma_raw: { low: 0.70, mid: 0.82, high: 0.92 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; small tier"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: MMLU vendor proxy refuted; small tier conservative interpolation
+
+  - model: openai-o3
+    task_type: classification
+    sigma_raw: { low: 0.85, mid: 0.92, high: 0.97 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; frontier tier"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: reasoning premium assumed; frontier tier conservative interpolation; refine immediately
+
+  - model: gemini-2-pro
+    task_type: classification
+    sigma_raw: { low: 0.78, mid: 0.87, high: 0.94 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; mid-to-frontier tier"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO absolute benchmark survived verification; mid tier conservative interpolation
+
+  - model: gemini-2-flash
+    task_type: classification
+    sigma_raw: { low: 0.75, mid: 0.85, high: 0.93 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; mid tier Flash"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO absolute benchmark survived verification; mid tier conservative interpolation
+
+  - model: llama-3.3-70b
+    task_type: classification
+    sigma_raw: { low: 0.75, mid: 0.85, high: 0.93 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; mid tier"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO absolute benchmark survived verification; mid tier conservative interpolation
+
+  - model: deepseek-v3
+    task_type: classification
+    sigma_raw: { low: 0.78, mid: 0.87, high: 0.94 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; mid tier"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO absolute benchmark survived verification; mid tier conservative interpolation
+
+  - model: deepseek-r1
+    task_type: classification
+    sigma_raw: { low: 0.78, mid: 0.87, high: 0.94 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; reasoning premium uncertain for routing"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO absolute benchmark survived verification; mid tier; reasoning premium unclear for classification
+
+  - model: qwen2.5-72b
+    task_type: classification
+    sigma_raw: { low: 0.75, mid: 0.85, high: 0.93 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; mid tier"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO absolute benchmark survived verification; mid tier conservative interpolation
+
+  - model: mistral-large
+    task_type: classification
+    sigma_raw: { low: 0.75, mid: 0.85, high: 0.93 }
+    primary_benchmark: NONE (conservative interpolation)
+    metric: accuracy (estimated)
+    metric_kind: relative
+    reported_value: "no reliable public absolute benchmark; mid tier"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: NO absolute benchmark survived verification; mid tier conservative interpolation
+
+# ---- EXTRACTION / STRUCTURED OUTPUT -------------------------------------------
+# Anchor: JSONSchemaBench (EPFL-DLab, Feb 2025, arXiv 2501.10868).
+# CRITICAL: dominated by schema-difficulty x constrained-decoding, NOT model
+# family. Rows below assume MODERATE schema (most common real-world case) with
+# PLAIN prompting (no constrained decoding). For constrained-decoding APIs,
+# raise mid by +0.10 to +0.20. For hard/deeply-nested schemas, lower low by -0.30.
+# Source: https://arxiv.org/abs/2501.10868 (Table 4, Feb 2025)
+
+  - model: claude-opus-4
+    task_type: extraction
+    sigma_raw: { low: 0.82, mid: 0.91, high: 0.98 }
+    primary_benchmark: JSONSchemaBench
+    metric: schema-compliance rate (plain prompting, moderate schema)
+    metric_kind: absolute
+    reported_value: "frontier tier: GlaiveAI ~0.97-1.00 (constrained); plain moderate ~0.85-0.95"
+    sample_size: "1707-1943 schemas per dataset"
+    observed_date: "2025-02"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: moderate schema, plain prompting; frontier tier; schema difficulty dominates; wide band
+
+  - model: claude-sonnet-4
+    task_type: extraction
+    sigma_raw: { low: 0.75, mid: 0.87, high: 0.96 }
+    primary_benchmark: JSONSchemaBench
+    metric: schema-compliance rate (plain prompting, moderate schema)
+    metric_kind: absolute
+    reported_value: "mid tier: moderate schema compliance ~0.80-0.93"
+    sample_size: "1707-1943 schemas per dataset"
+    observed_date: "2025-02"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: moderate schema, plain prompting; mid tier; wide band to capture difficulty variance
+
+  - model: claude-haiku-4
+    task_type: extraction
+    sigma_raw: { low: 0.50, mid: 0.70, high: 0.88 }
+    primary_benchmark: JSONSchemaBench
+    metric: schema-compliance rate (plain prompting, moderate schema)
+    metric_kind: absolute
+    reported_value: "small tier: 1B-class floor ~0.13 hard, ~0.65 easy (Llama-3.2-1B)"
+    sample_size: "1707-1943 schemas per dataset"
+    observed_date: "2025-02"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: small/efficient tier; Llama-1B floor; Haiku expected above floor but degrades on hard schemas
+
+  - model: gpt-4o
+    task_type: extraction
+    sigma_raw: { low: 0.80, mid: 0.91, high: 0.98 }
+    primary_benchmark: JSONSchemaBench
+    metric: schema-compliance rate (constrained-decoding, moderate schema)
+    metric_kind: absolute
+    reported_value: "OpenAI constrained GlaiveAI 1.00, GitHub-Easy 0.97, GitHub-Hard 1.00 (but low coverage on hard)"
+    sample_size: "1707-1943 schemas per dataset"
+    observed_date: "2025-02"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: OpenAI JSON-mode raises compliance on accepted schemas; coverage drops on hard schemas; moderate schema default
+
+  - model: gpt-4o-mini
+    task_type: extraction
+    sigma_raw: { low: 0.65, mid: 0.80, high: 0.93 }
+    primary_benchmark: JSONSchemaBench
+    metric: schema-compliance rate (moderate schema)
+    metric_kind: absolute
+    reported_value: "mid tier small model; JSON-mode helps on accepted schemas"
+    sample_size: "1707-1943 schemas per dataset"
+    observed_date: "2025-02"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: smaller model; JSON-mode available but coverage limited; wide band
+
+  - model: openai-o3
+    task_type: extraction
+    sigma_raw: { low: 0.82, mid: 0.92, high: 0.99 }
+    primary_benchmark: JSONSchemaBench (interpolated)
+    metric: schema-compliance rate (frontier reasoning)
+    metric_kind: absolute
+    reported_value: "interpolated; structured-output APIs + reasoning likely near-ceiling on moderate schemas"
+    sample_size: null
+    observed_date: "2025-12"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: frontier reasoning model; constrained API expected; interpolated upward; wide band
+
+  - model: gemini-2-pro
+    task_type: extraction
+    sigma_raw: { low: 0.80, mid: 0.91, high: 0.98 }
+    primary_benchmark: JSONSchemaBench
+    metric: schema-compliance rate (constrained decoding, moderate schema)
+    metric_kind: absolute
+    reported_value: "Gemini constrained GlaiveAI 1.00, GitHub-Hard 1.00 (but low coverage on hard)"
+    sample_size: "1707-1943 schemas per dataset"
+    observed_date: "2025-02"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: Gemini constrained-mode matches OpenAI on accepted schemas; coverage limited on hard schemas
+
+  - model: gemini-2-flash
+    task_type: extraction
+    sigma_raw: { low: 0.72, mid: 0.85, high: 0.95 }
+    primary_benchmark: JSONSchemaBench
+    metric: schema-compliance rate (moderate schema)
+    metric_kind: absolute
+    reported_value: "mid tier Flash; constrained-mode available but less than Pro"
+    sample_size: "1707-1943 schemas per dataset"
+    observed_date: "2025-02"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: mid tier; constrained output may vary; moderate schema assumed
+
+  - model: llama-3.3-70b
+    task_type: extraction
+    sigma_raw: { low: 0.65, mid: 0.80, high: 0.93 }
+    primary_benchmark: JSONSchemaBench
+    metric: schema-compliance rate (plain prompting, moderate schema)
+    metric_kind: absolute
+    reported_value: "mid tier open model; no constrained-decode API by default"
+    sample_size: "1707-1943 schemas per dataset"
+    observed_date: "2025-02"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: mid tier open model; plain prompting assumed; degrades on hard schemas
+
+  - model: deepseek-v3
+    task_type: extraction
+    sigma_raw: { low: 0.72, mid: 0.85, high: 0.95 }
+    primary_benchmark: JSONSchemaBench (interpolated)
+    metric: schema-compliance rate (moderate schema)
+    metric_kind: absolute
+    reported_value: "interpolated; strong instruction-following model"
+    sample_size: null
+    observed_date: "2025-01"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: interpolated mid-to-frontier tier; V3 strong at structured output
+
+  - model: deepseek-r1
+    task_type: extraction
+    sigma_raw: { low: 0.65, mid: 0.80, high: 0.93 }
+    primary_benchmark: JSONSchemaBench (interpolated)
+    metric: schema-compliance rate (moderate schema)
+    metric_kind: relative
+    reported_value: "interpolated; reasoning models sometimes over-think simple extraction"
+    sample_size: null
+    observed_date: "2025-01"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: reasoning overhead may reduce extraction accuracy; conservative mid-tier interpolation
+
+  - model: qwen2.5-72b
+    task_type: extraction
+    sigma_raw: { low: 0.65, mid: 0.80, high: 0.93 }
+    primary_benchmark: JSONSchemaBench (interpolated)
+    metric: schema-compliance rate (moderate schema)
+    metric_kind: absolute
+    reported_value: "interpolated; mid tier"
+    sample_size: null
+    observed_date: "2024-12"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: mid tier; Qwen2.5 strong at structured output but no direct JSONSchemaBench row
+
+  - model: mistral-large
+    task_type: extraction
+    sigma_raw: { low: 0.65, mid: 0.80, high: 0.93 }
+    primary_benchmark: JSONSchemaBench (interpolated)
+    metric: schema-compliance rate (moderate schema)
+    metric_kind: relative
+    reported_value: "interpolated; no direct JSONSchemaBench row found"
+    sample_size: null
+    observed_date: "2024-12"
+    source_url: https://arxiv.org/abs/2501.10868
+    normalization_note: relative-only interpolation; mid tier; wide band
+
+# ---- DRAFTING / OPEN GENERATION / SUMMARIZATION --------------------------------
+# NO clean absolute per-step success benchmark for open generation.
+# Faithfulness sub-dimension: seeded from Vectara HHEM (absolute faithfulness rate
+# for grounded summarization). Style/instruction-following quality is RELATIVE-ONLY
+# (AlpacaEval, Arena Elo) and is NOT inverted to sigma — bands below reflect
+# faithfulness-subdimension only. Flag to user that IQ/style quality is unquantified.
+# Source: Vectara HHEM (https://github.com/vectara/hallucination-leaderboard) +
+#         FaithBench/RAGTruth (https://arxiv.org/abs/2505.04847)
+
+  - model: claude-opus-4
+    task_type: drafting
+    sigma_raw: { low: 0.83, mid: 0.89, high: 0.95 }
+    primary_benchmark: Vectara-HHEM + FaithBench/RAGTruth (faithfulness subdim)
+    metric: factual-consistency rate (faithfulness proxy for drafting)
+    metric_kind: absolute
+    reported_value: "claude-3.7-sonnet 83.95% faithfulness; Opus interpolated slightly above"
+    sample_size: "511 human-annotated items (FaithBench); 7700+ docs (HHEM)"
+    observed_date: "2025-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: faithfulness subdim ONLY; style/IF quality is relative-only (AlpacaEval/Arena) and NOT captured here
+
+  - model: claude-sonnet-4
+    task_type: drafting
+    sigma_raw: { low: 0.80, mid: 0.87, high: 0.93 }
+    primary_benchmark: Vectara-HHEM + FaithBench/RAGTruth
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: absolute
+    reported_value: "claude-3.7-sonnet 83.95% (~16% hallu per FaithBench); Sonnet-4.5 >10% hallu per Vectara next-gen"
+    sample_size: "511 human-annotated items"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: Sonnet-4.5 >10% hallucination rate per Vectara next-gen; faithfulness subdim only
+
+  - model: claude-haiku-4
+    task_type: drafting
+    sigma_raw: { low: 0.75, mid: 0.83, high: 0.91 }
+    primary_benchmark: Vectara-HHEM (faithfulness proxy, interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "interpolated from smaller model position; no direct Haiku-4 row"
+    sample_size: null
+    observed_date: "2025-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: interpolated below Sonnet faithfulness; faithfulness subdim only; style quality relative-only
+
+  - model: gpt-4o
+    task_type: drafting
+    sigma_raw: { low: 0.78, mid: 0.85, high: 0.91 }
+    primary_benchmark: FaithBench/RAGTruth
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: absolute
+    reported_value: "gpt-4o 15.85% hallu rate per FaithBench → faithfulness ~84.15%"
+    sample_size: "511 human-annotated items"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: direct FaithBench measurement; faithfulness subdim only; style relative-only
+
+  - model: gpt-4o-mini
+    task_type: drafting
+    sigma_raw: { low: 0.72, mid: 0.81, high: 0.90 }
+    primary_benchmark: Vectara-HHEM (interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "interpolated below GPT-4o; small-model faithfulness penalty"
+    sample_size: null
+    observed_date: "2025-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: interpolated small-tier; faithfulness subdim only; refine quickly
+
+  - model: openai-o3
+    task_type: drafting
+    sigma_raw: { low: 0.80, mid: 0.88, high: 0.94 }
+    primary_benchmark: Vectara next-gen (interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "reasoning flagships >10% hallu per Vectara next-gen; o3 likely near frontier"
+    sample_size: null
+    observed_date: "2026-01"
+    source_url: https://www.vectara.com/blog/introducing-the-next-generation-of-vectaras-hallucination-leaderboard
+    normalization_note: reasoning flagships WORSE than Flash on faithfulness; faithfulness subdim only
+
+  - model: gemini-2-pro
+    task_type: drafting
+    sigma_raw: { low: 0.87, mid: 0.93, high: 0.97 }
+    primary_benchmark: FaithBench/RAGTruth
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: absolute
+    reported_value: "Gemini-2.5-Pro 6.65% hallu rate → faithfulness 93.35% (best in set)"
+    sample_size: "511 human-annotated items"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: best-in-class faithfulness per FaithBench; faithfulness subdim only; style quality relative-only
+
+  - model: gemini-2-flash
+    task_type: drafting
+    sigma_raw: { low: 0.88, mid: 0.93, high: 0.97 }
+    primary_benchmark: Vectara-HHEM
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: absolute
+    reported_value: "gemini-2.5-flash-lite 96.7% faithfulness (Vectara next-gen, best overall)"
+    sample_size: "7700+ documents"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: Flash-class tops HHEM faithfulness leaderboard; faithfulness subdim only; note HHEM is Vectara's own judge
+
+  - model: llama-3.3-70b
+    task_type: drafting
+    sigma_raw: { low: 0.78, mid: 0.84, high: 0.90 }
+    primary_benchmark: FaithBench/RAGTruth
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: absolute
+    reported_value: "llama-3.3-70b 16.44% hallu rate → faithfulness ~83.56%"
+    sample_size: "511 human-annotated items"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: direct FaithBench measurement; faithfulness subdim only; style relative-only
+
+  - model: deepseek-v3
+    task_type: drafting
+    sigma_raw: { low: 0.88, mid: 0.93, high: 0.97 }
+    primary_benchmark: Vectara-HHEM + DeepSeek blog
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: absolute
+    reported_value: "V3 3.9-6.1% hallu rate (HHEM-2.1 / HHEM-2.3) → faithfulness ~94-96%"
+    sample_size: "7700+ documents"
+    observed_date: "2026-01"
+    source_url: https://www.vectara.com/blog/deepseek-r1-hallucinates-more-than-deepseek-v3
+    normalization_note: V3 is notably less hallucinatory than R1; one of the best base-model faithfulness rates
+
+  - model: deepseek-r1
+    task_type: drafting
+    sigma_raw: { low: 0.80, mid: 0.87, high: 0.91 }
+    primary_benchmark: Vectara-HHEM + DeepSeek blog
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: absolute
+    reported_value: "R1 14.3/11.3% hallu rate (HHEM-2.1/2.3) vs V3 3.9/6.1% — reasoning PENALTY"
+    sample_size: "7700+ documents"
+    observed_date: "2026-01"
+    source_url: https://www.vectara.com/blog/deepseek-r1-hallucinates-more-than-deepseek-v3
+    normalization_note: REASONING PENALTY confirmed; R1 substantially worse than V3 on faithfulness; R1-0528 narrowed gap ~45-50% — widen
+
+  - model: qwen2.5-72b
+    task_type: drafting
+    sigma_raw: { low: 0.78, mid: 0.85, high: 0.92 }
+    primary_benchmark: Vectara-HHEM (interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "interpolated mid tier; no direct Qwen2.5 row in verified sources"
+    sample_size: null
+    observed_date: "2024-12"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: interpolated; mid tier faithfulness; wide band
+
+  - model: mistral-large
+    task_type: drafting
+    sigma_raw: { low: 0.78, mid: 0.85, high: 0.92 }
+    primary_benchmark: Vectara-HHEM (interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "interpolated mid tier; no direct Mistral-Large row in verified sources"
+    sample_size: null
+    observed_date: "2024-12"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: interpolated; mid tier faithfulness; wide band
+
+# ---- RETRIEVAL / RAG-ANSWER CORRECTNESS ----------------------------------------
+# Proxy: Vectara HHEM (grounded-summarization faithfulness) + FaithBench/RAGTruth.
+# NOTE: this measures FAITHFULNESS (groundedness), not full end-to-end RAG answer-
+# correctness. The two can diverge — DeepSeek-R1 scores low on faithfulness but
+# hits 86% clinical accuracy in RAG pipelines. Flag this proxy gap to users.
+# HHEM is Vectara's own commercial judge (~82% accuracy); rate conditioned on
+# answer-rate (high-refusal models look artificially good).
+# Source: https://github.com/vectara/hallucination-leaderboard (updated 2026-05-11)
+#         https://arxiv.org/abs/2505.04847 (FaithBench Table 7)
+
+  - model: claude-opus-4
+    task_type: retrieval
+    sigma_raw: { low: 0.83, mid: 0.89, high: 0.94 }
+    primary_benchmark: Vectara-HHEM + FaithBench/RAGTruth
+    metric: factual-consistency / faithfulness rate (PROXY for RAG correctness)
+    metric_kind: absolute
+    reported_value: "claude-3.7-sonnet ~84%; Opus-4 interpolated slightly above"
+    sample_size: "511 items (FaithBench); 7700+ docs (HHEM)"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: faithfulness PROXY — not full RAG answer-correctness; interpolated above Sonnet anchor
+
+  - model: claude-sonnet-4
+    task_type: retrieval
+    sigma_raw: { low: 0.80, mid: 0.87, high: 0.93 }
+    primary_benchmark: FaithBench/RAGTruth
+    metric: factual-consistency rate (faithfulness proxy for RAG)
+    metric_kind: absolute
+    reported_value: "claude-3.7-sonnet 83.95% (~16.05% hallu); Sonnet-4.5 confirmed >10% hallu"
+    sample_size: "511 human-annotated items"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: direct FaithBench measurement; faithfulness PROXY only; Sonnet-4.5 confirmed >10% hallu — use low end of band
+
+  - model: claude-haiku-4
+    task_type: retrieval
+    sigma_raw: { low: 0.75, mid: 0.83, high: 0.90 }
+    primary_benchmark: Vectara-HHEM (interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "interpolated below Sonnet; small-tier faithfulness penalty"
+    sample_size: null
+    observed_date: "2025-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: interpolated; small tier; faithfulness proxy only; refine from traces
+
+  - model: gpt-4o
+    task_type: retrieval
+    sigma_raw: { low: 0.80, mid: 0.84, high: 0.90 }
+    primary_benchmark: FaithBench/RAGTruth
+    metric: factual-consistency rate (faithfulness proxy for RAG)
+    metric_kind: absolute
+    reported_value: "gpt-4o 15.85% hallu → faithfulness ~84.15%"
+    sample_size: "511 human-annotated items"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: direct FaithBench measurement; faithfulness PROXY only
+
+  - model: gpt-4o-mini
+    task_type: retrieval
+    sigma_raw: { low: 0.72, mid: 0.80, high: 0.88 }
+    primary_benchmark: Vectara-HHEM (interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "interpolated below GPT-4o; small-tier penalty"
+    sample_size: null
+    observed_date: "2025-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: interpolated; small tier; faithfulness proxy only
+
+  - model: openai-o3
+    task_type: retrieval
+    sigma_raw: { low: 0.80, mid: 0.87, high: 0.93 }
+    primary_benchmark: Vectara next-gen (interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "reasoning flagship >10% hallu per Vectara next-gen; o3 likely mid-frontier band"
+    sample_size: null
+    observed_date: "2026-01"
+    source_url: https://www.vectara.com/blog/introducing-the-next-generation-of-vectaras-hallucination-leaderboard
+    normalization_note: reasoning models WORSE on faithfulness than Flash; wide band; faithfulness proxy only
+
+  - model: gemini-2-pro
+    task_type: retrieval
+    sigma_raw: { low: 0.88, mid: 0.93, high: 0.97 }
+    primary_benchmark: FaithBench/RAGTruth
+    metric: factual-consistency rate (faithfulness proxy for RAG)
+    metric_kind: absolute
+    reported_value: "Gemini-2.5-Pro 6.65% hallu → faithfulness 93.35% (best in FaithBench)"
+    sample_size: "511 human-annotated items"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: best faithfulness in FaithBench set; faithfulness PROXY only; note HHEM conflict-of-interest
+
+  - model: gemini-2-flash
+    task_type: retrieval
+    sigma_raw: { low: 0.88, mid: 0.93, high: 0.97 }
+    primary_benchmark: Vectara-HHEM + FaithBench
+    metric: factual-consistency rate (faithfulness proxy for RAG)
+    metric_kind: absolute
+    reported_value: "gemini-2.5-flash-lite 96.7% (HHEM); gemini-2.0-flash 89.82% (FaithBench)"
+    sample_size: "7700+ docs (HHEM); 511 items (FaithBench)"
+    observed_date: "2026-05"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: Flash-class tops HHEM; FaithBench confirms strong faithfulness; PROXY only
+
+  - model: llama-3.3-70b
+    task_type: retrieval
+    sigma_raw: { low: 0.78, mid: 0.84, high: 0.90 }
+    primary_benchmark: FaithBench/RAGTruth
+    metric: factual-consistency rate (faithfulness proxy for RAG)
+    metric_kind: absolute
+    reported_value: "llama-3.3-70b 16.44% hallu → faithfulness ~83.56%"
+    sample_size: "511 human-annotated items"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: direct FaithBench measurement; faithfulness PROXY only; 70B tier
+
+  - model: deepseek-v3
+    task_type: retrieval
+    sigma_raw: { low: 0.88, mid: 0.93, high: 0.96 }
+    primary_benchmark: Vectara-HHEM + DeepSeek blog
+    metric: factual-consistency rate (faithfulness proxy for RAG)
+    metric_kind: absolute
+    reported_value: "V3 3.9-6.1% hallu (HHEM-2.1/2.3) → faithfulness ~94-96%"
+    sample_size: "7700+ documents"
+    observed_date: "2026-01"
+    source_url: https://www.vectara.com/blog/deepseek-r1-hallucinates-more-than-deepseek-v3
+    normalization_note: V3 outstanding faithfulness; faithfulness PROXY only; does not predict end-to-end RAG correctness
+
+  - model: deepseek-r1
+    task_type: retrieval
+    sigma_raw: { low: 0.78, mid: 0.86, high: 0.91 }
+    primary_benchmark: Vectara-HHEM + DeepSeek blog
+    metric: factual-consistency rate (faithfulness proxy for RAG)
+    metric_kind: absolute
+    reported_value: "R1 14.3/11.3% hallu vs V3 3.9/6.1% — reasoning PENALTY; but RAG accuracy can diverge"
+    sample_size: "7700+ documents"
+    observed_date: "2026-01"
+    source_url: https://www.vectara.com/blog/deepseek-r1-hallucinates-more-than-deepseek-v3
+    normalization_note: REASONING PENALTY on faithfulness; R1+RAG can hit 86% clinical accuracy despite poor faithfulness — proxy gap CRITICAL
+
+  - model: qwen2.5-72b
+    task_type: retrieval
+    sigma_raw: { low: 0.75, mid: 0.85, high: 0.92 }
+    primary_benchmark: Vectara-HHEM (interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "interpolated mid tier; no direct Qwen2.5 row found"
+    sample_size: null
+    observed_date: "2024-12"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: interpolated; mid tier faithfulness proxy; wide band
+
+  - model: mistral-large
+    task_type: retrieval
+    sigma_raw: { low: 0.75, mid: 0.85, high: 0.92 }
+    primary_benchmark: Vectara-HHEM (interpolated)
+    metric: factual-consistency rate (faithfulness proxy)
+    metric_kind: relative
+    reported_value: "interpolated mid tier; no direct Mistral-Large row found"
+    sample_size: null
+    observed_date: "2024-12"
+    source_url: https://github.com/vectara/hallucination-leaderboard
+    normalization_note: interpolated; mid tier faithfulness proxy; wide band
+
+# ---- REVIEW / CRITIQUE / VERIFICATION (catch_rate) ----------------------------
+# SOFTEST COLUMN. Widest bands. Best public evidence: FaithJudge zero-shot on
+# FaithBench (arXiv 2505.04847) + MT-Bench human agreement (arXiv 2306.05685) +
+# RewardBench-2 (arXiv 2506.01937) + CriticBench (arXiv 2402.14809).
+#
+# Key constraints:
+#   - 84% FaithJudge headline is FEW-SHOT (9 peer examples in-context) — an
+#     optimistic ceiling a real pipeline won't have.
+#   - Zero-shot best: o3-mini-high 68.8% balanced accuracy on FaithBench.
+#   - RewardBench-2 shows ~20pp drop vs v1 on harder/realistic distributions.
+#   - Same-family self-critique is PARTIALLY RELATIVE (self-enhancement bias) —
+#     subtract ~0.05-0.10 from mid and widen.
+#   - CriticBench: stronger critic vs weaker target = better catch; weaker critic
+#     can surpass stronger on self-critique (pairing matters more than identity).
+# Bands below are ZERO-SHOT estimates for catching ANOTHER model's errors.
+# Source: https://arxiv.org/abs/2505.04847 (FaithJudge),
+#         https://arxiv.org/abs/2306.05685 (MT-Bench)
+
+  - model: claude-opus-4
+    task_type: review
+    catch_rate: { low: 0.62, mid: 0.72, high: 0.84 }
+    primary_benchmark: FaithJudge / MT-Bench (zero-shot LLM judge)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: absolute
+    reported_value: "strong frontier tier; o3-mini-high zero-shot 68.8% bal-acc ceiling; GPT-4 judge ~80-85% pairwise-agreement"
+    sample_size: "511 items (FaithBench zero-shot); ~80 questions (MT-Bench)"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: SOFTEST COLUMN; strong frontier judge tier; zero-shot only; few-shot raises to ~84% (not assumed here); wide band mandatory
+
+  - model: claude-sonnet-4
+    task_type: review
+    catch_rate: { low: 0.55, mid: 0.65, high: 0.78 }
+    primary_benchmark: FaithJudge / MT-Bench (zero-shot LLM judge)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: absolute
+    reported_value: "mid judge tier; GPT-4o-class ~0.65 estimated zero-shot"
+    sample_size: "511 items (FaithBench zero-shot)"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: SOFTEST COLUMN; mid judge tier; zero-shot only; RewardBench-2 shows ~20pp drop on harder distributions; wide band
+
+  - model: claude-haiku-4
+    task_type: review
+    catch_rate: { low: 0.48, mid: 0.58, high: 0.70 }
+    primary_benchmark: FaithJudge / MT-Bench (zero-shot LLM judge)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: absolute
+    reported_value: "small/cheap judge tier; below mid-judge zero-shot"
+    sample_size: "511 items (FaithBench zero-shot)"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: SOFTEST COLUMN; small judge tier; near-random on hard distributions; wide band; do not use as sole quality gate
+
+  - model: gpt-4o
+    task_type: review
+    catch_rate: { low: 0.55, mid: 0.65, high: 0.78 }
+    primary_benchmark: MT-Bench + FaithJudge
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: absolute
+    reported_value: "GPT-4 judge ~80-85% pairwise agreement (MT-Bench); pairwise easier than error-catch → widen down"
+    sample_size: "~80 questions (MT-Bench); 511 items (FaithBench)"
+    observed_date: "2023-06"
+    source_url: https://arxiv.org/abs/2306.05685
+    normalization_note: pairwise preference easier than absolute error-catch; MT-Bench bias documented (position/verbosity/self-enhancement); mid judge tier
+
+  - model: gpt-4o-mini
+    task_type: review
+    catch_rate: { low: 0.48, mid: 0.58, high: 0.70 }
+    primary_benchmark: FaithJudge (zero-shot)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: absolute
+    reported_value: "small judge tier; below GPT-4o zero-shot"
+    sample_size: "511 items (FaithBench zero-shot)"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: SOFTEST COLUMN; small judge tier; wide band; do not use as sole quality gate
+
+  - model: openai-o3
+    task_type: review
+    catch_rate: { low: 0.62, mid: 0.72, high: 0.84 }
+    primary_benchmark: FaithJudge (o3-mini-high zero-shot anchor)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: absolute
+    reported_value: "o3-mini-high zero-shot best: 68.8% balanced accuracy on FaithBench"
+    sample_size: "511 items (FaithBench zero-shot)"
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: SOFTEST COLUMN; best public zero-shot judge evidence; o3-mini-high is the anchor; strong frontier judge tier
+
+  - model: gemini-2-pro
+    task_type: review
+    catch_rate: { low: 0.55, mid: 0.65, high: 0.78 }
+    primary_benchmark: FaithJudge (interpolated)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: relative
+    reported_value: "interpolated mid-to-frontier judge tier; Gemini Pro strong at faithfulness detection"
+    sample_size: null
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: SOFTEST COLUMN; interpolated; no direct zero-shot catch-rate row for Gemini-2-Pro; mid-to-frontier tier
+
+  - model: gemini-2-flash
+    task_type: review
+    catch_rate: { low: 0.52, mid: 0.62, high: 0.75 }
+    primary_benchmark: FaithJudge (interpolated)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: relative
+    reported_value: "interpolated mid judge tier; Flash cheaper but weaker than Pro at critique"
+    sample_size: null
+    observed_date: "2025-05"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: SOFTEST COLUMN; interpolated; mid judge tier; wide band
+
+  - model: llama-3.3-70b
+    task_type: review
+    catch_rate: { low: 0.50, mid: 0.62, high: 0.75 }
+    primary_benchmark: FaithJudge / CriticBench (interpolated)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: relative
+    reported_value: "no reliable public absolute evidence for Llama-3.3 as zero-shot critic"
+    sample_size: null
+    observed_date: null
+    source_url: https://arxiv.org/pdf/2402.14809
+    normalization_note: SOFTEST COLUMN; conservative wide band fallback; no reliable evidence; refine from traces immediately
+
+  - model: deepseek-v3
+    task_type: review
+    catch_rate: { low: 0.52, mid: 0.63, high: 0.76 }
+    primary_benchmark: FaithJudge (interpolated)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: relative
+    reported_value: "interpolated mid tier; V3 strong at instruction-following; limited critic-specific evidence"
+    sample_size: null
+    observed_date: "2025-01"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: SOFTEST COLUMN; interpolated; mid tier; CriticBench pairing asymmetry applies
+
+  - model: deepseek-r1
+    task_type: review
+    catch_rate: { low: 0.50, mid: 0.62, high: 0.76 }
+    primary_benchmark: FaithJudge (interpolated)
+    metric: balanced accuracy catching upstream errors (zero-shot judge)
+    metric_kind: relative
+    reported_value: "reasoning models can over-think simple review; no R1-specific zero-shot critic evidence"
+    sample_size: null
+    observed_date: "2025-01"
+    source_url: https://arxiv.org/abs/2505.04847
+    normalization_note: SOFTEST COLUMN; reasoning overhead uncertain for critique; conservative mid tier; wide band
+
+  - model: qwen2.5-72b
+    task_type: review
+    catch_rate: { low: 0.50, mid: 0.60, high: 0.74 }
+    primary_benchmark: FaithJudge / CriticBench (no reliable evidence)
+    metric: balanced accuracy catching upstream errors
+    metric_kind: relative
+    reported_value: "no reliable public absolute evidence"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: SOFTEST COLUMN; conservative wide-band fallback per research guidance; no reliable evidence
+
+  - model: mistral-large
+    task_type: review
+    catch_rate: { low: 0.50, mid: 0.60, high: 0.74 }
+    primary_benchmark: FaithJudge / CriticBench (no reliable evidence)
+    metric: balanced accuracy catching upstream errors
+    metric_kind: relative
+    reported_value: "no reliable public absolute evidence"
+    sample_size: null
+    observed_date: null
+    source_url: null
+    normalization_note: SOFTEST COLUMN; conservative wide-band fallback per research guidance; no reliable evidence
