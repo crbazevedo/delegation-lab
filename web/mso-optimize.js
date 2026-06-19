@@ -46,6 +46,12 @@
     var task = node.task, model = node.model;
     var complexity = node.complexity || "moderate", misuse = node.tool_misuse || 0;
 
+    // manual node (no model): use its explicit σ / catch / fix as-is
+    if (!model && node.sigma_skill != null) {
+      return [node.sigma_skill, node.catch_rate || 0.0,
+              node.fix_rate != null ? node.fix_rate : 1.0];
+    }
+
     if (role === "reviewer") {
       var b = (model ? P.priorMid(model, "review") : null); if (b == null) b = 0.62;
       return [0.92, effectiveSigma(b, complexity, misuse), 1.0];

@@ -88,12 +88,24 @@ def _prior_mid(model: str, task: str) -> float | None:
 
 
 def node_params(node: dict) -> tuple[float, float, float]:
-    """Derive (sigma_skill, catch_rate, fix_rate) for a node from its model+role."""
+    """Derive (sigma_skill, catch_rate, fix_rate) for a node from its model+role.
+
+    A node WITHOUT a model is "manual" (a deterministic tool, or an
+    illustrative node): its explicit ``sigma_skill`` / ``catch_rate`` /
+    ``fix_rate`` are used as-is, so the optimizer agrees with a hand-set pipeline.
+    """
     role = node.get("role", "generator")
     task = node.get("task")
     model = node.get("model")
     complexity = node.get("complexity", "moderate")
     misuse = float(node.get("tool_misuse", 0.0))
+
+    if not model and node.get("sigma_skill") is not None:
+        return (
+            float(node["sigma_skill"]),
+            float(node.get("catch_rate") or 0.0),
+            float(node["fix_rate"]) if node.get("fix_rate") is not None else 1.0,
+        )
 
     if role == "reviewer":
         base = _prior_mid(model, "review") if model else None
