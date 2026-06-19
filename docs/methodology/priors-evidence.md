@@ -189,3 +189,41 @@ surveys (arXiv:2404.11584, 2506.04565). The node types the cockpit should model:
 vector search, *not* an LLM — an LLM only enters retrieval as a *reranker*
 (post-ranking) or *generator* (reader); (2) reviewer ≠ corrector — detection and
 repair are separate competences whose **product** governs corrected quality.
+
+---
+
+## GAP 6 — Model pricing & license (the cost registry)
+
+Source for `model_registry.yaml` (the allocation optimizer's cost basis). Prices
+are USD per million tokens (input / output); license `open` = open-weights AND
+commercially usable. Sweep 2026-06-18, mostly **CONFIRMED** against official
+pricing pages. **Prices change; batch/cached tiers are cheaper; open-weights
+self-host economics differ from hosted-API prices.**
+
+| Model | Input $/Mtok | Output $/Mtok | License | Source | Conf |
+|---|---|---|---|---|---|
+| GPT-5.5 | 5.00 | 30.00 | proprietary | developers.openai.com | CONFIRMED |
+| GPT-5.4-nano | 0.20 | 1.25 | proprietary | developers.openai.com | CONFIRMED |
+| Claude Opus 4.6/4.7 | 5.00 | 25.00 | proprietary | anthropic.com | CONFIRMED (2-0) |
+| Claude Haiku 4.5 | 1.00 | 5.00 | proprietary | anthropic.com | CONFIRMED |
+| Gemini 2.5 Pro (≤200k) | 1.25 | 10.00 | proprietary | ai.google.dev | CONFIRMED |
+| Gemini 2.5 Flash | 0.30 | 2.50 | proprietary | ai.google.dev | CONFIRMED |
+| Gemini 2.5 Flash-Lite | 0.10 | 0.40 | proprietary | ai.google.dev | CONFIRMED |
+| DeepSeek V3.2 | 0.23 | 0.34 | open (MIT-style) | OpenRouter | CONFIRMED |
+| Kimi K2 (0905) | 0.60 | 2.50 | open (Modified-MIT) | OpenRouter | CONFIRMED |
+| Voyage embeddings (v4-large/4/lite) | 0.12 / 0.06 / 0.02 | — | proprietary | voyageai.com | CONFIRMED |
+| BGE-reranker-v2-m3 | self-host | — | Apache-2.0 | HuggingFace | CONFIRMED |
+| Qwen3-Embedding / Qwen3-Reranker (0.6/4/8B) | self-host | — | Apache-2.0 | HuggingFace | CONFIRMED |
+| Jina rerankers | per-token | — | CC-BY-NC (non-commercial) | jina.ai | CONFIRMED |
+
+**Cost index.** The registry maps blended $/Mtok (`0.6·input + 0.4·output`) onto
+a 1–100 **log-scale** index between anchors $0.05 and $60. Open-source models
+cluster cheap-to-mid (index 1–47); proprietary frontier models sit at the top
+(67–96). The optimizer prefers the cheapest model that clears a node's bar, with
+open-source preferred on ties — so easy tasks fall to cheap OSS and only
+hard/critical tasks pull in expensive proprietary models.
+
+**Caveats.** Cohere Rerank is billed per *search* (not per token) — recorded as
+an approximate $/Mtok-equivalent. Reasoning/cached/batch tiers differ. Brand-new
+names without a public price (Fable 5, exact GPT-5.5 sibling variants) are
+flagged and **excluded from cost optimization** rather than guessed.
