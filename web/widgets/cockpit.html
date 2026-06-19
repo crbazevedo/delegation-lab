@@ -46,6 +46,7 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
   <span class="hint">click a connector to add · drag ● to link · drag canvas to pan · scroll to zoom · Delete to remove</span>
 </div>
 
+<div id="tpl-desc" style="display:none;font-size:12.5px;color:var(--text-secondary);margin:-2px 0 12px;line-height:1.5"></div>
 <div id="lesson" style="display:none;background:var(--bg-warning);color:var(--tx-warning);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px;line-height:1.5"></div>
 <div id="import-note" style="display:none;background:var(--bg-success);color:var(--tx-success);border-radius:var(--radius);padding:9px 13px;margin-bottom:12px;font-size:13px"></div>
 
@@ -489,7 +490,30 @@ function resetSimRow(){simOn=false;simTokens=null;var sr=document.getElementById
 // Lessons keep their hand-tuned coordinates (the action buttons reposition
 // specific nodes); workflows are auto-laid-out so the larger cards never overlap.
 var HAND_LAID={review_placement:1,reviewer_competence:1,merge_gate:1,review_loop:1,chain_depth:1,reviewer_corrector:1};
-function loadTemplate(name){resetSimRow();document.getElementById("import-note").style.display="none";var ns=TEMPLATES[name]();if(!HAND_LAID[name])ns=MSOEstimate.layout(ns,W,H);state.nodes=ns;state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
+var TEMPLATE_DESC={
+  conv_commerce:"<b>Conversational commerce, end-to-end</b> — chat → auth → product search → rerank → recommendation → checkout → fraud → payments → order → post-sales (14 agents & systems). A 12-deep chain: watch masking compound, then ⚡ Optimize to cut model cost.",
+  returns_refunds:"<b>Returns &amp; refunds agent</b> — policy RAG → eligibility → refund decision → human approval → Stripe refund → notify.",
+  support_triage:"<b>Support ticket triage</b> — classify → KB RAG (embed → rerank) → drafted reply → LLM judge → human escalation → send.",
+  kb_assistant:"<b>Enterprise knowledge assistant</b> — query rewrite → retrieve → rerank → grounded answer → groundedness judge. Often just short of 0.80 — try Optimize.",
+  patient_intake:"<b>Healthcare intake &amp; clinical decision support</b> over EHR/FHIR, with a <b>critical</b> physician review before any EHR write-back.",
+  loan_underwriting:"<b>Loan underwriting</b> — KYC → credit bureau → doc extraction → risk model → underwriting reasoning → fraud → <b>critical</b> credit officer.",
+  kyc_aml:"<b>KYC / AML screening</b> with adverse-media RAG and a <b>critical</b> analyst. Frequently infeasible at 0.80 — Optimize, then lower the Quality target to find the cliff.",
+  claims_processing:"<b>Insurance claims</b> — FNOL → policy → doc/photo extraction → coverage → fraud → adjuster reasoning → <b>critical</b> human adjuster → payout.",
+  contract_review:"<b>Contract review</b> — clause extraction → risk → playbook RAG → redline draft → <b>critical</b> lawyer review → DocuSign.",
+  resume_screening:"<b>HR resume screening</b> — parse → JD match → rank → fit score → summary → recruiter review → schedule.",
+  pr_review:"<b>AI code review</b> — diff analysis → standards RAG → AI review → CI → human approve → merge.",
+  incident_sre:"<b>SRE incident response</b> — alert → runbook RAG → root-cause → MCP mitigation (note the tool-misuse rate) → <b>critical</b> SRE review → postmortem.",
+  content_marketing:"<b>Marketing content + campaign</b> — research → draft → brand/SEO → fact-check → editor review → publish.",
+  nl2sql:"<b>Analytics NL→SQL</b> — schema retrieve → SQL generation → execute → summarize → SQL/answer judge.",
+  soc_triage:"<b>Security SOC alert triage</b> — enrich → classify → threat-intel RAG → analyst reasoning → tier-2 review → contain (tool-misuse on the response agent).",
+  supply_chain:"<b>Supply-chain reorder</b> — demand forecast → exception detect → reorder reasoning → buyer approval → PO (ERP) → supplier notify.",
+  agentic_rag:"<b>Agentic RAG + rerank</b>, deliberately on Claude Opus everywhere (expensive &amp; infeasible). Hit ⚡ Optimize: it swaps to open-source and invests review to clear the bar.",
+  tool_agent:"<b>Tool-using MCP agent</b> — planner → tool caller (with a tool-misuse rate) → MCP gateway → output verifier.",
+  sales:"<b>Sales lead-to-deal</b> with a fan-out → merge <i>diamond</i> — the classic masking lesson inside a real workflow.",
+  rag:"<b>RAG research assistant</b> — embedders + reranker + grounded reader + groundedness judge.",
+};
+function loadTemplate(name){resetSimRow();document.getElementById("import-note").style.display="none";var ns=TEMPLATES[name]();if(!HAND_LAID[name])ns=MSOEstimate.layout(ns,W,H);state.nodes=ns;state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);
+  var dd=$("tpl-desc"),d=TEMPLATE_DESC[name];if(d&&!HAND_LAID[name]){dd.innerHTML=d;dd.style.display="block";}else dd.style.display="none";}
 function loadImported(parsed){resetSimRow();document.getElementById("lesson").style.display="none";state.nodes=MSOEstimate.layout(parsed.nodes,W,H);state.nodes.forEach(function(n){if(!n.label)n.label=String(n.id).replace(/_/g," ");});state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();var nn=document.getElementById("import-note");nn.style.display="block";nn.innerHTML="<b>Imported your pipeline</b> · "+parsed.note+". Edit any node in the inspector, slide p_min to your target, or press Run tokens.";}
 function showLesson(name){var h=TEMPLATE_HINTS[name],box=$("lesson");if(!h){box.style.display="none";return;}box.style.display="block";
   var acts=(h.actions||[]).map(function(a,i){return '<button data-act="'+i+'" style="margin-right:8px;margin-top:2px">'+a.label+'</button>';}).join("");
