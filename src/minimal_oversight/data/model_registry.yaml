@@ -19,19 +19,20 @@ meta:
   cost_basis: usd_per_mtok        # input/output dollars per million tokens
   blend: { input: 0.6, output: 0.4 }   # blended $/Mtok = 0.6*in + 0.4*out
   observed_date: "2026-06-18"
-  status: provisional             # provisional -> sourced after pricing research
+  status: sourced                 # prices from a cited pricing research sweep (most CONFIRMED)
+  sources: "official pricing pages (openai/anthropic/google/deepseek), OpenRouter, Voyage; see docs/methodology/priors-evidence.md"
   index_anchors: { min: 0.05, max: 60.0 }   # log-scale 1..100 between these blends
 
 models:
   # ---- Proprietary frontier LLMs --------------------------------------------
   - { name: claude-opus-4,    provider: anthropic, modality: llm, license: { name: proprietary, open: false }, cost: { input: 15.0,  output: 75.0 } }
-  - { name: claude-opus-4.8,  provider: anthropic, modality: llm, license: { name: proprietary, open: false }, cost: { input: 15.0,  output: 75.0 }, note: "est — no public price for exact name" }
+  - { name: claude-opus-4.8,  provider: anthropic, modality: llm, license: { name: proprietary, open: false }, cost: { input: 5.0,   output: 25.0 }, note: "newer Opus tier (Opus 4.6/4.7 confirmed $5/$25); cheaper than Opus 4.0" }
   - { name: claude-sonnet-4,  provider: anthropic, modality: llm, license: { name: proprietary, open: false }, cost: { input: 3.0,   output: 15.0 } }
   - { name: claude-haiku-4,   provider: anthropic, modality: llm, license: { name: proprietary, open: false }, cost: { input: 1.0,   output: 5.0  } }
   - { name: gpt-4o,           provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 2.5,   output: 10.0 } }
   - { name: gpt-4o-mini,      provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 0.15,  output: 0.60 } }
-  - { name: gpt-5.4-nano,     provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 0.05,  output: 0.40 }, note: "nano tier; est" }
-  - { name: gpt-5.5,          provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 5.0,   output: 15.0 }, note: "est — no public price for exact name" }
+  - { name: gpt-5.4-nano,     provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 0.20,  output: 1.25 }, note: "official pricing page (developers.openai.com)" }
+  - { name: gpt-5.5,          provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 5.0,   output: 30.0 }, note: "official pricing page; frontier tier" }
   - { name: openai-o3,        provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 2.0,   output: 8.0  }, note: "reasoning" }
   - { name: o3-pro,           provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 20.0,  output: 80.0 }, note: "reasoning; premium" }
   - { name: o4-mini-high,     provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 1.1,   output: 4.4  }, note: "reasoning; mini" }
