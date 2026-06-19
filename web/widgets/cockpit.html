@@ -36,7 +36,7 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
 
 <div class="toolbar">
   <label class="hint">Load template
-    <select id="tpl"><optgroup label="Workflows"><option value="sales">Sales — lead to deal</option><option value="support">Customer support triage</option><option value="github">GitHub PR review</option><option value="rag">RAG research assistant</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option></optgroup><optgroup label="Agentic (models pre-loaded · try ⚡ Optimize)"><option value="agentic_rag">Agentic RAG + rerank</option><option value="tool_agent">Tool-using agent (MCP)</option></optgroup><optgroup label="Lessons (try the hint)"><option value="reviewer_corrector">Lesson · reviewer ≠ corrector</option><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><option value="blank">Blank canvas</option></select>
+    <select id="tpl"><optgroup label="★ Commerce &amp; Retail (models pre-loaded · try ⚡ Optimize)"><option value="conv_commerce">Conversational commerce (14-node multi-agent)</option><option value="returns_refunds">Returns &amp; refunds agent</option><option value="sales">Sales — lead to deal</option></optgroup><optgroup label="Support &amp; Knowledge"><option value="support_triage">Support ticket triage</option><option value="kb_assistant">Enterprise knowledge assistant</option><option value="agentic_rag">Agentic RAG + rerank</option></optgroup><optgroup label="Finance &amp; Risk"><option value="loan_underwriting">Loan underwriting</option><option value="kyc_aml">KYC / AML screening</option><option value="claims_processing">Insurance claims</option></optgroup><optgroup label="Healthcare &amp; Legal"><option value="patient_intake">Patient intake &amp; clinical support</option><option value="contract_review">Contract review</option></optgroup><optgroup label="Software &amp; Ops"><option value="pr_review">AI code review (PR)</option><option value="incident_sre">SRE incident response</option><option value="soc_triage">Security SOC alert triage</option><option value="tool_agent">Tool-using agent (MCP)</option></optgroup><optgroup label="Ops &amp; Growth"><option value="resume_screening">HR resume screening</option><option value="content_marketing">Marketing content + campaign</option><option value="nl2sql">Analytics NL→SQL</option><option value="supply_chain">Supply-chain reorder</option></optgroup><optgroup label="Lessons (try the hint)"><option value="reviewer_corrector">Lesson · reviewer ≠ corrector</option><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><optgroup label="Other"><option value="rag">RAG research assistant</option><option value="github">GitHub PR review</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option><option value="blank">Blank canvas</option></optgroup></select>
   </label>
   <span class="rng" style="gap:6px" title="p_min — the corrected quality the pipeline must sustain"><span class="hint">Quality target</span><input type="range" id="pmin" min="0.50" max="0.95" step="0.01" value="0.80" style="width:110px"><b id="pminv">0.80</b></span>
   <span class="rng" style="gap:6px" title="H(W) — process complexity / entropy in bits; higher means more routing & drift"><span class="hint">Process complexity</span><input type="range" id="hw" min="0" max="6" step="0.1" value="0" style="width:90px"><b id="hwv">0.0</b></span>
@@ -149,22 +149,48 @@ var CONN = {
   // --- Human ---
   reviewer:{label:"Human reviewer",cat:"Human",skill:0.90,catch:0.85,fix:1.0,drift:0.01,task:"review"},
   approver:{label:"Approver gate",cat:"Human",skill:0.92,catch:0.85,fix:1.0,drift:0.01,task:"review"},
-  // --- Tools / systems (deterministic connectors) ---
-  hubspot:{label:"HubSpot",cat:"CRM",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
-  salesforce:{label:"Salesforce",cat:"CRM",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  // --- Business apps / CRM-ERP (deterministic connectors) ---
+  hubspot:{label:"HubSpot",cat:"Apps",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  salesforce:{label:"Salesforce CRM",cat:"Apps",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  erp:{label:"ERP (SAP/NetSuite)",cat:"Apps",skill:0.94,catch:0.50,fix:1.0,drift:0.01},
+  servicenow:{label:"ITSM (ServiceNow)",cat:"Apps",skill:0.93,catch:0.50,fix:1.0,drift:0.02},
+  docusign:{label:"E-sign (DocuSign)",cat:"Apps",skill:0.96,catch:0.50,fix:1.0,drift:0.01},
+  zendesk:{label:"Helpdesk (Zendesk)",cat:"Apps",skill:0.85,catch:0.50,fix:1.0,drift:0.03},
+  // --- Identity & money ---
+  auth:{label:"Auth / SSO (Auth0)",cat:"Trust",skill:0.97,catch:0.50,fix:1.0,drift:0.01},
+  kyc:{label:"KYC / identity (Plaid)",cat:"Trust",skill:0.92,catch:0.60,fix:1.0,drift:0.02},
+  payment:{label:"Payments (Stripe)",cat:"Trust",skill:0.97,catch:0.50,fix:1.0,drift:0.01},
+  fraud:{label:"Fraud / risk API",cat:"Trust",skill:0.90,catch:0.60,fix:1.0,drift:0.03},
+  billing:{label:"Billing / subscriptions",cat:"Trust",skill:0.95,catch:0.50,fix:1.0,drift:0.01},
+  // --- DevOps / observability ---
   mcp_gateway:{label:"MCP gateway",cat:"Dev",skill:0.95,catch:0.50,fix:1.0,drift:0.01},
   github:{label:"GitHub",cat:"Dev",skill:0.88,catch:0.50,fix:1.0,drift:0.02},
   jira:{label:"Jira",cat:"Dev",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
-  ci:{label:"CI check",cat:"Dev",skill:0.9,catch:0.6,fix:1.0,drift:0.01},
+  ci:{label:"CI / CD check",cat:"Dev",skill:0.9,catch:0.6,fix:1.0,drift:0.01},
+  pagerduty:{label:"PagerDuty / on-call",cat:"Dev",skill:0.95,catch:0.60,fix:1.0,drift:0.01},
+  datadog:{label:"Datadog / o11y",cat:"Dev",skill:0.94,catch:0.60,fix:1.0,drift:0.02},
+  // --- Comms / messaging ---
   slack:{label:"Slack",cat:"Comms",skill:0.85,catch:0.50,fix:1.0,drift:0.03},
-  zendesk:{label:"Zendesk",cat:"Comms",skill:0.85,catch:0.50,fix:1.0,drift:0.03},
-  enrich:{label:"Enrichment",cat:"Data",skill:0.80,catch:0.60,fix:1.0,drift:0.04},
-  db:{label:"Datastore",cat:"Data",skill:0.90,catch:0.50,fix:1.0,drift:0.01}
+  email:{label:"Email (SendGrid)",cat:"Comms",skill:0.96,catch:0.50,fix:1.0,drift:0.02},
+  sms:{label:"SMS / WhatsApp (Twilio)",cat:"Comms",skill:0.95,catch:0.50,fix:1.0,drift:0.02},
+  chat:{label:"Chat widget",cat:"Comms",skill:0.92,catch:0.50,fix:1.0,drift:0.02},
+  // --- Data & sources / sinks ---
+  db:{label:"Datastore",cat:"Data",skill:0.90,catch:0.50,fix:1.0,drift:0.01},
+  vector_db:{label:"Vector DB (Pinecone)",cat:"Data",skill:0.95,catch:0.50,fix:1.0,drift:0.01},
+  sql_db:{label:"SQL / warehouse",cat:"Data",skill:0.96,catch:0.50,fix:1.0,drift:0.01},
+  knowledge_base:{label:"Knowledge base",cat:"Data",skill:0.93,catch:0.50,fix:1.0,drift:0.02},
+  file_store:{label:"File store (S3)",cat:"Data",skill:0.97,catch:0.50,fix:1.0,drift:0.01},
+  web_search:{label:"Web search API",cat:"Data",skill:0.85,catch:0.50,fix:1.0,drift:0.05},
+  ehr:{label:"EHR / FHIR (Epic)",cat:"Data",skill:0.93,catch:0.50,fix:1.0,drift:0.02},
+  api:{label:"External API",cat:"Data",skill:0.90,catch:0.50,fix:1.0,drift:0.04},
+  enrich:{label:"Data enrichment",cat:"Data",skill:0.80,catch:0.60,fix:1.0,drift:0.04}
 };
-var CAT_COLOR = {Generate:"#EF9F27",Retrieve:"#2AA7C4",Govern:"#C75DAB",CRM:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",Human:"#639922",Data:"#888780"};
+var CAT_COLOR = {Generate:"#EF9F27",Retrieve:"#2AA7C4",Govern:"#C75DAB",Human:"#639922",Trust:"#B5894E",Apps:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",Data:"#888780"};
 var MOTIF_COLOR = {chain:"#888780",fan_out:"#EF9F27",merge:"#7F77DD",diamond:"#E24B4A",single:"#888780"};
 
 function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];var n={id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,fix_rate:over.fix!=null?over.fix:(c.fix!=null?c.fix:1.0),drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1,model:over.model||null,complexity:over.cx||"moderate",tool_misuse:over.misuse||0};if(n.model&&typeof MSO_Optimize!=="undefined")applyDerived(n);return n;}
+// template node without coordinates — loadTemplate auto-lays-out workflows
+function tn(id,type,parents,over){return nd(id,type,0,0,parents,over);}
 var AGG_LABEL={product:"all-required",min:"weakest-link",mean:"vote / redundant"};
 var TEMPLATES = {
   sales: function(){var n=[
@@ -232,6 +258,169 @@ var TEMPLATES = {
     nd("mcp","mcp_gateway",470,200,["tools"],{label:"MCP gateway"}),
     nd("verify","model_reviewer",610,200,["mcp"],{label:"Output verifier",model:"claude-opus-4"}),
     nd("done","db",750,200,["verify"],{label:"Result"})];},
+  // ===== Realistic multi-industry workflows (auto-laid-out; models pre-loaded) =====
+  conv_commerce: function(){return [
+    tn("chat","chat",[],{label:"Shopper chat"}),
+    tn("auth","auth",["chat"],{label:"Login / SSO"}),
+    tn("intent","classifier",["auth"],{label:"Intent router",model:"gpt-4o-mini",cx:"easy"}),
+    tn("search","embedder",["intent"],{label:"Product search",model:"openai-text-embedding-3-large"}),
+    tn("catalog","vector_db",["search"],{label:"Catalog vector DB"}),
+    tn("rerank","reranker",["catalog"],{label:"Rerank results",model:"cohere-rerank-3"}),
+    tn("reco","reader",["rerank"],{label:"Recommendation",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("cart","api",["reco"],{label:"Cart service"}),
+    tn("checkout","llm",["cart"],{label:"Checkout agent",model:"gpt-4o",cx:"moderate"}),
+    tn("fraud","fraud",["checkout"],{label:"Fraud / risk"}),
+    tn("pay","payment",["fraud"],{label:"Payments (Stripe)"}),
+    tn("order","db",["pay"],{label:"Order DB"}),
+    tn("confirm","email",["order"],{label:"Order confirmation"}),
+    tn("postsales","model_reviewer",["confirm"],{label:"Post-sales support",model:"gpt-4o"})];},
+  returns_refunds: function(){return [
+    tn("ticket","zendesk",[],{label:"Return request"}),
+    tn("policy","embedder",["ticket"],{label:"Policy retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["policy"],{label:"Returns policy KB"}),
+    tn("elig","classifier",["kb"],{label:"Eligibility",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("decide","llm",["elig"],{label:"Refund decision",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("approve","approver",["decide"],{label:"Agent approval",cx:"hard"}),
+    tn("refund","payment",["approve"],{label:"Issue refund"}),
+    tn("notify","email",["refund"],{label:"Notify customer"})];},
+  support_triage: function(){return [
+    tn("intake","chat",[],{label:"Ticket intake"}),
+    tn("classify","classifier",["intake"],{label:"Triage / route",model:"gpt-4o-mini",cx:"easy"}),
+    tn("embed","embedder",["classify"],{label:"KB retrieve",model:"openai-text-embedding-3-large"}),
+    tn("vdb","vector_db",["embed"],{label:"Support KB"}),
+    tn("rerank","reranker",["vdb"],{label:"Rerank",model:"cohere-rerank-3"}),
+    tn("draft","reader",["rerank"],{label:"Draft reply",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("judge","model_reviewer",["draft"],{label:"Quality judge",model:"gpt-4o"}),
+    tn("escalate","approver",["judge"],{label:"Human escalation"}),
+    tn("send","email",["escalate"],{label:"Send reply"})];},
+  kb_assistant: function(){return [
+    tn("q","chat",[],{label:"User question"}),
+    tn("rewrite","llm",["q"],{label:"Query rewrite",model:"gpt-4o-mini",cx:"easy"}),
+    tn("embed","embedder",["rewrite"],{label:"Embed + search",model:"openai-text-embedding-3-large"}),
+    tn("vdb","vector_db",["embed"],{label:"Docs vector DB"}),
+    tn("rerank","reranker",["vdb"],{label:"Rerank",model:"cohere-rerank-3"}),
+    tn("answer","reader",["rerank"],{label:"Grounded answer",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("judge","model_reviewer",["answer"],{label:"Groundedness judge",model:"gpt-4o"}),
+    tn("out","chat",["judge"],{label:"Answer"})];},
+  patient_intake: function(){return [
+    tn("form","chat",[],{label:"Patient intake"}),
+    tn("id","kyc",["form"],{label:"Identity verify"}),
+    tn("records","ehr",["id"],{label:"EHR / FHIR"}),
+    tn("triage","classifier",["records"],{label:"Symptom triage",model:"gpt-4o",cx:"hard"}),
+    tn("embed","embedder",["triage"],{label:"Clinical retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["embed"],{label:"Guidelines KB"}),
+    tn("cds","reader",["kb"],{label:"Decision support",model:"claude-opus-4",cx:"hard"}),
+    tn("md","reviewer",["cds"],{label:"Physician review",cx:"critical"}),
+    tn("doc","extractor",["md"],{label:"Documentation",model:"gpt-4o"}),
+    tn("write","ehr",["doc"],{label:"EHR write-back"})];},
+  loan_underwriting: function(){return [
+    tn("app","api",[],{label:"Loan application"}),
+    tn("kyc","kyc",["app"],{label:"KYC / identity"}),
+    tn("bureau","api",["kyc"],{label:"Credit bureau"}),
+    tn("extract","extractor",["bureau"],{label:"Doc extraction",model:"gpt-4o",cx:"moderate"}),
+    tn("risk","classifier",["extract"],{label:"Risk scoring",model:"gpt-4o",cx:"hard"}),
+    tn("reason","llm",["risk"],{label:"Underwriting",model:"claude-opus-4",cx:"hard"}),
+    tn("fraud","fraud",["reason"],{label:"Fraud check"}),
+    tn("officer","approver",["fraud"],{label:"Credit officer",cx:"critical"}),
+    tn("decision","db",["officer"],{label:"Decision record"}),
+    tn("notify","email",["decision"],{label:"Notify applicant"})];},
+  kyc_aml: function(){return [
+    tn("onboard","auth",[],{label:"Onboarding"}),
+    tn("verify","kyc",["onboard"],{label:"Identity verify"}),
+    tn("screen","api",["verify"],{label:"Sanctions / PEP"}),
+    tn("classify","classifier",["screen"],{label:"Risk classify",model:"gpt-4o",cx:"hard"}),
+    tn("embed","embedder",["classify"],{label:"Adverse-media search",model:"openai-text-embedding-3-large"}),
+    tn("web","web_search",["embed"],{label:"Adverse media"}),
+    tn("read","reader",["web"],{label:"Media summary",model:"claude-sonnet-4",cx:"hard"}),
+    tn("analyst","reviewer",["read"],{label:"AML analyst",cx:"critical"}),
+    tn("sar","llm",["analyst"],{label:"SAR draft",model:"gpt-4o",cx:"hard"}),
+    tn("case","db",["sar"],{label:"Case management"})];},
+  claims_processing: function(){return [
+    tn("fnol","chat",[],{label:"FNOL intake"}),
+    tn("policy","sql_db",["fnol"],{label:"Policy lookup"}),
+    tn("extract","extractor",["policy"],{label:"Doc / photo extract",model:"gpt-4o",cx:"hard"}),
+    tn("coverage","classifier",["extract"],{label:"Coverage check",model:"gpt-4o",cx:"moderate"}),
+    tn("fraud","fraud",["coverage"],{label:"Fraud / SIU"}),
+    tn("adjust","llm",["fraud"],{label:"Adjuster reasoning",model:"claude-opus-4",cx:"hard"}),
+    tn("human","approver",["adjust"],{label:"Adjuster review",cx:"critical"}),
+    tn("payout","payment",["human"],{label:"Payout"}),
+    tn("notify","email",["payout"],{label:"Notify claimant"})];},
+  contract_review: function(){return [
+    tn("upload","file_store",[],{label:"Contract upload"}),
+    tn("clauses","extractor",["upload"],{label:"Clause extraction",model:"gpt-4o",cx:"hard"}),
+    tn("risk","classifier",["clauses"],{label:"Risk classify",model:"gpt-4o",cx:"hard"}),
+    tn("embed","embedder",["risk"],{label:"Precedent retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["embed"],{label:"Playbook KB"}),
+    tn("redline","reader",["kb"],{label:"Redline draft",model:"claude-opus-4",cx:"hard"}),
+    tn("lawyer","reviewer",["redline"],{label:"Lawyer review",cx:"critical"}),
+    tn("sign","docusign",["lawyer"],{label:"E-signature"})];},
+  resume_screening: function(){return [
+    tn("apply","api",[],{label:"Application"}),
+    tn("parse","extractor",["apply"],{label:"Resume parse",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("match","embedder",["parse"],{label:"JD match",model:"openai-text-embedding-3-large"}),
+    tn("rerank","reranker",["match"],{label:"Rank candidates",model:"cohere-rerank-3"}),
+    tn("score","classifier",["rerank"],{label:"Fit score",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("summary","llm",["score"],{label:"Candidate summary",model:"claude-sonnet-4"}),
+    tn("recruiter","reviewer",["summary"],{label:"Recruiter review",cx:"hard"}),
+    tn("schedule","api",["recruiter"],{label:"Schedule interview"}),
+    tn("notify","email",["schedule"],{label:"Notify candidate"})];},
+  pr_review: function(){return [
+    tn("pr","github",[],{label:"PR opened"}),
+    tn("diff","coder",["pr"],{label:"Diff analysis",model:"claude-sonnet-4",cx:"hard"}),
+    tn("embed","embedder",["diff"],{label:"Code retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["embed"],{label:"Standards KB"}),
+    tn("review","model_reviewer",["kb"],{label:"AI code review",model:"gpt-4o"}),
+    tn("ci","ci",["review"],{label:"CI / tests"}),
+    tn("approve","approver",["ci"],{label:"Human approve"}),
+    tn("merge","github",["approve"],{label:"Merge"})];},
+  incident_sre: function(){return [
+    tn("alert","datadog",[],{label:"Alert (Datadog)"}),
+    tn("page","pagerduty",["alert"],{label:"PagerDuty"}),
+    tn("triage","classifier",["page"],{label:"Severity triage",model:"gpt-4o-mini",cx:"easy"}),
+    tn("embed","embedder",["triage"],{label:"Runbook retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["embed"],{label:"Runbooks KB"}),
+    tn("rca","llm",["kb"],{label:"Root-cause",model:"claude-opus-4",cx:"hard"}),
+    tn("mitigate","tool_caller",["rca"],{label:"Mitigation",model:"gpt-4o",cx:"hard",misuse:0.12}),
+    tn("mcp","mcp_gateway",["mitigate"],{label:"MCP gateway"}),
+    tn("sre","reviewer",["mcp"],{label:"SRE review",cx:"critical"}),
+    tn("pm","llm",["sre"],{label:"Postmortem",model:"claude-sonnet-4"}),
+    tn("ticket","jira",["pm"],{label:"Jira ticket"})];},
+  content_marketing: function(){return [
+    tn("brief","db",[],{label:"Campaign brief"}),
+    tn("research","embedder",["brief"],{label:"Research retrieve",model:"openai-text-embedding-3-large"}),
+    tn("web","web_search",["research"],{label:"Web research"}),
+    tn("draft","llm",["web"],{label:"Content draft",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("seo","classifier",["draft"],{label:"Brand / SEO check",model:"gpt-4o-mini",cx:"easy"}),
+    tn("fact","model_reviewer",["seo"],{label:"Fact-check",model:"gpt-4o"}),
+    tn("editor","reviewer",["fact"],{label:"Editor review"}),
+    tn("publish","api",["editor"],{label:"Publish (CMS)"})];},
+  nl2sql: function(){return [
+    tn("q","chat",[],{label:"NL question"}),
+    tn("schema","embedder",["q"],{label:"Schema retrieve",model:"openai-text-embedding-3-large"}),
+    tn("meta","sql_db",["schema"],{label:"Schema / catalog"}),
+    tn("sql","coder",["meta"],{label:"SQL generation",model:"gpt-4o",cx:"hard"}),
+    tn("exec","sql_db",["sql"],{label:"Execute query"}),
+    tn("summarize","reader",["exec"],{label:"Summarize result",model:"claude-sonnet-4"}),
+    tn("judge","model_reviewer",["summarize"],{label:"SQL / answer judge",model:"gpt-4o"}),
+    tn("out","chat",["judge"],{label:"Answer + chart"})];},
+  soc_triage: function(){return [
+    tn("alert","api",[],{label:"SIEM alert"}),
+    tn("enrich","enrich",["alert"],{label:"Enrich (IOC)"}),
+    tn("classify","classifier",["enrich"],{label:"Triage classify",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("embed","embedder",["classify"],{label:"Threat-intel search",model:"openai-text-embedding-3-large"}),
+    tn("web","web_search",["embed"],{label:"Threat intel"}),
+    tn("reason","llm",["web"],{label:"Analyst reasoning",model:"claude-opus-4",cx:"hard"}),
+    tn("review","model_reviewer",["reason"],{label:"Tier-2 review",model:"gpt-4o"}),
+    tn("respond","tool_caller",["review"],{label:"Respond / contain",model:"gpt-4o",cx:"hard",misuse:0.1}),
+    tn("page","pagerduty",["respond"],{label:"Escalate / page"})];},
+  supply_chain: function(){return [
+    tn("data","sql_db",[],{label:"Demand data"}),
+    tn("forecast","classifier",["data"],{label:"Demand forecast",model:"gpt-4o",cx:"hard"}),
+    tn("exception","classifier",["forecast"],{label:"Exception detect",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("reason","llm",["exception"],{label:"Reorder reasoning",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("buyer","approver",["reason"],{label:"Buyer approval"}),
+    tn("po","erp",["buyer"],{label:"Create PO (ERP)"}),
+    tn("notify","email",["po"],{label:"Supplier notify"})];},
   review_placement: function(){return [
     nd("req","db",20,200,[],{label:"Request"}),
     nd("weak","llm",175,200,["req"],{label:"Weak agent",skill:0.45}),
@@ -290,7 +479,7 @@ function compactNodeCost(n){var c=nodeCostOf(n);if(!c)return "";var k=c*1000;ret
 function truncW(s,maxChars){s=String(s||"");return s.length>maxChars?s.slice(0,maxChars-1)+"…":s;}
 // Retrieve uses the data (parallelogram) shape to reinforce that it is NOT an
 // agent — it's a vector index + search, not a language model.
-var CAT_SHAPE={Generate:"agent",Govern:"agent",Retrieve:"data",CRM:"tool",Dev:"tool",Comms:"tool",Human:"human",Data:"data"};
+var CAT_SHAPE={Generate:"agent",Govern:"agent",Retrieve:"data",Trust:"tool",Apps:"tool",Dev:"tool",Comms:"tool",Human:"human",Data:"data"};
 var view={k:1,x:0,y:0};
 var svg=document.getElementById("svg"), $=function(id){return document.getElementById(id);};
 var drag=null, draw=null, pan=null, counter=0;
@@ -404,7 +593,7 @@ function deleteSelected(){var s=state.selected;if(!s)return;
 function addNode(type){counter++;var id=type+"_"+counter;var cw=svg.clientWidth||666;var x=(cw/2-view.x)/view.k-W/2+((counter%3)*22-22);var y=(220-view.y)/view.k+((counter%3)*18);state.nodes.push(nd(id,type,x,y,[]));state.selected={kind:"node",id:id};render();analyze();showInspector();}
 
 function buildPalette(){var cats={};Object.keys(CONN).forEach(function(t){var c=CONN[t].cat;(cats[c]=cats[c]||[]).push(t);});
-  var html="";["Generate","Retrieve","Govern","Human","CRM","Dev","Comms","Data"].forEach(function(cat){if(!cats[cat])return;html+="<h3>"+cat+"</h3>";cats[cat].forEach(function(t){html+='<button class="chip" data-add="'+t+'"><span class="dot" style="background:'+CAT_COLOR[cat]+'"></span>'+CONN[t].label+'</button>';});});
+  var html="";["Generate","Retrieve","Govern","Human","Trust","Apps","Dev","Comms","Data"].forEach(function(cat){if(!cats[cat])return;html+="<h3>"+cat+"</h3>";cats[cat].forEach(function(t){html+='<button class="chip" data-add="'+t+'"><span class="dot" style="background:'+CAT_COLOR[cat]+'"></span>'+CONN[t].label+'</button>';});});
   $("palette").innerHTML=html;
   $("palette").querySelectorAll("[data-add]").forEach(function(b){b.addEventListener("click",function(){addNode(b.getAttribute("data-add"));});});}
 
