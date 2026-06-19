@@ -120,6 +120,11 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
     <div class="sec"><h3>Motifs</h3><div id="motifs"></div></div>
     <div class="sec"><h3>Risk ranking</h3><div id="risk"></div></div>
     <div class="sec"><h3>Prescriptions</h3><div id="rx"></div></div>
+    <div class="sec"><h3>Theory toolkit</h3>
+      <div id="theory-readout" style="font-size:11.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:7px"></div>
+      <div id="recipes"></div>
+      <div id="recipe-out" style="font-size:11px;color:var(--text-secondary);margin-top:7px;line-height:1.5"></div>
+    </div>
   </div>
 </div>
 
@@ -752,7 +757,48 @@ function updateSeedPreview(){
     relWarn;
 }
 
-var lastRisk=null, lastBottleneck=null;
+var lastRisk=null, lastBottleneck=null, lastTheory=null;
+
+// ---- Theory-grounded recipe library (each maps to a paper equation) ----
+function rOut(html){$("recipe-out").innerHTML=html;}
+var RECIPES=[
+  {id:"runlonger",label:"Run N× longer",
+   run:function(){var t=lastTheory;if(!t)return;var n=Math.max(1.1,+($("recipe-mult").value||2));
+     if(t.beff<=0){rOut("<b>Can't extend autonomy</b> — the buffer B_eff is already ≤ 0 (at the cliff). First raise C_op or lower the target / process complexity, then come back.");return;}
+     state.nodes.forEach(function(nd){nd.drift_rate=(nd.drift_rate||0)/n;});
+     analyze();showInspector();
+     rOut("Scaled every node's drift by 1/"+n.toFixed(1)+" (more stable models, lower temperature, caching, pinned versions). <b>Autonomy runway T*_auto = B_eff/μ_eff</b> is now ≈ "+n.toFixed(1)+"× longer — drift is what ends an autonomous run, not raw quality.");}},
+  {id:"cliff",label:"Max safe process load",
+   run:function(){var t=lastTheory;if(!t||!isFinite(t.hcrit)){rOut("No finite capacity cliff at this setting.");return;}
+     var safe=Math.max(0,t.hcrit*0.8);var s=$("hw");s.value=safe.toFixed(1);s.dispatchEvent(new Event("input"));
+     rOut("Set process complexity H(W) to 80% of the <b>capacity cliff H_crit="+t.hcrit.toFixed(1)+" bits</b> (Demonstration 7). Above H_crit, no governance policy keeps the workflow autonomous — this is the most routing/branching/tool-variety it can absorb with a safety margin.");}},
+  {id:"minreview",label:"Min review to hit target",
+   run:function(){var t=lastTheory;if(!t)return;var n=byId(t.bottleneck);if(!n){rOut("No bottleneck node.");return;}
+     var sr=MSO.sigmaRawFixedPoint(n.sigma_skill,10,2,0);var ceff=effCatch(n)*(n.fix_rate==null?1:n.fix_rate);
+     var th;if(t.pmin<=sr)th=0;else if(ceff<=0||(1-sr)<=0)th=Infinity;else th=Math.max(0,(t.pmin-sr)/((1-sr)*ceff));
+     rOut("<b>Corrector capacity threshold (K/N)</b>: to hit "+t.pmin.toFixed(2)+" at the bottleneck <b>"+(t.labelOf[t.bottleneck]||t.bottleneck)+"</b> (σ_raw="+sr.toFixed(2)+", effective correction c·f="+ceff.toFixed(2)+"), you must review at least <b>"+(th===Infinity?"100%+ (impossible — strengthen the reviewer/corrector)":Math.min(100,Math.round(th*100))+"%")+"</b> of its outputs. Below that fraction the target is unreachable however you route.");}},
+  {id:"waterfill",label:"Where to invest oversight",
+   run:function(){if(state.nodes.length<2){rOut("Add more nodes.");return;}var pmin=+$("pmin").value;
+     var sr=state.nodes.map(function(n){return MSO.sigmaRawFixedPoint(n.sigma_skill,10,2,0);});
+     var lam=MSO.solveLambda(sr,pmin);var alpha=MSO.optimalAuthority(sr,lam);
+     var ranked=state.nodes.map(function(n,i){return {id:n.id,a:alpha[i]};}).sort(function(a,b){return b.a-a.a;}).slice(0,4);
+     var lab={};state.nodes.forEach(function(n){lab[n.id]=n.label;});
+     rOut("<b>Water-filling allocation α*(x)</b> (Eq. 8) — Fisher-weighted oversight spreads where it has the highest marginal value (mid-competence nodes, not the strongest or weakest). Invest authority/review here first: "+ranked.map(function(r){return lab[r.id]+" (α*="+r.a.toFixed(2)+")";}).join(" · ")+".");}},
+  {id:"buffer",label:"Maximize autonomy buffer",
+   run:function(){var t=lastTheory;if(!t)return;
+     rOut("<b>Autonomy buffer B_eff = C_op − p_min − λ·H(W) = "+t.beff.toFixed(3)+"</b> (Eq. 16). Three levers, by leverage here: "+
+       "raise <b>C_op</b> ("+t.cop.toFixed(3)+") via a stronger model or in-place review at the bottleneck (try ⚡ Optimize), "+
+       "lower <b>H(W)</b> ("+t.hw.toFixed(1)+" bits, costs λ·H per bit — simplify routing / fewer tool variants), "+
+       "or relax the <b>quality target</b> ("+t.pmin.toFixed(2)+"). Each +0.01 of B_eff buys ≈ "+(t.muEff>0?(0.01/t.muEff).toFixed(1):"∞")+" more drift-time of autonomy.");}},
+];
+function renderRecipes(){
+  var html=RECIPES.map(function(r){
+    if(r.id==="runlonger")return '<span style="display:inline-flex;align-items:center;gap:3px;margin:0 4px 5px 0"><input id="recipe-mult" type="number" value="2" min="1.1" step="0.5" style="width:38px;font:inherit;font-size:11px;padding:1px 3px;border:1px solid var(--border);border-radius:4px;background:var(--bg-page);color:var(--text-primary)"><button data-recipe="'+r.id+'" style="font-size:11px;padding:2px 7px">⏱ Run N× longer</button></span>';
+    return '<button data-recipe="'+r.id+'" style="font-size:11px;padding:2px 7px;margin:0 4px 5px 0">'+r.label+'</button>';
+  }).join("");
+  $("recipes").innerHTML=html;
+  $("recipes").querySelectorAll("[data-recipe]").forEach(function(b){b.addEventListener("click",function(){var id=b.getAttribute("data-recipe");var rec=RECIPES.filter(function(x){return x.id===id;})[0];if(rec)rec.run();});});
+}
 function analyze(){
   var pmin=+$("pmin").value, hw=+$("hw").value;
   $("pminv").textContent=pmin.toFixed(2); $("hwv").textContent=hw.toFixed(1);
@@ -789,6 +835,15 @@ function analyze(){
       rx.push("Autonomy can expand at "+labelOf[x.name]+" — review is barely lifting it (M*="+x.masking_index.toFixed(2)+"). Reclaim that oversight budget for the high-masking nodes above.");});
   }
   $("rx").innerHTML=rx.length?rx.slice(0,4).map(function(t){return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.45">→ '+t+'</div>';}).join(""):'<span class="hint">no actions — healthy pipeline</span>';
+  // ---- Theory toolkit: autonomy time (Eq.17), capacity cliff (H_crit), drift μ_eff ----
+  var lam=0.02, muEff=0; state.nodes.forEach(function(n){muEff=Math.max(muEff,n.drift_rate||0);});
+  var tAuto=MSO.autonomyTime(r.cop,pmin,lam,hw,muEff);
+  lastTheory={lam:lam,muEff:muEff,tAuto:tAuto,hcrit:r.hcrit,cop:r.cop,beff:r.beff,pmin:pmin,hw:hw,bottleneck:r.bottleneck,labelOf:labelOf};
+  var tStr=(r.beff<=0)?'<span style="color:var(--tx-danger)">0 — at the cliff</span>':(muEff<=0?'∞ (no drift)':'<b>'+tAuto.toFixed(1)+'</b> drift-time');
+  $("theory-readout").innerHTML=
+    '<div title="T*_auto = B_eff / μ_eff (Eq. 17): how long autonomy lasts before drift forces intervention">⏱ Autonomy runway (T*_auto): '+tStr+' · drift μ_eff='+muEff.toFixed(3)+'</div>'+
+    '<div title="H_crit = (C_op − p_min)/λ: process-entropy ceiling; beyond it, autonomy is impossible">▲ Capacity cliff (H_crit): <b>'+(isFinite(r.hcrit)?r.hcrit.toFixed(1):'∞')+'</b> bits · headroom '+(r.hcrit-hw>0?(r.hcrit-hw).toFixed(1):'0')+' bits at H(W)='+hw.toFixed(1)+'</div>';
+  renderRecipes();
   render();
 }
 ["pmin","hw"].forEach(function(id){$(id).addEventListener("input",analyze);});
