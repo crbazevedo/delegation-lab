@@ -43,6 +43,7 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
   <span class="seg"><button id="zout" title="zoom out" aria-label="zoom out">−</button><button id="zfit" title="fit to view">Fit</button><button id="zin" title="zoom in" aria-label="zoom in">+</button></span>
   <button id="run" type="button">▶ Run tokens</button>
   <button id="import-btn" type="button" style="border-color:var(--blue);color:var(--blue)">⤓ Import your pipeline</button>
+  <button id="export-btn" type="button" title="Download this pipeline (nodes, models, costs) as JSON">⤒ Export</button>
   <span class="hint">click a connector to add · drag ● to link · drag canvas to pan · scroll to zoom · Delete to remove</span>
 </div>
 
@@ -513,7 +514,8 @@ var TEMPLATE_DESC={
   rag:"<b>RAG research assistant</b> — embedders + reranker + grounded reader + groundedness judge.",
 };
 function loadTemplate(name){resetSimRow();document.getElementById("import-note").style.display="none";var ns=TEMPLATES[name]();if(!HAND_LAID[name])ns=MSOEstimate.layout(ns,W,H);state.nodes=ns;state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);
-  var dd=$("tpl-desc"),d=TEMPLATE_DESC[name];if(d&&!HAND_LAID[name]){dd.innerHTML=d;dd.style.display="block";}else dd.style.display="none";}
+  var dd=$("tpl-desc"),d=TEMPLATE_DESC[name];if(d&&!HAND_LAID[name]){dd.innerHTML=d;dd.style.display="block";}else dd.style.display="none";
+  if($("alloc-out")){$("alloc-out").innerHTML="";}optCands=null;}
 function loadImported(parsed){resetSimRow();document.getElementById("lesson").style.display="none";state.nodes=MSOEstimate.layout(parsed.nodes,W,H);state.nodes.forEach(function(n){if(!n.label)n.label=String(n.id).replace(/_/g," ");});state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();var nn=document.getElementById("import-note");nn.style.display="block";nn.innerHTML="<b>Imported your pipeline</b> · "+parsed.note+". Edit any node in the inspector, slide p_min to your target, or press Run tokens.";}
 function showLesson(name){var h=TEMPLATE_HINTS[name],box=$("lesson");if(!h){box.style.display="none";return;}box.style.display="block";
   var acts=(h.actions||[]).map(function(a,i){return '<button data-act="'+i+'" style="margin-right:8px;margin-top:2px">'+a.label+'</button>';}).join("");
@@ -856,23 +858,55 @@ $("seed-apply").addEventListener("click",function(){
   $("seed-modal").style.display="none";
   render();analyze();showInspector();
 });
+// PAVED (EuroVis 2020) + AutoML-trust (IUI 2020): present a small set of
+// allocations on the cost↔quality frontier, lead with the OUTCOME, demote the
+// step list to progressive disclosure, and let the user APPLY one a-posteriori
+// (never auto-commit the optimizer's answer).
+var optCands=null, optBefore=null;
+function ossShare(nodes){var m=nodes.filter(function(n){return n.model;});if(!m.length)return null;var o=m.filter(function(n){return MSO_Registry.isOpenSource(n.model);}).length;return Math.round(100*o/m.length);}
+function applyAllocation(i){
+  var c=optCands&&optCands[i];if(!c)return;
+  c.res.nodes.forEach(function(s){var n=byId(s.id);if(!n)return;n.model=s.model||null;n.oversight_model=s.oversight_model||null;n.complexity=s.complexity;if(n.model){applyDerived(n);n._prior=null;}});
+  render();analyze();showInspector();
+  $("alloc-out").innerHTML='<div style="color:var(--tx-success)">✓ Applied <b>'+c.name+'</b> — C_op '+c.res.c_op.toFixed(3)+' · '+fmtCost(c.res.cost)+'/run</div>';
+  optCands=null;
+}
 function runOptimize(){
   if(!state.nodes.length){$("alloc-out").innerHTML='<span class="hint">add nodes first</span>';return;}
   var pmin=+$("pmin").value;
   var bv=$("budget").value; var budget=(bv===""||bv==null)?null:+bv;
   var specs=state.nodes.map(optSpec);
-  var before=MSO_Optimize.evaluate(specs,pmin,budget);
-  var res=MSO_Optimize.optimizeAllocation(specs,pmin,budget,true);
-  res.nodes.forEach(function(s){var n=byId(s.id);if(!n)return;n.model=s.model||null;n.oversight_model=s.oversight_model||null;n.complexity=s.complexity;if(n.model){applyDerived(n);n._prior=null;}});
-  render();analyze();showInspector();
-  var out='<div><b>C_op '+res.c_op.toFixed(3)+'</b> '+(res.feasible?'<span style="color:var(--tx-success)">≥ target ✓</span>':'<span style="color:var(--tx-danger)">&lt; target (infeasible)</span>')+
-    ' · cost '+fmtCost(res.cost)+(budget!=null?(' · '+(res.within_budget?'<span style="color:var(--tx-success)">within budget ✓</span>':'<span style="color:var(--tx-warning)">over budget</span>')):'')+'</div>';
-  if(before.cost>0 && res.cost<before.cost-1e-12) out+='<div style="color:var(--text-tertiary)">was '+fmtCost(before.cost)+' → '+(before.cost/Math.max(res.cost,1e-12)).toFixed(1)+'× cheaper</div>';
-  if(res.steps.length) out+='<div style="margin-top:4px;line-height:1.5">'+res.steps.map(function(s){return '→ '+s;}).join('<br>')+'</div>';
-  else out+='<div style="color:var(--text-tertiary);margin-top:4px">already optimal for this target</div>';
-  $("alloc-out").innerHTML=out;
+  optBefore=MSO_Optimize.evaluate(specs,pmin,budget);
+  var raw=[{name:"Min cost · meets target",res:MSO_Optimize.optimizeAllocation(specs,pmin,null,true)}];
+  var hi=Math.min(pmin+0.05,0.95);
+  if(hi>pmin+1e-6)raw.push({name:"More headroom (+0.05)",res:MSO_Optimize.optimizeAllocation(specs,hi,null,true)});
+  if(budget!=null)raw.push({name:"Fit budget $"+budget,res:MSO_Optimize.optimizeAllocation(specs,pmin,budget,true)});
+  // dedupe near-identical allocations (same rounded C_op + cost)
+  var seen={};optCands=[];
+  raw.forEach(function(c){var k=c.res.c_op.toFixed(3)+"|"+c.res.cost.toFixed(5);if(!seen[k]){seen[k]=1;optCands.push(c);}});
+  var html='<div style="color:var(--text-tertiary);margin-bottom:6px">Baseline C_op '+optBefore.c_op.toFixed(3)+' · '+fmtCost(optBefore.cost)+'/run. Choose an allocation:</div>';
+  optCands.forEach(function(c,i){
+    var r=c.res, oss=ossShare(r.nodes);
+    var saved=(optBefore.cost>0&&r.cost<optBefore.cost-1e-12)?(' · <span style="color:var(--tx-success)">'+(optBefore.cost/Math.max(r.cost,1e-12)).toFixed(1)+'× cheaper</span>'):'';
+    html+='<div style="border:1px solid var(--border);border-radius:6px;padding:7px 9px;margin-bottom:6px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-weight:600">'+c.name+'</span>'+
+        '<button data-apply="'+i+'" class="on" style="font-size:11px;padding:2px 10px">Apply</button></div>'+
+      '<div style="margin-top:3px">C_op <b>'+r.c_op.toFixed(3)+'</b> '+(r.feasible?'<span style="color:var(--tx-success)">≥ target ✓</span>':'<span style="color:var(--tx-danger)">&lt; target</span>')+
+        ' · '+fmtCost(r.cost)+'/run'+saved+(oss!=null?(' · '+oss+'% open-source'):'')+'</div>'+
+      (r.steps.length?'<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--text-tertiary);font-size:10.5px">what changed ('+r.steps.length+' moves)</summary><div style="margin-top:3px;line-height:1.5;font-size:10.5px;color:var(--text-secondary)">'+r.steps.map(function(s){return '→ '+s;}).join('<br>')+'</div></details>':'<div style="color:var(--text-tertiary);font-size:10.5px;margin-top:3px">already optimal</div>')+
+    '</div>';
+  });
+  $("alloc-out").innerHTML=html;
+  $("alloc-out").querySelectorAll("[data-apply]").forEach(function(b){b.addEventListener("click",function(){applyAllocation(+b.getAttribute("data-apply"));});});
 }
 $("opt-run").addEventListener("click",runOptimize);
+$("export-btn").addEventListener("click",function(){
+  var pmin=+$("pmin").value, r=MSO.analyzePipeline(pipeline(),{p_min:pmin,process_entropy:+$("hw").value});
+  var doc={meta:{tool:"MSO governance cockpit",exported:new Date().toISOString(),p_min:pmin,c_op:r.cop,b_eff:r.beff,cost_per_run:totalCost()},
+    nodes:state.nodes.map(function(n){return {id:n.id,label:n.label,type:n.type,model:n.model||null,oversight_model:n.oversight_model||null,complexity:n.complexity||"moderate",tool_misuse:n.tool_misuse||0,sigma_skill:n.sigma_skill,catch_rate:n.catch_rate,fix_rate:n.fix_rate,parents:(n.parents||[]).slice(),aggregation:n.aggregation,rework:n.rework||1};})};
+  var blob=new Blob([JSON.stringify(doc,null,2)],{type:"application/json"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="mso-pipeline.json";a.click();URL.revokeObjectURL(a.href);
+});
 $("tpl").value="support_triage";loadTemplate("support_triage");
 </script>
 </body>

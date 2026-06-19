@@ -75,6 +75,7 @@ nav:
   - Methodology:
     - How the Priors Are Built: methodology/priors.md
     - Priors Evidence Ledger: methodology/priors-evidence.md
+    - Cockpit Design Rationale: methodology/cockpit-ux.md
   - Paper:
     - Validation (8 Experiments): paper/validation.md
     - Equation-to-Code Reference: paper/references.md
