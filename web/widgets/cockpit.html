@@ -36,7 +36,7 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
 
 <div class="toolbar">
   <label class="hint">Load template
-    <select id="tpl"><optgroup label="Workflows"><option value="sales">Sales — lead to deal</option><option value="support">Customer support triage</option><option value="github">GitHub PR review</option><option value="rag">RAG research assistant</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option></optgroup><optgroup label="Lessons (try the hint)"><option value="reviewer_corrector">Lesson · reviewer ≠ corrector</option><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><option value="blank">Blank canvas</option></select>
+    <select id="tpl"><optgroup label="Workflows"><option value="sales">Sales — lead to deal</option><option value="support">Customer support triage</option><option value="github">GitHub PR review</option><option value="rag">RAG research assistant</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option></optgroup><optgroup label="Agentic (models pre-loaded · try ⚡ Optimize)"><option value="agentic_rag">Agentic RAG + rerank</option><option value="tool_agent">Tool-using agent (MCP)</option></optgroup><optgroup label="Lessons (try the hint)"><option value="reviewer_corrector">Lesson · reviewer ≠ corrector</option><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><option value="blank">Blank canvas</option></select>
   </label>
   <span class="rng" style="gap:6px" title="p_min — the corrected quality the pipeline must sustain"><span class="hint">Quality target</span><input type="range" id="pmin" min="0.50" max="0.95" step="0.01" value="0.80" style="width:110px"><b id="pminv">0.80</b></span>
   <span class="rng" style="gap:6px" title="H(W) — process complexity / entropy in bits; higher means more routing & drift"><span class="hint">Process complexity</span><input type="range" id="hw" min="0" max="6" step="0.1" value="0" style="width:90px"><b id="hwv">0.0</b></span>
@@ -139,6 +139,7 @@ var CONN = {
   extractor:{label:"Extractor",cat:"Generate",skill:0.70,catch:0.50,fix:1.0,drift:0.06,task:"extraction"},
   classifier:{label:"Classifier / router",cat:"Generate",skill:0.62,catch:0.65,fix:1.0,drift:0.05,task:"classification"},
   reader:{label:"RAG reader (grounded)",cat:"Generate",skill:0.62,catch:0.55,fix:1.0,drift:0.08,task:"grounded_generation"},
+  tool_caller:{label:"Tool caller (MCP agent)",cat:"Generate",skill:0.62,catch:0.55,fix:1.0,drift:0.10,task:"classification"},
   // --- AI · Retrieve (NOT an LLM — embedding + vector search, then post-ranking) ---
   embedder:{label:"Embedder / retriever",cat:"Retrieve",skill:0.80,catch:0.0,fix:1.0,drift:0.03,task:"retrieval"},
   reranker:{label:"Reranker (post-rank)",cat:"Retrieve",skill:0.84,catch:0.0,fix:1.0,drift:0.04,task:"reranking"},
@@ -151,6 +152,7 @@ var CONN = {
   // --- Tools / systems (deterministic connectors) ---
   hubspot:{label:"HubSpot",cat:"CRM",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
   salesforce:{label:"Salesforce",cat:"CRM",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  mcp_gateway:{label:"MCP gateway",cat:"Dev",skill:0.95,catch:0.50,fix:1.0,drift:0.01},
   github:{label:"GitHub",cat:"Dev",skill:0.88,catch:0.50,fix:1.0,drift:0.02},
   jira:{label:"Jira",cat:"Dev",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
   ci:{label:"CI check",cat:"Dev",skill:0.9,catch:0.6,fix:1.0,drift:0.01},
@@ -162,7 +164,7 @@ var CONN = {
 var CAT_COLOR = {Generate:"#EF9F27",Retrieve:"#2AA7C4",Govern:"#C75DAB",CRM:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",Human:"#639922",Data:"#888780"};
 var MOTIF_COLOR = {chain:"#888780",fan_out:"#EF9F27",merge:"#7F77DD",diamond:"#E24B4A",single:"#888780"};
 
-function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];return {id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,fix_rate:over.fix!=null?over.fix:(c.fix!=null?c.fix:1.0),drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1};}
+function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];var n={id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,fix_rate:over.fix!=null?over.fix:(c.fix!=null?c.fix:1.0),drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1,model:over.model||null,complexity:over.cx||"moderate",tool_misuse:over.misuse||0};if(n.model&&typeof MSO_Optimize!=="undefined")applyDerived(n);return n;}
 var AGG_LABEL={product:"all-required",min:"weakest-link",mean:"vote / redundant"};
 var TEMPLATES = {
   sales: function(){var n=[
@@ -213,6 +215,23 @@ var TEMPLATES = {
     nd("ar","llm",310,300,["reconcile"],{label:"AR agent",skill:0.52}),
     nd("control","approver",455,200,["ap","ar"],{label:"Controller"}),
     nd("report","db",600,200,["control"],{label:"Report"})];return n;},
+  // Realistic agentic workflows with models PRE-LOADED (expensive — try ⚡ Optimize).
+  agentic_rag: function(){return [
+    nd("q","db",20,200,[],{label:"User query"}),
+    nd("rewrite","llm",150,200,["q"],{label:"Query rewrite",model:"claude-opus-4",cx:"easy"}),
+    nd("embed","embedder",300,108,["rewrite"],{label:"Web embed+search",model:"qwen3-embedding-8b"}),
+    nd("kb","embedder",300,300,["rewrite"],{label:"KB search",model:"openai-text-embedding-3-large"}),
+    nd("rerank","reranker",450,200,["embed","kb"],{label:"Rerank",model:"cohere-rerank-3"}),
+    nd("read","reader",600,200,["rerank"],{label:"Grounded answer",model:"claude-opus-4",cx:"hard"}),
+    nd("judge","model_reviewer",750,200,["read"],{label:"Groundedness judge",model:"claude-opus-4"}),
+    nd("answer","db",900,200,["judge"],{label:"Answer"})];},
+  tool_agent: function(){return [
+    nd("req","db",20,200,[],{label:"Request"}),
+    nd("plan","llm",165,200,["req"],{label:"Planner",model:"claude-opus-4",cx:"moderate"}),
+    nd("tools","tool_caller",320,200,["plan"],{label:"Tool caller",model:"claude-opus-4",cx:"moderate",misuse:0.15}),
+    nd("mcp","mcp_gateway",470,200,["tools"],{label:"MCP gateway"}),
+    nd("verify","model_reviewer",610,200,["mcp"],{label:"Output verifier",model:"claude-opus-4"}),
+    nd("done","db",750,200,["verify"],{label:"Result"})];},
   review_placement: function(){return [
     nd("req","db",20,200,[],{label:"Request"}),
     nd("weak","llm",175,200,["req"],{label:"Weak agent",skill:0.45}),
@@ -278,7 +297,7 @@ function effCatch(n){var k=n.rework||1;return k>1?1-Math.pow(1-n.catch_rate,k):n
 function pipeline(){return {nodes:state.nodes.map(function(n){return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:effCatch(n),fix_rate:n.fix_rate==null?1.0:n.fix_rate,parents:(n.parents||[]).slice(),aggregation:n.aggregation};})};}
 
 // ---- Cost-aware allocation glue (mso-optimize.js / mso-registry.js) ----
-var OPT_ROLE={llm:"generator",coder:"generator",extractor:"generator",classifier:"classifier",reader:"reader",embedder:"retriever",reranker:"reranker",model_reviewer:"reviewer",corrector:"corrector",reviewer:"reviewer",approver:"reviewer"};
+var OPT_ROLE={llm:"generator",coder:"generator",extractor:"generator",classifier:"classifier",reader:"reader",tool_caller:"classifier",embedder:"retriever",reranker:"reranker",model_reviewer:"reviewer",corrector:"corrector",reviewer:"reviewer",approver:"reviewer"};
 function optSpec(n){return {id:n.id,role:OPT_ROLE[n.type]||"tool",task:(CONN[n.type]||{}).task||null,complexity:n.complexity||"moderate",tool_misuse:n.tool_misuse||0,model:n.model||null,oversight_model:n.oversight_model||null,parents:(n.parents||[]).slice(),aggregation:n.aggregation||"product",sigma_skill:n.sigma_skill,catch_rate:effCatch(n),fix_rate:n.fix_rate==null?1.0:n.fix_rate};}
 // When a node carries a model, its σ_skill / catch / fix are derived from the
 // (model × task × complexity) prior — the benchmark-grounded path.
@@ -379,7 +398,8 @@ function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
     var mopts='<option value="">— none (manual σ) —</option>'+mlist.map(function(m){var rg=MSO_Registry.get(m);return '<option value="'+m+'"'+(m===n.model?' selected':'')+'>'+m+(rg&&rg.open?' · OSS':'')+'</option>';}).join("");
     var cxopts=["trivial","easy","moderate","hard","critical"].map(function(cx){return '<option value="'+cx+'"'+((n.complexity||"moderate")===cx?' selected':'')+'>'+cx+'</option>';}).join("");
     modelSection='<div class="field"><label>Model — sets σ from benchmarks &amp; cost</label><select id="f-model">'+mopts+'</select></div>'+
-      '<div class="field"><label>Task complexity (harder ⇒ needs stronger model)</label><select id="f-cx">'+cxopts+'</select></div>';
+      '<div class="field"><label>Task complexity (harder ⇒ needs stronger model)</label><select id="f-cx">'+cxopts+'</select></div>'+
+      '<div class="field"><label>Tool-misuse rate — agent calls a tool wrong/unsafe</label><div class="rng"><input type="range" id="f-misuse" min="0" max="0.5" step="0.01" value="'+(n.tool_misuse||0)+'"><b id="f-misusev">'+((n.tool_misuse||0)).toFixed(2)+'</b></div></div>';
   }
   box.innerHTML='<div class="field"><label>Name</label><input type="text" id="f-label" value="'+n.label.replace(/"/g,"&quot;")+'"></div>'+
     '<div class="field"><label>Component</label><select id="f-type">'+opts+'</select></div>'+
@@ -400,6 +420,7 @@ function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
   $("f-type").addEventListener("change",function(){n.type=this.value;n.model=null;n.oversight_model=null;render();analyze();showInspector();});
   if($("f-model"))$("f-model").addEventListener("change",function(){n.model=this.value||null;n.oversight_model=null;if(n.model){applyDerived(n);n._prior=null;}render();analyze();showInspector();});
   if($("f-cx"))$("f-cx").addEventListener("change",function(){n.complexity=this.value;if(n.model)applyDerived(n);render();analyze();showInspector();});
+  if($("f-misuse"))$("f-misuse").addEventListener("input",function(){n.tool_misuse=+this.value;$("f-misusev").textContent=n.tool_misuse.toFixed(2);if(n.model)applyDerived(n);render();analyze();});
   $("f-skill").addEventListener("input",function(){n.sigma_skill=+this.value;$("f-skillv").textContent=n.sigma_skill.toFixed(2);n._prior=null;n.model=null;render();analyze();});
   $("f-catch").addEventListener("input",function(){n.catch_rate=+this.value;$("f-catchv").textContent=n.catch_rate.toFixed(2);n._prior=null;render();analyze();});
   $("f-fix").addEventListener("input",function(){n.fix_rate=+this.value;$("f-fixv").textContent=(+this.value).toFixed(2);n._prior=null;render();analyze();});
