@@ -73,6 +73,7 @@ nav:
     - Calibrating from Traces: guides/traces.md
     - Reading the Report: guides/interpret.md
   - Methodology:
+    - Theory in the Cockpit: methodology/theory-in-the-cockpit.md
     - How the Priors Are Built: methodology/priors.md
     - Priors Evidence Ledger: methodology/priors-evidence.md
     - Cockpit Design Rationale: methodology/cockpit-ux.md
