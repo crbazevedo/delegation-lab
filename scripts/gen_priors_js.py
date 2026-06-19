@@ -154,10 +154,16 @@ def build() -> str:
     return out;
   }}
 
+  /** The prior band MID for (model, task), or null. Used by the optimizer. */
+  function priorMid(model, taskType) {{
+    var cell = CELLS[model + "|" + taskType];
+    return cell ? cell.band.mid : null;
+  }}
+
   return {{
     listModels: listModels, listTaskTypes: listTaskTypes,
     tasksForModel: tasksForModel, modelsForTask: modelsForTask,
-    hasCell: hasCell, seedNode: seedNode, GAMMA: GAMMA
+    hasCell: hasCell, seedNode: seedNode, priorMid: priorMid, GAMMA: GAMMA
   }};
 }});
 '''

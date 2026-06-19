@@ -2,8 +2,27 @@
 
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
+
 from minimal_oversight import priors as P
 from minimal_oversight import registry as R
+
+_REPO = Path(__file__).resolve().parents[1]
+
+
+def test_js_registry_bundle_is_regenerated():
+    """web/mso-registry.js must be freshly generated from model_registry.yaml."""
+    spec = importlib.util.spec_from_file_location(
+        "gen_registry_js", _REPO / "scripts" / "gen_registry_js.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    generated = mod.build()
+    on_disk = (_REPO / "web" / "mso-registry.js").read_text()
+    assert generated == on_disk, (
+        "web/mso-registry.js is stale — run: python scripts/gen_registry_js.py"
+    )
 
 # Roles that are configurations, not real costable models.
 _NON_MODELS = {
