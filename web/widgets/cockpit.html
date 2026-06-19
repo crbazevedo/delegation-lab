@@ -36,16 +36,18 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
 
 <div class="toolbar">
   <label class="hint">Load template
-    <select id="tpl"><optgroup label="Workflows"><option value="sales">Sales — lead to deal</option><option value="support">Customer support triage</option><option value="github">GitHub PR review</option><option value="rag">RAG research assistant</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option></optgroup><optgroup label="Lessons (try the hint)"><option value="reviewer_corrector">Lesson · reviewer ≠ corrector</option><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><option value="blank">Blank canvas</option></select>
+    <select id="tpl"><optgroup label="★ Commerce &amp; Retail (models pre-loaded · try ⚡ Optimize)"><option value="conv_commerce">Conversational commerce (14-node multi-agent)</option><option value="returns_refunds">Returns &amp; refunds agent</option><option value="sales">Sales — lead to deal</option></optgroup><optgroup label="Support &amp; Knowledge"><option value="support_triage">Support ticket triage</option><option value="kb_assistant">Enterprise knowledge assistant</option><option value="agentic_rag">Agentic RAG + rerank</option></optgroup><optgroup label="Finance &amp; Risk"><option value="loan_underwriting">Loan underwriting</option><option value="kyc_aml">KYC / AML screening</option><option value="claims_processing">Insurance claims</option></optgroup><optgroup label="Healthcare &amp; Legal"><option value="patient_intake">Patient intake &amp; clinical support</option><option value="contract_review">Contract review</option></optgroup><optgroup label="Software &amp; Ops"><option value="pr_review">AI code review (PR)</option><option value="incident_sre">SRE incident response</option><option value="soc_triage">Security SOC alert triage</option><option value="tool_agent">Tool-using agent (MCP)</option></optgroup><optgroup label="Ops &amp; Growth"><option value="resume_screening">HR resume screening</option><option value="content_marketing">Marketing content + campaign</option><option value="nl2sql">Analytics NL→SQL</option><option value="supply_chain">Supply-chain reorder</option></optgroup><optgroup label="Lessons (try the hint)"><option value="reviewer_corrector">Lesson · reviewer ≠ corrector</option><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><optgroup label="Other"><option value="rag">RAG research assistant</option><option value="github">GitHub PR review</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option><option value="blank">Blank canvas</option></optgroup></select>
   </label>
   <span class="rng" style="gap:6px" title="p_min — the corrected quality the pipeline must sustain"><span class="hint">Quality target</span><input type="range" id="pmin" min="0.50" max="0.95" step="0.01" value="0.80" style="width:110px"><b id="pminv">0.80</b></span>
   <span class="rng" style="gap:6px" title="H(W) — process complexity / entropy in bits; higher means more routing & drift"><span class="hint">Process complexity</span><input type="range" id="hw" min="0" max="6" step="0.1" value="0" style="width:90px"><b id="hwv">0.0</b></span>
   <span class="seg"><button id="zout" title="zoom out" aria-label="zoom out">−</button><button id="zfit" title="fit to view">Fit</button><button id="zin" title="zoom in" aria-label="zoom in">+</button></span>
   <button id="run" type="button">▶ Run tokens</button>
   <button id="import-btn" type="button" style="border-color:var(--blue);color:var(--blue)">⤓ Import your pipeline</button>
+  <button id="export-btn" type="button" title="Download this pipeline (nodes, models, costs) as JSON">⤒ Export</button>
   <span class="hint">click a connector to add · drag ● to link · drag canvas to pan · scroll to zoom · Delete to remove</span>
 </div>
 
+<div id="tpl-desc" style="display:none;font-size:12.5px;color:var(--text-secondary);margin:-2px 0 12px;line-height:1.5"></div>
 <div id="lesson" style="display:none;background:var(--bg-warning);color:var(--tx-warning);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px;line-height:1.5"></div>
 <div id="import-note" style="display:none;background:var(--bg-success);color:var(--tx-success);border-radius:var(--radius);padding:9px 13px;margin-bottom:12px;font-size:13px"></div>
 
@@ -102,6 +104,14 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
       <div class="minicard" title="M* = σ_corr/σ_raw — how much review is hiding weak raw competence (>1 = masking)"><div class="l">Worst masking (M*)</div><div class="v" id="mstar">—</div></div>
       <div class="minicard" title="structural patterns that are fragile under delegation"><div class="l">Fragile motifs</div><div class="v" id="nmotif">—</div></div>
     </div>
+    <div id="alloc" style="margin:0 0 12px;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:9px 11px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px">
+        <span title="total model spend per pipeline run, from the cost registry">Cost <b id="totalcost">—</b> <span style="color:var(--text-tertiary)">/run</span></span>
+        <span class="rng" style="gap:5px" title="optional cost ceiling per run for the optimizer"><span class="hint">budget $</span><input type="number" id="budget" step="0.001" min="0" placeholder="none" style="width:74px;font:inherit;font-size:12px;padding:2px 5px;border:1px solid var(--border);border-radius:5px;background:var(--bg-page);color:var(--text-primary)"></span>
+      </div>
+      <button id="opt-run" type="button" style="width:100%;font-size:12px" title="Find the cheapest model-per-node allocation (open-source preferred) that meets the quality target — investing in review where needed; or trim an expensive pipeline to the budget while holding the bar.">⚡ Optimize allocation</button>
+      <div id="alloc-out" style="font-size:11px;color:var(--text-secondary);margin-top:7px"></div>
+    </div>
     <div id="simrow" style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.</div>
     <div class="sec" id="inspector-sec" style="display:none">
       <h3>Selected node</h3>
@@ -110,15 +120,22 @@ svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cur
     <div class="sec"><h3>Motifs</h3><div id="motifs"></div></div>
     <div class="sec"><h3>Risk ranking</h3><div id="risk"></div></div>
     <div class="sec"><h3>Prescriptions</h3><div id="rx"></div></div>
+    <div class="sec"><h3>Theory toolkit</h3>
+      <div id="theory-readout" style="font-size:11.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:7px"></div>
+      <div id="recipes"></div>
+      <div id="recipe-out" style="font-size:11px;color:var(--text-secondary);margin-top:7px;line-height:1.5"></div>
+    </div>
   </div>
 </div>
 
-<p class="foot">Every value is computed by <code>mso-core.js</code> (Fisher info, capacity propagation, masking, water-filling, motif detection, delegation centrality), pinned to <code>minimal-oversight==0.1.3</code> by the parity test. Component parameters are illustrative defaults — seed any node from public benchmarks (⊕) or edit to match your system. <a href="../../methodology/priors/" style="color:var(--text-secondary)">How the priors are built ↗</a></p>
+<p class="foot">Every value is computed by <code>mso-core.js</code> (Fisher info, capacity propagation, masking, water-filling, motif detection, delegation centrality), pinned to <code>minimal-oversight==0.1.3</code> by the parity test. Component parameters are illustrative defaults — seed any node from public benchmarks (⊕) or edit to match your system. <a href="../../methodology/theory-in-the-cockpit/" style="color:var(--text-secondary)">Theory in the cockpit ↗</a> · <a href="../../methodology/priors/" style="color:var(--text-secondary)">How the priors are built ↗</a></p>
 
 <script src="../mso-core.js"></script>
 <script src="../mso-sim.js"></script>
 <script src="../mso-estimate.js"></script>
 <script src="../mso-priors.js"></script>
+<script src="../mso-registry.js"></script>
+<script src="../mso-optimize.js"></script>
 <script>
 // task = which prior column seeds this node (see mso-priors.js / methodology).
 // fix = corrector repair-success (f); catch = reviewer detection (c). σ_corr uses c·f.
@@ -129,6 +146,7 @@ var CONN = {
   extractor:{label:"Extractor",cat:"Generate",skill:0.70,catch:0.50,fix:1.0,drift:0.06,task:"extraction"},
   classifier:{label:"Classifier / router",cat:"Generate",skill:0.62,catch:0.65,fix:1.0,drift:0.05,task:"classification"},
   reader:{label:"RAG reader (grounded)",cat:"Generate",skill:0.62,catch:0.55,fix:1.0,drift:0.08,task:"grounded_generation"},
+  tool_caller:{label:"Tool caller (MCP agent)",cat:"Generate",skill:0.62,catch:0.55,fix:1.0,drift:0.10,task:"classification"},
   // --- AI · Retrieve (NOT an LLM — embedding + vector search, then post-ranking) ---
   embedder:{label:"Embedder / retriever",cat:"Retrieve",skill:0.80,catch:0.0,fix:1.0,drift:0.03,task:"retrieval"},
   reranker:{label:"Reranker (post-rank)",cat:"Retrieve",skill:0.84,catch:0.0,fix:1.0,drift:0.04,task:"reranking"},
@@ -138,21 +156,48 @@ var CONN = {
   // --- Human ---
   reviewer:{label:"Human reviewer",cat:"Human",skill:0.90,catch:0.85,fix:1.0,drift:0.01,task:"review"},
   approver:{label:"Approver gate",cat:"Human",skill:0.92,catch:0.85,fix:1.0,drift:0.01,task:"review"},
-  // --- Tools / systems (deterministic connectors) ---
-  hubspot:{label:"HubSpot",cat:"CRM",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
-  salesforce:{label:"Salesforce",cat:"CRM",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  // --- Business apps / CRM-ERP (deterministic connectors) ---
+  hubspot:{label:"HubSpot",cat:"Apps",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  salesforce:{label:"Salesforce CRM",cat:"Apps",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
+  erp:{label:"ERP (SAP/NetSuite)",cat:"Apps",skill:0.94,catch:0.50,fix:1.0,drift:0.01},
+  servicenow:{label:"ITSM (ServiceNow)",cat:"Apps",skill:0.93,catch:0.50,fix:1.0,drift:0.02},
+  docusign:{label:"E-sign (DocuSign)",cat:"Apps",skill:0.96,catch:0.50,fix:1.0,drift:0.01},
+  zendesk:{label:"Helpdesk (Zendesk)",cat:"Apps",skill:0.85,catch:0.50,fix:1.0,drift:0.03},
+  // --- Identity & money ---
+  auth:{label:"Auth / SSO (Auth0)",cat:"Trust",skill:0.97,catch:0.50,fix:1.0,drift:0.01},
+  kyc:{label:"KYC / identity (Plaid)",cat:"Trust",skill:0.92,catch:0.60,fix:1.0,drift:0.02},
+  payment:{label:"Payments (Stripe)",cat:"Trust",skill:0.97,catch:0.50,fix:1.0,drift:0.01},
+  fraud:{label:"Fraud / risk API",cat:"Trust",skill:0.90,catch:0.60,fix:1.0,drift:0.03},
+  billing:{label:"Billing / subscriptions",cat:"Trust",skill:0.95,catch:0.50,fix:1.0,drift:0.01},
+  // --- DevOps / observability ---
+  mcp_gateway:{label:"MCP gateway",cat:"Dev",skill:0.95,catch:0.50,fix:1.0,drift:0.01},
   github:{label:"GitHub",cat:"Dev",skill:0.88,catch:0.50,fix:1.0,drift:0.02},
   jira:{label:"Jira",cat:"Dev",skill:0.85,catch:0.50,fix:1.0,drift:0.02},
-  ci:{label:"CI check",cat:"Dev",skill:0.9,catch:0.6,fix:1.0,drift:0.01},
+  ci:{label:"CI / CD check",cat:"Dev",skill:0.9,catch:0.6,fix:1.0,drift:0.01},
+  pagerduty:{label:"PagerDuty / on-call",cat:"Dev",skill:0.95,catch:0.60,fix:1.0,drift:0.01},
+  datadog:{label:"Datadog / o11y",cat:"Dev",skill:0.94,catch:0.60,fix:1.0,drift:0.02},
+  // --- Comms / messaging ---
   slack:{label:"Slack",cat:"Comms",skill:0.85,catch:0.50,fix:1.0,drift:0.03},
-  zendesk:{label:"Zendesk",cat:"Comms",skill:0.85,catch:0.50,fix:1.0,drift:0.03},
-  enrich:{label:"Enrichment",cat:"Data",skill:0.80,catch:0.60,fix:1.0,drift:0.04},
-  db:{label:"Datastore",cat:"Data",skill:0.90,catch:0.50,fix:1.0,drift:0.01}
+  email:{label:"Email (SendGrid)",cat:"Comms",skill:0.96,catch:0.50,fix:1.0,drift:0.02},
+  sms:{label:"SMS / WhatsApp (Twilio)",cat:"Comms",skill:0.95,catch:0.50,fix:1.0,drift:0.02},
+  chat:{label:"Chat widget",cat:"Comms",skill:0.92,catch:0.50,fix:1.0,drift:0.02},
+  // --- Data & sources / sinks ---
+  db:{label:"Datastore",cat:"Data",skill:0.90,catch:0.50,fix:1.0,drift:0.01},
+  vector_db:{label:"Vector DB (Pinecone)",cat:"Data",skill:0.95,catch:0.50,fix:1.0,drift:0.01},
+  sql_db:{label:"SQL / warehouse",cat:"Data",skill:0.96,catch:0.50,fix:1.0,drift:0.01},
+  knowledge_base:{label:"Knowledge base",cat:"Data",skill:0.93,catch:0.50,fix:1.0,drift:0.02},
+  file_store:{label:"File store (S3)",cat:"Data",skill:0.97,catch:0.50,fix:1.0,drift:0.01},
+  web_search:{label:"Web search API",cat:"Data",skill:0.85,catch:0.50,fix:1.0,drift:0.05},
+  ehr:{label:"EHR / FHIR (Epic)",cat:"Data",skill:0.93,catch:0.50,fix:1.0,drift:0.02},
+  api:{label:"External API",cat:"Data",skill:0.90,catch:0.50,fix:1.0,drift:0.04},
+  enrich:{label:"Data enrichment",cat:"Data",skill:0.80,catch:0.60,fix:1.0,drift:0.04}
 };
-var CAT_COLOR = {Generate:"#EF9F27",Retrieve:"#2AA7C4",Govern:"#C75DAB",CRM:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",Human:"#639922",Data:"#888780"};
+var CAT_COLOR = {Generate:"#EF9F27",Retrieve:"#2AA7C4",Govern:"#C75DAB",Human:"#639922",Trust:"#B5894E",Apps:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",Data:"#888780"};
 var MOTIF_COLOR = {chain:"#888780",fan_out:"#EF9F27",merge:"#7F77DD",diamond:"#E24B4A",single:"#888780"};
 
-function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];return {id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,fix_rate:over.fix!=null?over.fix:(c.fix!=null?c.fix:1.0),drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1};}
+function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];var n={id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,fix_rate:over.fix!=null?over.fix:(c.fix!=null?c.fix:1.0),drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1,model:over.model||null,complexity:over.cx||"moderate",tool_misuse:over.misuse||0};if(n.model&&typeof MSO_Optimize!=="undefined")applyDerived(n);return n;}
+// template node without coordinates — loadTemplate auto-lays-out workflows
+function tn(id,type,parents,over){return nd(id,type,0,0,parents,over);}
 var AGG_LABEL={product:"all-required",min:"weakest-link",mean:"vote / redundant"};
 var TEMPLATES = {
   sales: function(){var n=[
@@ -203,6 +248,186 @@ var TEMPLATES = {
     nd("ar","llm",310,300,["reconcile"],{label:"AR agent",skill:0.52}),
     nd("control","approver",455,200,["ap","ar"],{label:"Controller"}),
     nd("report","db",600,200,["control"],{label:"Report"})];return n;},
+  // Realistic agentic workflows with models PRE-LOADED (expensive — try ⚡ Optimize).
+  agentic_rag: function(){return [
+    nd("q","db",20,200,[],{label:"User query"}),
+    nd("rewrite","llm",150,200,["q"],{label:"Query rewrite",model:"claude-opus-4",cx:"easy"}),
+    nd("embed","embedder",300,108,["rewrite"],{label:"Web embed+search",model:"qwen3-embedding-8b"}),
+    nd("kb","embedder",300,300,["rewrite"],{label:"KB search",model:"openai-text-embedding-3-large"}),
+    nd("rerank","reranker",450,200,["embed","kb"],{label:"Rerank",model:"cohere-rerank-3"}),
+    nd("read","reader",600,200,["rerank"],{label:"Grounded answer",model:"claude-opus-4",cx:"hard"}),
+    nd("judge","model_reviewer",750,200,["read"],{label:"Groundedness judge",model:"claude-opus-4"}),
+    nd("answer","db",900,200,["judge"],{label:"Answer"})];},
+  tool_agent: function(){return [
+    nd("req","db",20,200,[],{label:"Request"}),
+    nd("plan","llm",165,200,["req"],{label:"Planner",model:"claude-opus-4",cx:"moderate"}),
+    nd("tools","tool_caller",320,200,["plan"],{label:"Tool caller",model:"claude-opus-4",cx:"moderate",misuse:0.15}),
+    nd("mcp","mcp_gateway",470,200,["tools"],{label:"MCP gateway"}),
+    nd("verify","model_reviewer",610,200,["mcp"],{label:"Output verifier",model:"claude-opus-4"}),
+    nd("done","db",750,200,["verify"],{label:"Result"})];},
+  // ===== Realistic multi-industry workflows (auto-laid-out; models pre-loaded) =====
+  conv_commerce: function(){return [
+    tn("chat","chat",[],{label:"Shopper chat"}),
+    tn("auth","auth",["chat"],{label:"Login / SSO"}),
+    tn("intent","classifier",["auth"],{label:"Intent router",model:"gpt-4o-mini",cx:"easy"}),
+    tn("search","embedder",["intent"],{label:"Product search",model:"openai-text-embedding-3-large"}),
+    tn("catalog","vector_db",["search"],{label:"Catalog vector DB"}),
+    tn("rerank","reranker",["catalog"],{label:"Rerank results",model:"cohere-rerank-3"}),
+    tn("reco","reader",["rerank"],{label:"Recommendation",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("cart","api",["reco"],{label:"Cart service"}),
+    tn("checkout","llm",["cart"],{label:"Checkout agent",model:"gpt-4o",cx:"moderate"}),
+    tn("fraud","fraud",["checkout"],{label:"Fraud / risk"}),
+    tn("pay","payment",["fraud"],{label:"Payments (Stripe)"}),
+    tn("order","db",["pay"],{label:"Order DB"}),
+    tn("confirm","email",["order"],{label:"Order confirmation"}),
+    tn("postsales","model_reviewer",["confirm"],{label:"Post-sales support",model:"gpt-4o"})];},
+  returns_refunds: function(){return [
+    tn("ticket","zendesk",[],{label:"Return request"}),
+    tn("policy","embedder",["ticket"],{label:"Policy retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["policy"],{label:"Returns policy KB"}),
+    tn("elig","classifier",["kb"],{label:"Eligibility",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("decide","llm",["elig"],{label:"Refund decision",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("approve","approver",["decide"],{label:"Agent approval",cx:"hard"}),
+    tn("refund","payment",["approve"],{label:"Issue refund"}),
+    tn("notify","email",["refund"],{label:"Notify customer"})];},
+  support_triage: function(){return [
+    tn("intake","chat",[],{label:"Ticket intake"}),
+    tn("classify","classifier",["intake"],{label:"Triage / route",model:"gpt-4o-mini",cx:"easy"}),
+    tn("embed","embedder",["classify"],{label:"KB retrieve",model:"openai-text-embedding-3-large"}),
+    tn("vdb","vector_db",["embed"],{label:"Support KB"}),
+    tn("rerank","reranker",["vdb"],{label:"Rerank",model:"cohere-rerank-3"}),
+    tn("draft","reader",["rerank"],{label:"Draft reply",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("judge","model_reviewer",["draft"],{label:"Quality judge",model:"gpt-4o"}),
+    tn("escalate","approver",["judge"],{label:"Human escalation"}),
+    tn("send","email",["escalate"],{label:"Send reply"})];},
+  kb_assistant: function(){return [
+    tn("q","chat",[],{label:"User question"}),
+    tn("rewrite","llm",["q"],{label:"Query rewrite",model:"gpt-4o-mini",cx:"easy"}),
+    tn("embed","embedder",["rewrite"],{label:"Embed + search",model:"openai-text-embedding-3-large"}),
+    tn("vdb","vector_db",["embed"],{label:"Docs vector DB"}),
+    tn("rerank","reranker",["vdb"],{label:"Rerank",model:"cohere-rerank-3"}),
+    tn("answer","reader",["rerank"],{label:"Grounded answer",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("judge","model_reviewer",["answer"],{label:"Groundedness judge",model:"gpt-4o"}),
+    tn("out","chat",["judge"],{label:"Answer"})];},
+  patient_intake: function(){return [
+    tn("form","chat",[],{label:"Patient intake"}),
+    tn("id","kyc",["form"],{label:"Identity verify"}),
+    tn("records","ehr",["id"],{label:"EHR / FHIR"}),
+    tn("triage","classifier",["records"],{label:"Symptom triage",model:"gpt-4o",cx:"hard"}),
+    tn("embed","embedder",["triage"],{label:"Clinical retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["embed"],{label:"Guidelines KB"}),
+    tn("cds","reader",["kb"],{label:"Decision support",model:"claude-opus-4",cx:"hard"}),
+    tn("md","reviewer",["cds"],{label:"Physician review",cx:"critical"}),
+    tn("doc","extractor",["md"],{label:"Documentation",model:"gpt-4o"}),
+    tn("write","ehr",["doc"],{label:"EHR write-back"})];},
+  loan_underwriting: function(){return [
+    tn("app","api",[],{label:"Loan application"}),
+    tn("kyc","kyc",["app"],{label:"KYC / identity"}),
+    tn("bureau","api",["kyc"],{label:"Credit bureau"}),
+    tn("extract","extractor",["bureau"],{label:"Doc extraction",model:"gpt-4o",cx:"moderate"}),
+    tn("risk","classifier",["extract"],{label:"Risk scoring",model:"gpt-4o",cx:"hard"}),
+    tn("reason","llm",["risk"],{label:"Underwriting",model:"claude-opus-4",cx:"hard"}),
+    tn("fraud","fraud",["reason"],{label:"Fraud check"}),
+    tn("officer","approver",["fraud"],{label:"Credit officer",cx:"critical"}),
+    tn("decision","db",["officer"],{label:"Decision record"}),
+    tn("notify","email",["decision"],{label:"Notify applicant"})];},
+  kyc_aml: function(){return [
+    tn("onboard","auth",[],{label:"Onboarding"}),
+    tn("verify","kyc",["onboard"],{label:"Identity verify"}),
+    tn("screen","api",["verify"],{label:"Sanctions / PEP"}),
+    tn("classify","classifier",["screen"],{label:"Risk classify",model:"gpt-4o",cx:"hard"}),
+    tn("embed","embedder",["classify"],{label:"Adverse-media search",model:"openai-text-embedding-3-large"}),
+    tn("web","web_search",["embed"],{label:"Adverse media"}),
+    tn("read","reader",["web"],{label:"Media summary",model:"claude-sonnet-4",cx:"hard"}),
+    tn("analyst","reviewer",["read"],{label:"AML analyst",cx:"critical"}),
+    tn("sar","llm",["analyst"],{label:"SAR draft",model:"gpt-4o",cx:"hard"}),
+    tn("case","db",["sar"],{label:"Case management"})];},
+  claims_processing: function(){return [
+    tn("fnol","chat",[],{label:"FNOL intake"}),
+    tn("policy","sql_db",["fnol"],{label:"Policy lookup"}),
+    tn("extract","extractor",["policy"],{label:"Doc / photo extract",model:"gpt-4o",cx:"hard"}),
+    tn("coverage","classifier",["extract"],{label:"Coverage check",model:"gpt-4o",cx:"moderate"}),
+    tn("fraud","fraud",["coverage"],{label:"Fraud / SIU"}),
+    tn("adjust","llm",["fraud"],{label:"Adjuster reasoning",model:"claude-opus-4",cx:"hard"}),
+    tn("human","approver",["adjust"],{label:"Adjuster review",cx:"critical"}),
+    tn("payout","payment",["human"],{label:"Payout"}),
+    tn("notify","email",["payout"],{label:"Notify claimant"})];},
+  contract_review: function(){return [
+    tn("upload","file_store",[],{label:"Contract upload"}),
+    tn("clauses","extractor",["upload"],{label:"Clause extraction",model:"gpt-4o",cx:"hard"}),
+    tn("risk","classifier",["clauses"],{label:"Risk classify",model:"gpt-4o",cx:"hard"}),
+    tn("embed","embedder",["risk"],{label:"Precedent retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["embed"],{label:"Playbook KB"}),
+    tn("redline","reader",["kb"],{label:"Redline draft",model:"claude-opus-4",cx:"hard"}),
+    tn("lawyer","reviewer",["redline"],{label:"Lawyer review",cx:"critical"}),
+    tn("sign","docusign",["lawyer"],{label:"E-signature"})];},
+  resume_screening: function(){return [
+    tn("apply","api",[],{label:"Application"}),
+    tn("parse","extractor",["apply"],{label:"Resume parse",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("match","embedder",["parse"],{label:"JD match",model:"openai-text-embedding-3-large"}),
+    tn("rerank","reranker",["match"],{label:"Rank candidates",model:"cohere-rerank-3"}),
+    tn("score","classifier",["rerank"],{label:"Fit score",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("summary","llm",["score"],{label:"Candidate summary",model:"claude-sonnet-4"}),
+    tn("recruiter","reviewer",["summary"],{label:"Recruiter review",cx:"hard"}),
+    tn("schedule","api",["recruiter"],{label:"Schedule interview"}),
+    tn("notify","email",["schedule"],{label:"Notify candidate"})];},
+  pr_review: function(){return [
+    tn("pr","github",[],{label:"PR opened"}),
+    tn("diff","coder",["pr"],{label:"Diff analysis",model:"claude-sonnet-4",cx:"hard"}),
+    tn("embed","embedder",["diff"],{label:"Code retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["embed"],{label:"Standards KB"}),
+    tn("review","model_reviewer",["kb"],{label:"AI code review",model:"gpt-4o"}),
+    tn("ci","ci",["review"],{label:"CI / tests"}),
+    tn("approve","approver",["ci"],{label:"Human approve"}),
+    tn("merge","github",["approve"],{label:"Merge"})];},
+  incident_sre: function(){return [
+    tn("alert","datadog",[],{label:"Alert (Datadog)"}),
+    tn("page","pagerduty",["alert"],{label:"PagerDuty"}),
+    tn("triage","classifier",["page"],{label:"Severity triage",model:"gpt-4o-mini",cx:"easy"}),
+    tn("embed","embedder",["triage"],{label:"Runbook retrieve",model:"openai-text-embedding-3-large"}),
+    tn("kb","knowledge_base",["embed"],{label:"Runbooks KB"}),
+    tn("rca","llm",["kb"],{label:"Root-cause",model:"claude-opus-4",cx:"hard"}),
+    tn("mitigate","tool_caller",["rca"],{label:"Mitigation",model:"gpt-4o",cx:"hard",misuse:0.12}),
+    tn("mcp","mcp_gateway",["mitigate"],{label:"MCP gateway"}),
+    tn("sre","reviewer",["mcp"],{label:"SRE review",cx:"critical"}),
+    tn("pm","llm",["sre"],{label:"Postmortem",model:"claude-sonnet-4"}),
+    tn("ticket","jira",["pm"],{label:"Jira ticket"})];},
+  content_marketing: function(){return [
+    tn("brief","db",[],{label:"Campaign brief"}),
+    tn("research","embedder",["brief"],{label:"Research retrieve",model:"openai-text-embedding-3-large"}),
+    tn("web","web_search",["research"],{label:"Web research"}),
+    tn("draft","llm",["web"],{label:"Content draft",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("seo","classifier",["draft"],{label:"Brand / SEO check",model:"gpt-4o-mini",cx:"easy"}),
+    tn("fact","model_reviewer",["seo"],{label:"Fact-check",model:"gpt-4o"}),
+    tn("editor","reviewer",["fact"],{label:"Editor review"}),
+    tn("publish","api",["editor"],{label:"Publish (CMS)"})];},
+  nl2sql: function(){return [
+    tn("q","chat",[],{label:"NL question"}),
+    tn("schema","embedder",["q"],{label:"Schema retrieve",model:"openai-text-embedding-3-large"}),
+    tn("meta","sql_db",["schema"],{label:"Schema / catalog"}),
+    tn("sql","coder",["meta"],{label:"SQL generation",model:"gpt-4o",cx:"hard"}),
+    tn("exec","sql_db",["sql"],{label:"Execute query"}),
+    tn("summarize","reader",["exec"],{label:"Summarize result",model:"claude-sonnet-4"}),
+    tn("judge","model_reviewer",["summarize"],{label:"SQL / answer judge",model:"gpt-4o"}),
+    tn("out","chat",["judge"],{label:"Answer + chart"})];},
+  soc_triage: function(){return [
+    tn("alert","api",[],{label:"SIEM alert"}),
+    tn("enrich","enrich",["alert"],{label:"Enrich (IOC)"}),
+    tn("classify","classifier",["enrich"],{label:"Triage classify",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("embed","embedder",["classify"],{label:"Threat-intel search",model:"openai-text-embedding-3-large"}),
+    tn("web","web_search",["embed"],{label:"Threat intel"}),
+    tn("reason","llm",["web"],{label:"Analyst reasoning",model:"claude-opus-4",cx:"hard"}),
+    tn("review","model_reviewer",["reason"],{label:"Tier-2 review",model:"gpt-4o"}),
+    tn("respond","tool_caller",["review"],{label:"Respond / contain",model:"gpt-4o",cx:"hard",misuse:0.1}),
+    tn("page","pagerduty",["respond"],{label:"Escalate / page"})];},
+  supply_chain: function(){return [
+    tn("data","sql_db",[],{label:"Demand data"}),
+    tn("forecast","classifier",["data"],{label:"Demand forecast",model:"gpt-4o",cx:"hard"}),
+    tn("exception","classifier",["forecast"],{label:"Exception detect",model:"gpt-4o-mini",cx:"moderate"}),
+    tn("reason","llm",["exception"],{label:"Reorder reasoning",model:"claude-sonnet-4",cx:"moderate"}),
+    tn("buyer","approver",["reason"],{label:"Buyer approval"}),
+    tn("po","erp",["buyer"],{label:"Create PO (ERP)"}),
+    tn("notify","email",["po"],{label:"Supplier notify"})];},
   review_placement: function(){return [
     nd("req","db",20,200,[],{label:"Request"}),
     nd("weak","llm",175,200,["req"],{label:"Weak agent",skill:0.45}),
@@ -245,17 +470,57 @@ var TEMPLATE_HINTS={
 };
 
 var state = {nodes:[], selected:null};
-var W=108, H=40, NS="http://www.w3.org/2000/svg";
+var W=156, H=54, NS="http://www.w3.org/2000/svg";
+// compact model name for node cards (keeps labels from overflowing)
+function shortModel(m){if(!m)return "";return m
+  .replace("openai-text-embedding-3-","oai-emb-")
+  .replace("claude-","").replace("openai-","")
+  .replace("-embedding","-emb").replace("embedding-","emb-")
+  .replace("-reranker","-rrk").replace("reranker","rrk")
+  .replace("gemini-2.5-","gem-").replace("gemini-2-","gem-").replace("gemini-","gem-")
+  .replace("deepseek-","ds-").replace("mistral-","mist-")
+  .replace("llama-3.3-","llama-").replace("qwen2.5-","qwen-")
+  .replace("-2026-03-17","").slice(0,15);}
+// per-1000-runs cost, compact, for a node card
+function compactNodeCost(n){var c=nodeCostOf(n);if(!c)return "";var k=c*1000;return "$"+(k<1?k.toFixed(2):k<100?k.toFixed(1):Math.round(k))+"/1k";}
+function truncW(s,maxChars){s=String(s||"");return s.length>maxChars?s.slice(0,maxChars-1)+"…":s;}
 // Retrieve uses the data (parallelogram) shape to reinforce that it is NOT an
 // agent — it's a vector index + search, not a language model.
-var CAT_SHAPE={Generate:"agent",Govern:"agent",Retrieve:"data",CRM:"tool",Dev:"tool",Comms:"tool",Human:"human",Data:"data"};
+var CAT_SHAPE={Generate:"agent",Govern:"agent",Retrieve:"data",Trust:"tool",Apps:"tool",Dev:"tool",Comms:"tool",Human:"human",Data:"data"};
 var view={k:1,x:0,y:0};
 var svg=document.getElementById("svg"), $=function(id){return document.getElementById(id);};
 var drag=null, draw=null, pan=null, counter=0;
 function clampv(v,a,b){return Math.max(a,Math.min(b,v));}
 
 function resetSimRow(){simOn=false;simTokens=null;var sr=document.getElementById("simrow");if(sr)sr.innerHTML='Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.';}
-function loadTemplate(name){resetSimRow();document.getElementById("import-note").style.display="none";state.nodes=TEMPLATES[name]();state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
+// Lessons keep their hand-tuned coordinates (the action buttons reposition
+// specific nodes); workflows are auto-laid-out so the larger cards never overlap.
+var HAND_LAID={review_placement:1,reviewer_competence:1,merge_gate:1,review_loop:1,chain_depth:1,reviewer_corrector:1};
+var TEMPLATE_DESC={
+  conv_commerce:"<b>Conversational commerce, end-to-end</b> — chat → auth → product search → rerank → recommendation → checkout → fraud → payments → order → post-sales (14 agents & systems). A 12-deep chain: watch masking compound, then ⚡ Optimize to cut model cost.",
+  returns_refunds:"<b>Returns &amp; refunds agent</b> — policy RAG → eligibility → refund decision → human approval → Stripe refund → notify.",
+  support_triage:"<b>Support ticket triage</b> — classify → KB RAG (embed → rerank) → drafted reply → LLM judge → human escalation → send.",
+  kb_assistant:"<b>Enterprise knowledge assistant</b> — query rewrite → retrieve → rerank → grounded answer → groundedness judge. Often just short of 0.80 — try Optimize.",
+  patient_intake:"<b>Healthcare intake &amp; clinical decision support</b> over EHR/FHIR, with a <b>critical</b> physician review before any EHR write-back.",
+  loan_underwriting:"<b>Loan underwriting</b> — KYC → credit bureau → doc extraction → risk model → underwriting reasoning → fraud → <b>critical</b> credit officer.",
+  kyc_aml:"<b>KYC / AML screening</b> with adverse-media RAG and a <b>critical</b> analyst. Frequently infeasible at 0.80 — Optimize, then lower the Quality target to find the cliff.",
+  claims_processing:"<b>Insurance claims</b> — FNOL → policy → doc/photo extraction → coverage → fraud → adjuster reasoning → <b>critical</b> human adjuster → payout.",
+  contract_review:"<b>Contract review</b> — clause extraction → risk → playbook RAG → redline draft → <b>critical</b> lawyer review → DocuSign.",
+  resume_screening:"<b>HR resume screening</b> — parse → JD match → rank → fit score → summary → recruiter review → schedule.",
+  pr_review:"<b>AI code review</b> — diff analysis → standards RAG → AI review → CI → human approve → merge.",
+  incident_sre:"<b>SRE incident response</b> — alert → runbook RAG → root-cause → MCP mitigation (note the tool-misuse rate) → <b>critical</b> SRE review → postmortem.",
+  content_marketing:"<b>Marketing content + campaign</b> — research → draft → brand/SEO → fact-check → editor review → publish.",
+  nl2sql:"<b>Analytics NL→SQL</b> — schema retrieve → SQL generation → execute → summarize → SQL/answer judge.",
+  soc_triage:"<b>Security SOC alert triage</b> — enrich → classify → threat-intel RAG → analyst reasoning → tier-2 review → contain (tool-misuse on the response agent).",
+  supply_chain:"<b>Supply-chain reorder</b> — demand forecast → exception detect → reorder reasoning → buyer approval → PO (ERP) → supplier notify.",
+  agentic_rag:"<b>Agentic RAG + rerank</b>, deliberately on Claude Opus everywhere (expensive &amp; infeasible). Hit ⚡ Optimize: it swaps to open-source and invests review to clear the bar.",
+  tool_agent:"<b>Tool-using MCP agent</b> — planner → tool caller (with a tool-misuse rate) → MCP gateway → output verifier.",
+  sales:"<b>Sales lead-to-deal</b> with a fan-out → merge <i>diamond</i> — the classic masking lesson inside a real workflow.",
+  rag:"<b>RAG research assistant</b> — embedders + reranker + grounded reader + groundedness judge.",
+};
+function loadTemplate(name){resetSimRow();document.getElementById("import-note").style.display="none";var ns=TEMPLATES[name]();if(!HAND_LAID[name])ns=MSOEstimate.layout(ns,W,H);state.nodes=ns;state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);
+  var dd=$("tpl-desc"),d=TEMPLATE_DESC[name];if(d&&!HAND_LAID[name]){dd.innerHTML=d;dd.style.display="block";}else dd.style.display="none";
+  if($("alloc-out")){$("alloc-out").innerHTML="";}optCands=null;}
 function loadImported(parsed){resetSimRow();document.getElementById("lesson").style.display="none";state.nodes=MSOEstimate.layout(parsed.nodes,W,H);state.nodes.forEach(function(n){if(!n.label)n.label=String(n.id).replace(/_/g," ");});state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();var nn=document.getElementById("import-note");nn.style.display="block";nn.innerHTML="<b>Imported your pipeline</b> · "+parsed.note+". Edit any node in the inspector, slide p_min to your target, or press Run tokens.";}
 function showLesson(name){var h=TEMPLATE_HINTS[name],box=$("lesson");if(!h){box.style.display="none";return;}box.style.display="block";
   var acts=(h.actions||[]).map(function(a,i){return '<button data-act="'+i+'" style="margin-right:8px;margin-top:2px">'+a.label+'</button>';}).join("");
@@ -266,6 +531,18 @@ function edges(){var es=[];state.nodes.forEach(function(n){(n.parents||[]).forEa
 function byId(id){for(var i=0;i<state.nodes.length;i++)if(state.nodes[i].id===id)return state.nodes[i];return null;}
 function effCatch(n){var k=n.rework||1;return k>1?1-Math.pow(1-n.catch_rate,k):n.catch_rate;}
 function pipeline(){return {nodes:state.nodes.map(function(n){return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:effCatch(n),fix_rate:n.fix_rate==null?1.0:n.fix_rate,parents:(n.parents||[]).slice(),aggregation:n.aggregation};})};}
+
+// ---- Cost-aware allocation glue (mso-optimize.js / mso-registry.js) ----
+var OPT_ROLE={llm:"generator",coder:"generator",extractor:"generator",classifier:"classifier",reader:"reader",tool_caller:"classifier",embedder:"retriever",reranker:"reranker",model_reviewer:"reviewer",corrector:"corrector",reviewer:"reviewer",approver:"reviewer"};
+function optSpec(n){return {id:n.id,role:OPT_ROLE[n.type]||"tool",task:(CONN[n.type]||{}).task||null,complexity:n.complexity||"moderate",tool_misuse:n.tool_misuse||0,model:n.model||null,oversight_model:n.oversight_model||null,parents:(n.parents||[]).slice(),aggregation:n.aggregation||"product",sigma_skill:n.sigma_skill,catch_rate:effCatch(n),fix_rate:n.fix_rate==null?1.0:n.fix_rate};}
+// When a node carries a model, its σ_skill / catch / fix are derived from the
+// (model × task × complexity) prior — the benchmark-grounded path.
+function applyDerived(n){if(!n.model)return;var p=MSO_Optimize.nodeParams(optSpec(n));n.sigma_skill=p[0];n.catch_rate=p[1];n.fix_rate=p[2];}
+function nodeCostOf(n){return n.model?MSO_Optimize.nodeCost(optSpec(n)):0;}
+function totalCost(){return state.nodes.reduce(function(s,n){return s+nodeCostOf(n);},0);}
+// models that have a prior for this node's task (for the inspector dropdown)
+function modelsForNode(n){var t=(CONN[n.type]||{}).task;if(!t)return [];return MSO_Optimize.candidateModels(t,n.complexity||"moderate",n.tool_misuse||0,0).map(function(o){return o.model;});}
+function fmtCost(c){if(c==null)return "—";if(c<0.001)return "$"+(c*1000).toFixed(3)+"/1k";return "$"+c.toFixed(4);}
 function reaches(from,to){var es=edges(),adj={};es.forEach(function(e){(adj[e.from]=adj[e.from]||[]).push(e.to);});var seen={},q=[from];while(q.length){var x=q.shift();if(x===to)return true;(adj[x]||[]).forEach(function(y){if(!seen[y]){seen[y]=true;q.push(y);}});}return false;}
 function evtPt(e){var r=svg.getBoundingClientRect();return {x:(e.clientX-r.left-view.x)/view.k,y:(e.clientY-r.top-view.y)/view.k};}
 
@@ -306,8 +583,14 @@ function render(){
     var stroke=sel?"#378ADD":sev, sw=sel?2.5:(rk&&rk.masking_index>1.4?2:1.5);
     var g=el("g",{transform:"translate("+n.x+","+n.y+")","data-node":n.id,style:"cursor:grab"});
     g.appendChild(shapeEl(cat,CAT_COLOR[cat]+"22",stroke,sw));
-    var t1=el("text",{x:16,y:16,fill:"var(--text-primary)","font-size":"11.5","font-family":"var(--font)","font-weight":"500"});t1.textContent=n.label.length>13?n.label.slice(0,12)+"…":n.label;g.appendChild(t1);
-    var t2=el("text",{x:16,y:29,fill:"var(--text-tertiary)","font-size":"9.5","font-family":"var(--font)"});t2.textContent=CONN[n.type].label+(rk?" M*"+rk.masking_index.toFixed(1):"");g.appendChild(t2);
+    var t1=el("text",{x:13,y:17,fill:"var(--text-primary)","font-size":"11.5","font-family":"var(--font)","font-weight":"600"});t1.textContent=truncW(n.label,22);g.appendChild(t1);
+    // line 2: model · cost when a model is assigned, else the component type
+    var sub=n.model?(shortModel(n.model)+" · "+compactNodeCost(n)):CONN[n.type].label;
+    var subColor=n.model?(MSO_Registry.isOpenSource(n.model)?"var(--tx-success)":"var(--text-secondary)"):"var(--text-tertiary)";
+    var t2=el("text",{x:13,y:32,fill:subColor,"font-size":"9.5","font-family":"var(--font)","font-weight":n.model?"500":"400"});t2.textContent=truncW(sub,26);g.appendChild(t2);
+    // line 3: component type (when model occupies line 2) + masking badge
+    var l3=(n.model?CONN[n.type].label:"")+(rk&&rk.masking_index>1.01?(n.model?" · ":"")+"M* "+rk.masking_index.toFixed(2):"");
+    if(l3){var t3=el("text",{x:13,y:45,fill:rk&&rk.masking_index>1.4?"#EF9F27":"var(--text-tertiary)","font-size":"8.8","font-family":"var(--font)"});t3.textContent=truncW(l3,30);g.appendChild(t3);}
     if(lastBottleneck===n.id)g.appendChild(el("circle",{cx:W-9,cy:8,r:4,fill:"#E24B4A"}));
     if(fin[n.id]>1){var gt=el("text",{x:W/2,y:-6,fill:"#7F77DD","font-size":"9.5","font-family":"var(--font)","text-anchor":"middle","font-weight":"500"});gt.textContent="gate · "+AGG_LABEL[n.aggregation];g.appendChild(gt);}
     if((n.rework||1)>1){g.appendChild(el("path",{d:"M"+(W*0.62)+" 2 C"+(W*0.86)+" -22,"+(W*0.14)+" -22,"+(W*0.38)+" 2",fill:"none",stroke:"#1D9E75","stroke-width":"1.6","marker-end":"url(#arr)"}));var rt=el("text",{x:W/2,y:-13,fill:"#1D9E75","font-size":"9.5","font-family":"var(--font)","text-anchor":"middle","font-weight":"500"});rt.textContent="↺ rework ×"+n.rework;g.appendChild(rt);}
@@ -341,7 +624,7 @@ function deleteSelected(){var s=state.selected;if(!s)return;
 function addNode(type){counter++;var id=type+"_"+counter;var cw=svg.clientWidth||666;var x=(cw/2-view.x)/view.k-W/2+((counter%3)*22-22);var y=(220-view.y)/view.k+((counter%3)*18);state.nodes.push(nd(id,type,x,y,[]));state.selected={kind:"node",id:id};render();analyze();showInspector();}
 
 function buildPalette(){var cats={};Object.keys(CONN).forEach(function(t){var c=CONN[t].cat;(cats[c]=cats[c]||[]).push(t);});
-  var html="";["Generate","Retrieve","Govern","Human","CRM","Dev","Comms","Data"].forEach(function(cat){if(!cats[cat])return;html+="<h3>"+cat+"</h3>";cats[cat].forEach(function(t){html+='<button class="chip" data-add="'+t+'"><span class="dot" style="background:'+CAT_COLOR[cat]+'"></span>'+CONN[t].label+'</button>';});});
+  var html="";["Generate","Retrieve","Govern","Human","Trust","Apps","Dev","Comms","Data"].forEach(function(cat){if(!cats[cat])return;html+="<h3>"+cat+"</h3>";cats[cat].forEach(function(t){html+='<button class="chip" data-add="'+t+'"><span class="dot" style="background:'+CAT_COLOR[cat]+'"></span>'+CONN[t].label+'</button>';});});
   $("palette").innerHTML=html;
   $("palette").querySelectorAll("[data-add]").forEach(function(b){b.addEventListener("click",function(){addNode(b.getAttribute("data-add"));});});}
 
@@ -351,8 +634,18 @@ function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
   var opts=Object.keys(CONN).map(function(t){return '<option value="'+t+'"'+(t===n.type?" selected":"")+'>'+CONN[t].label+'</option>';}).join("");
   var aggs=["product","min","mean"].map(function(a){return '<option value="'+a+'"'+(a===n.aggregation?" selected":"")+'>'+AGG_LABEL[a]+'</option>';}).join("");
   var fix=n.fix_rate==null?1.0:n.fix_rate;
+  var task=(CONN[n.type]||{}).task, modelSection='';
+  if(task){
+    var mlist=modelsForNode(n);
+    var mopts='<option value="">— none (manual σ) —</option>'+mlist.map(function(m){var rg=MSO_Registry.get(m);return '<option value="'+m+'"'+(m===n.model?' selected':'')+'>'+m+(rg&&rg.open?' · OSS':'')+'</option>';}).join("");
+    var cxopts=["trivial","easy","moderate","hard","critical"].map(function(cx){return '<option value="'+cx+'"'+((n.complexity||"moderate")===cx?' selected':'')+'>'+cx+'</option>';}).join("");
+    modelSection='<div class="field"><label>Model — sets σ from benchmarks &amp; cost</label><select id="f-model">'+mopts+'</select></div>'+
+      '<div class="field"><label>Task complexity (harder ⇒ needs stronger model)</label><select id="f-cx">'+cxopts+'</select></div>'+
+      '<div class="field"><label>Tool-misuse rate — agent calls a tool wrong/unsafe</label><div class="rng"><input type="range" id="f-misuse" min="0" max="0.5" step="0.01" value="'+(n.tool_misuse||0)+'"><b id="f-misusev">'+((n.tool_misuse||0)).toFixed(2)+'</b></div></div>';
+  }
   box.innerHTML='<div class="field"><label>Name</label><input type="text" id="f-label" value="'+n.label.replace(/"/g,"&quot;")+'"></div>'+
     '<div class="field"><label>Component</label><select id="f-type">'+opts+'</select></div>'+
+    modelSection+
     '<div class="field"><label>Raw competence — agent skill (σ_skill)</label><div class="rng"><input type="range" id="f-skill" min="0.05" max="0.98" step="0.01" value="'+n.sigma_skill+'"><b id="f-skillv">'+n.sigma_skill.toFixed(2)+'</b></div></div>'+
     '<div class="field"><label>Reviewer catch rate — detection (c)</label><div class="rng"><input type="range" id="f-catch" min="0" max="0.98" step="0.01" value="'+n.catch_rate+'"><b id="f-catchv">'+n.catch_rate.toFixed(2)+'</b></div></div>'+
     '<div class="field"><label>Corrector fix rate — repair (f)</label><div class="rng"><input type="range" id="f-fix" min="0" max="1" step="0.01" value="'+fix+'"><b id="f-fixv">'+fix.toFixed(2)+'</b></div></div>'+
@@ -360,13 +653,17 @@ function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
     '<div class="field"><label>Merge rule for a gate (aggregation)</label><select id="f-agg">'+aggs+'</select></div>'+
     '<div class="field"><label>Review rework passes (loop) — effective correction c·f='+(effCatch(n)*fix).toFixed(2)+'</label><div class="rng"><input type="range" id="f-rework" min="1" max="4" step="1" value="'+(n.rework||1)+'"><b id="f-reworkv">×'+(n.rework||1)+'</b></div></div>'+
     '<button id="f-del" style="color:var(--tx-danger)">Delete node</button>'+
+    (task?costPrescription(n):'')+
     '<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px">' +
       (n._prior ? priorChip(n._prior) : '') +
       '<button id="f-seed-btn" style="width:100%;font-size:12px;margin-top:'+(n._prior?'6px':'0')+'" title="Seed skill / catch rate / fix rate from public benchmark table">⊕ Seed from model &amp; task…</button>' +
     '</div>';
   $("f-label").addEventListener("input",function(){n.label=this.value;render();});
-  $("f-type").addEventListener("change",function(){n.type=this.value;render();analyze();});
-  $("f-skill").addEventListener("input",function(){n.sigma_skill=+this.value;$("f-skillv").textContent=n.sigma_skill.toFixed(2);n._prior=null;render();analyze();});
+  $("f-type").addEventListener("change",function(){n.type=this.value;n.model=null;n.oversight_model=null;render();analyze();showInspector();});
+  if($("f-model"))$("f-model").addEventListener("change",function(){n.model=this.value||null;n.oversight_model=null;if(n.model){applyDerived(n);n._prior=null;}render();analyze();showInspector();});
+  if($("f-cx"))$("f-cx").addEventListener("change",function(){n.complexity=this.value;if(n.model)applyDerived(n);render();analyze();showInspector();});
+  if($("f-misuse"))$("f-misuse").addEventListener("input",function(){n.tool_misuse=+this.value;$("f-misusev").textContent=n.tool_misuse.toFixed(2);if(n.model)applyDerived(n);render();analyze();});
+  $("f-skill").addEventListener("input",function(){n.sigma_skill=+this.value;$("f-skillv").textContent=n.sigma_skill.toFixed(2);n._prior=null;n.model=null;render();analyze();});
   $("f-catch").addEventListener("input",function(){n.catch_rate=+this.value;$("f-catchv").textContent=n.catch_rate.toFixed(2);n._prior=null;render();analyze();});
   $("f-fix").addEventListener("input",function(){n.fix_rate=+this.value;$("f-fixv").textContent=(+this.value).toFixed(2);n._prior=null;render();analyze();});
   $("f-drift").addEventListener("input",function(){n.drift_rate=+this.value;$("f-driftv").textContent=n.drift_rate.toFixed(2);});
@@ -374,6 +671,27 @@ function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
   $("f-rework").addEventListener("input",function(){n.rework=+this.value;$("f-reworkv").textContent="×"+n.rework;render();analyze();});
   $("f-del").addEventListener("click",deleteSelected);
   $("f-seed-btn").addEventListener("click",function(){openSeedModal(n);});
+}
+
+function ossBadge(open){return open
+  ?'<span style="background:var(--bg-success);color:var(--tx-success);border-radius:4px;padding:1px 5px;font-size:9.5px;font-weight:600">OSS</span>'
+  :'<span style="background:var(--bg-surface);color:var(--text-tertiary);border-radius:4px;padding:1px 5px;font-size:9.5px">proprietary</span>';}
+
+function costPrescription(n){
+  var pmin=+$("pmin").value;
+  var pres=MSO_Optimize.prescribeNode(optSpec(n),pmin);
+  var head;
+  if(n.model){var rg=MSO_Registry.get(n.model);head='<b>'+n.model+'</b> '+ossBadge(rg&&rg.open)+' · '+fmtCost(nodeCostOf(n))+'/run';}
+  else head='<span style="color:var(--text-tertiary)">no model — σ set manually</span>';
+  var pick=pres.pick;
+  var verdict=pres.needs_proprietary?'<span style="color:var(--tx-warning)">needs a proprietary model</span>'
+    :pres.oss_can_do?'<span style="color:var(--tx-success)">open-source can do it ✓</span>':'';
+  var line2=pick?('Min model that clears target ('+pmin.toFixed(2)+'): <b>'+pick.model+'</b>'+(pick.open?' '+ossBadge(true):'')+(verdict?' · '+verdict:'')):'';
+  return '<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:8px;font-size:11px;line-height:1.5">'+
+    '<div style="font-weight:500;color:var(--text-tertiary);margin-bottom:3px">Model &amp; cost</div>'+
+    '<div>'+head+'</div>'+
+    (line2?'<div style="color:var(--text-secondary);margin-top:3px">'+line2+'</div>':'')+
+  '</div>';
 }
 
 function priorChip(p) {
@@ -439,7 +757,48 @@ function updateSeedPreview(){
     relWarn;
 }
 
-var lastRisk=null, lastBottleneck=null;
+var lastRisk=null, lastBottleneck=null, lastTheory=null;
+
+// ---- Theory-grounded recipe library (each maps to a paper equation) ----
+function rOut(html){$("recipe-out").innerHTML=html;}
+var RECIPES=[
+  {id:"runlonger",label:"Run N× longer",
+   run:function(){var t=lastTheory;if(!t)return;var n=Math.max(1.1,+($("recipe-mult").value||2));
+     if(t.beff<=0){rOut("<b>Can't extend autonomy</b> — the buffer B_eff is already ≤ 0 (at the cliff). First raise C_op or lower the target / process complexity, then come back.");return;}
+     state.nodes.forEach(function(nd){nd.drift_rate=(nd.drift_rate||0)/n;});
+     analyze();showInspector();
+     rOut("Scaled every node's drift by 1/"+n.toFixed(1)+" (more stable models, lower temperature, caching, pinned versions). <b>Autonomy runway T*_auto = B_eff/μ_eff</b> is now ≈ "+n.toFixed(1)+"× longer — drift is what ends an autonomous run, not raw quality.");}},
+  {id:"cliff",label:"Max safe process load",
+   run:function(){var t=lastTheory;if(!t||!isFinite(t.hcrit)){rOut("No finite capacity cliff at this setting.");return;}
+     var safe=Math.max(0,t.hcrit*0.8);var s=$("hw");s.value=safe.toFixed(1);s.dispatchEvent(new Event("input"));
+     rOut("Set process complexity H(W) to 80% of the <b>capacity cliff H_crit="+t.hcrit.toFixed(1)+" bits</b> (Demonstration 7). Above H_crit, no governance policy keeps the workflow autonomous — this is the most routing/branching/tool-variety it can absorb with a safety margin.");}},
+  {id:"minreview",label:"Min review to hit target",
+   run:function(){var t=lastTheory;if(!t)return;var n=byId(t.bottleneck);if(!n){rOut("No bottleneck node.");return;}
+     var sr=MSO.sigmaRawFixedPoint(n.sigma_skill,10,2,0);var ceff=effCatch(n)*(n.fix_rate==null?1:n.fix_rate);
+     var th;if(t.pmin<=sr)th=0;else if(ceff<=0||(1-sr)<=0)th=Infinity;else th=Math.max(0,(t.pmin-sr)/((1-sr)*ceff));
+     rOut("<b>Corrector capacity threshold (K/N)</b>: to hit "+t.pmin.toFixed(2)+" at the bottleneck <b>"+(t.labelOf[t.bottleneck]||t.bottleneck)+"</b> (σ_raw="+sr.toFixed(2)+", effective correction c·f="+ceff.toFixed(2)+"), you must review at least <b>"+(th===Infinity?"100%+ (impossible — strengthen the reviewer/corrector)":Math.min(100,Math.round(th*100))+"%")+"</b> of its outputs. Below that fraction the target is unreachable however you route.");}},
+  {id:"waterfill",label:"Where to invest oversight",
+   run:function(){if(state.nodes.length<2){rOut("Add more nodes.");return;}var pmin=+$("pmin").value;
+     var sr=state.nodes.map(function(n){return MSO.sigmaRawFixedPoint(n.sigma_skill,10,2,0);});
+     var lam=MSO.solveLambda(sr,pmin);var alpha=MSO.optimalAuthority(sr,lam);
+     var ranked=state.nodes.map(function(n,i){return {id:n.id,a:alpha[i]};}).sort(function(a,b){return b.a-a.a;}).slice(0,4);
+     var lab={};state.nodes.forEach(function(n){lab[n.id]=n.label;});
+     rOut("<b>Water-filling allocation α*(x)</b> (Eq. 8) — Fisher-weighted oversight spreads where it has the highest marginal value (mid-competence nodes, not the strongest or weakest). Invest authority/review here first: "+ranked.map(function(r){return lab[r.id]+" (α*="+r.a.toFixed(2)+")";}).join(" · ")+".");}},
+  {id:"buffer",label:"Maximize autonomy buffer",
+   run:function(){var t=lastTheory;if(!t)return;
+     rOut("<b>Autonomy buffer B_eff = C_op − p_min − λ·H(W) = "+t.beff.toFixed(3)+"</b> (Eq. 16). Three levers, by leverage here: "+
+       "raise <b>C_op</b> ("+t.cop.toFixed(3)+") via a stronger model or in-place review at the bottleneck (try ⚡ Optimize), "+
+       "lower <b>H(W)</b> ("+t.hw.toFixed(1)+" bits, costs λ·H per bit — simplify routing / fewer tool variants), "+
+       "or relax the <b>quality target</b> ("+t.pmin.toFixed(2)+"). Each +0.01 of B_eff buys ≈ "+(t.muEff>0?(0.01/t.muEff).toFixed(1):"∞")+" more drift-time of autonomy.");}},
+];
+function renderRecipes(){
+  var html=RECIPES.map(function(r){
+    if(r.id==="runlonger")return '<span style="display:inline-flex;align-items:center;gap:3px;margin:0 4px 5px 0"><input id="recipe-mult" type="number" value="2" min="1.1" step="0.5" style="width:38px;font:inherit;font-size:11px;padding:1px 3px;border:1px solid var(--border);border-radius:4px;background:var(--bg-page);color:var(--text-primary)"><button data-recipe="'+r.id+'" style="font-size:11px;padding:2px 7px">⏱ Run N× longer</button></span>';
+    return '<button data-recipe="'+r.id+'" style="font-size:11px;padding:2px 7px;margin:0 4px 5px 0">'+r.label+'</button>';
+  }).join("");
+  $("recipes").innerHTML=html;
+  $("recipes").querySelectorAll("[data-recipe]").forEach(function(b){b.addEventListener("click",function(){var id=b.getAttribute("data-recipe");var rec=RECIPES.filter(function(x){return x.id===id;})[0];if(rec)rec.run();});});
+}
 function analyze(){
   var pmin=+$("pmin").value, hw=+$("hw").value;
   $("pminv").textContent=pmin.toFixed(2); $("hwv").textContent=hw.toFixed(1);
@@ -459,6 +818,7 @@ function analyze(){
   var worst=risks.slice().sort(function(a,b){return b.masking_index-a.masking_index;})[0];
   $("mstar").textContent=worst?worst.masking_index.toFixed(2):"—";
   $("nmotif").textContent=motifs.length;
+  var tc=totalCost();$("totalcost").textContent=tc>0?fmtCost(tc):"—";
   $("motifs").innerHTML=motifs.length?motifs.map(function(m){var desc=m.risk_description.split(". ")[0];Object.keys(labelOf).sort(function(a,b){return b.length-a.length;}).forEach(function(id){desc=desc.replace(new RegExp('\\b'+id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g'),labelOf[id]);});return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.4"><span class="mtag" style="background:'+MOTIF_COLOR[m.motif]+'22;color:'+MOTIF_COLOR[m.motif]+'">'+m.motif+'</span> '+desc+'.</div>';}).join(""):'<span class="hint">none</span>';
   $("risk").innerHTML=risks.slice(0,5).map(function(x){return '<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px"><span>'+(x.is_bottleneck?'<span style="color:var(--tx-danger)">●</span> ':'')+labelOf[x.name]+'</span><span class="hint">M*'+x.masking_index.toFixed(2)+' · DC'+x.delegation_centrality.toFixed(1)+' · S'+x.sota_score.toFixed(1)+'</span></div>';}).join("");
   var rx=[];
@@ -475,6 +835,15 @@ function analyze(){
       rx.push("Autonomy can expand at "+labelOf[x.name]+" — review is barely lifting it (M*="+x.masking_index.toFixed(2)+"). Reclaim that oversight budget for the high-masking nodes above.");});
   }
   $("rx").innerHTML=rx.length?rx.slice(0,4).map(function(t){return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.45">→ '+t+'</div>';}).join(""):'<span class="hint">no actions — healthy pipeline</span>';
+  // ---- Theory toolkit: autonomy time (Eq.17), capacity cliff (H_crit), drift μ_eff ----
+  var lam=0.02, muEff=0; state.nodes.forEach(function(n){muEff=Math.max(muEff,n.drift_rate||0);});
+  var tAuto=MSO.autonomyTime(r.cop,pmin,lam,hw,muEff);
+  lastTheory={lam:lam,muEff:muEff,tAuto:tAuto,hcrit:r.hcrit,cop:r.cop,beff:r.beff,pmin:pmin,hw:hw,bottleneck:r.bottleneck,labelOf:labelOf};
+  var tStr=(r.beff<=0)?'<span style="color:var(--tx-danger)">0 — at the cliff</span>':(muEff<=0?'∞ (no drift)':'<b>'+tAuto.toFixed(1)+'</b> drift-time');
+  $("theory-readout").innerHTML=
+    '<div title="T*_auto = B_eff / μ_eff (Eq. 17): how long autonomy lasts before drift forces intervention">⏱ Autonomy runway (T*_auto): '+tStr+' · drift μ_eff='+muEff.toFixed(3)+'</div>'+
+    '<div title="H_crit = (C_op − p_min)/λ: process-entropy ceiling; beyond it, autonomy is impossible">▲ Capacity cliff (H_crit): <b>'+(isFinite(r.hcrit)?r.hcrit.toFixed(1):'∞')+'</b> bits · headroom '+(r.hcrit-hw>0?(r.hcrit-hw).toFixed(1):'0')+' bits at H(W)='+hw.toFixed(1)+'</div>';
+  renderRecipes();
   render();
 }
 ["pmin","hw"].forEach(function(id){$(id).addEventListener("input",analyze);});
@@ -544,7 +913,56 @@ $("seed-apply").addEventListener("click",function(){
   $("seed-modal").style.display="none";
   render();analyze();showInspector();
 });
-loadTemplate("sales");
+// PAVED (EuroVis 2020) + AutoML-trust (IUI 2020): present a small set of
+// allocations on the cost↔quality frontier, lead with the OUTCOME, demote the
+// step list to progressive disclosure, and let the user APPLY one a-posteriori
+// (never auto-commit the optimizer's answer).
+var optCands=null, optBefore=null;
+function ossShare(nodes){var m=nodes.filter(function(n){return n.model;});if(!m.length)return null;var o=m.filter(function(n){return MSO_Registry.isOpenSource(n.model);}).length;return Math.round(100*o/m.length);}
+function applyAllocation(i){
+  var c=optCands&&optCands[i];if(!c)return;
+  c.res.nodes.forEach(function(s){var n=byId(s.id);if(!n)return;n.model=s.model||null;n.oversight_model=s.oversight_model||null;n.complexity=s.complexity;if(n.model){applyDerived(n);n._prior=null;}});
+  render();analyze();showInspector();
+  $("alloc-out").innerHTML='<div style="color:var(--tx-success)">✓ Applied <b>'+c.name+'</b> — C_op '+c.res.c_op.toFixed(3)+' · '+fmtCost(c.res.cost)+'/run</div>';
+  optCands=null;
+}
+function runOptimize(){
+  if(!state.nodes.length){$("alloc-out").innerHTML='<span class="hint">add nodes first</span>';return;}
+  var pmin=+$("pmin").value;
+  var bv=$("budget").value; var budget=(bv===""||bv==null)?null:+bv;
+  var specs=state.nodes.map(optSpec);
+  optBefore=MSO_Optimize.evaluate(specs,pmin,budget);
+  var raw=[{name:"Min cost · meets target",res:MSO_Optimize.optimizeAllocation(specs,pmin,null,true)}];
+  var hi=Math.min(pmin+0.05,0.95);
+  if(hi>pmin+1e-6)raw.push({name:"More headroom (+0.05)",res:MSO_Optimize.optimizeAllocation(specs,hi,null,true)});
+  if(budget!=null)raw.push({name:"Fit budget $"+budget,res:MSO_Optimize.optimizeAllocation(specs,pmin,budget,true)});
+  // dedupe near-identical allocations (same rounded C_op + cost)
+  var seen={};optCands=[];
+  raw.forEach(function(c){var k=c.res.c_op.toFixed(3)+"|"+c.res.cost.toFixed(5);if(!seen[k]){seen[k]=1;optCands.push(c);}});
+  var html='<div style="color:var(--text-tertiary);margin-bottom:6px">Baseline C_op '+optBefore.c_op.toFixed(3)+' · '+fmtCost(optBefore.cost)+'/run. Choose an allocation:</div>';
+  optCands.forEach(function(c,i){
+    var r=c.res, oss=ossShare(r.nodes);
+    var saved=(optBefore.cost>0&&r.cost<optBefore.cost-1e-12)?(' · <span style="color:var(--tx-success)">'+(optBefore.cost/Math.max(r.cost,1e-12)).toFixed(1)+'× cheaper</span>'):'';
+    html+='<div style="border:1px solid var(--border);border-radius:6px;padding:7px 9px;margin-bottom:6px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-weight:600">'+c.name+'</span>'+
+        '<button data-apply="'+i+'" class="on" style="font-size:11px;padding:2px 10px">Apply</button></div>'+
+      '<div style="margin-top:3px">C_op <b>'+r.c_op.toFixed(3)+'</b> '+(r.feasible?'<span style="color:var(--tx-success)">≥ target ✓</span>':'<span style="color:var(--tx-danger)">&lt; target</span>')+
+        ' · '+fmtCost(r.cost)+'/run'+saved+(oss!=null?(' · '+oss+'% open-source'):'')+'</div>'+
+      (r.steps.length?'<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--text-tertiary);font-size:10.5px">what changed ('+r.steps.length+' moves)</summary><div style="margin-top:3px;line-height:1.5;font-size:10.5px;color:var(--text-secondary)">'+r.steps.map(function(s){return '→ '+s;}).join('<br>')+'</div></details>':'<div style="color:var(--text-tertiary);font-size:10.5px;margin-top:3px">already optimal</div>')+
+    '</div>';
+  });
+  $("alloc-out").innerHTML=html;
+  $("alloc-out").querySelectorAll("[data-apply]").forEach(function(b){b.addEventListener("click",function(){applyAllocation(+b.getAttribute("data-apply"));});});
+}
+$("opt-run").addEventListener("click",runOptimize);
+$("export-btn").addEventListener("click",function(){
+  var pmin=+$("pmin").value, r=MSO.analyzePipeline(pipeline(),{p_min:pmin,process_entropy:+$("hw").value});
+  var doc={meta:{tool:"MSO governance cockpit",exported:new Date().toISOString(),p_min:pmin,c_op:r.cop,b_eff:r.beff,cost_per_run:totalCost()},
+    nodes:state.nodes.map(function(n){return {id:n.id,label:n.label,type:n.type,model:n.model||null,oversight_model:n.oversight_model||null,complexity:n.complexity||"moderate",tool_misuse:n.tool_misuse||0,sigma_skill:n.sigma_skill,catch_rate:n.catch_rate,fix_rate:n.fix_rate,parents:(n.parents||[]).slice(),aggregation:n.aggregation,rework:n.rework||1};})};
+  var blob=new Blob([JSON.stringify(doc,null,2)],{type:"application/json"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="mso-pipeline.json";a.click();URL.revokeObjectURL(a.href);
+});
+$("tpl").value="support_triage";loadTemplate("support_triage");
 </script>
 </body>
 </html>

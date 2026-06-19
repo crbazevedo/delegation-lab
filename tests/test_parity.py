@@ -21,6 +21,9 @@ from minimal_oversight import _formulae as F
 from minimal_oversight import analyze_pipeline
 from minimal_oversight import estimation as E
 from minimal_oversight import priors as P
+from minimal_oversight import optimize as OPT
+from minimal_oversight import registry as REG
+from minimal_oversight.complexity import effective_sigma as _eff
 from minimal_oversight.allocation import select_scope
 from minimal_oversight.capacity import check_feasibility
 from minimal_oversight.models import AggregationType, Node, PipelineGraph
@@ -89,6 +92,17 @@ PIPE_FIX = {
         _nd("review_correct", 0.80, 0.65, ["gen"], fix=0.8),
     ]
 }
+# Allocation-optimizer fixtures (mso-optimize.js ↔ optimize.py).
+OPT_NODES_A = [
+    {"id": "draft", "role": "generator", "task": "drafting",
+     "complexity": "moderate", "model": "qwen3-8b", "parents": []},
+]
+OPT_NODES_B = [
+    {"id": "a", "role": "generator", "task": "drafting", "complexity": "easy",
+     "model": "claude-opus-4", "parents": []},
+    {"id": "b", "role": "reviewer", "task": "review", "complexity": "easy",
+     "model": "claude-opus-4", "parents": ["a"]},
+]
 
 CASES = {
     "fisher": SIGMAS,
@@ -150,6 +164,30 @@ CASES = {
         {"model": "llm-judge-ensemble", "task_type": "review"},
         {"model": "corrector-with-feedback", "task_type": "correction"},
         {"model": "gpt-5.4-nano", "task_type": "grounded_generation"},
+    ],
+    # mso-registry.js / mso-optimize.js — the cost-aware allocation layer.
+    "opt_registry": [
+        {"model": "gpt-4o", "in": 2000, "out": 500},
+        {"model": "phi-4", "in": 1500, "out": 400},
+        {"model": "claude-opus-4", "in": 1000, "out": 1000},
+        {"model": "fable-5", "in": 1000, "out": 100},
+    ],
+    "opt_eff": [
+        {"prior": 0.90, "complexity": "easy", "misuse": 0.0},
+        {"prior": 0.90, "complexity": "critical", "misuse": 0.0},
+        {"prior": 0.90, "complexity": "moderate", "misuse": 0.25},
+    ],
+    "opt_eval": [
+        {"nodes": OPT_NODES_A, "p_min": 0.80, "budget": None},
+        {"nodes": OPT_NODES_B, "p_min": 0.80, "budget": None},
+    ],
+    "opt_candidates": [
+        {"task": "drafting", "complexity": "easy", "misuse": 0, "target": 0.85},
+        {"task": "review", "complexity": "moderate", "misuse": 0, "target": 0.0},
+    ],
+    "opt_alloc": [
+        {"nodes": OPT_NODES_A, "p_min": 0.80, "budget": None},
+        {"nodes": OPT_NODES_B, "p_min": 0.80, "budget": 0.03},
     ],
     # web/mso-estimate.js turns a practitioner's real outcomes into per-node
     # sigma_raw / sigma_corr / catch / masking. Pin those to estimation.py.
@@ -296,6 +334,36 @@ def _python_expected() -> dict:
             "band_mid": prov["band"]["mid"],
             "band_high": prov["band"]["high"],
         })
+
+    exp["opt_registry"] = []
+    for c in CASES["opt_registry"]:
+        exp["opt_registry"].append({
+            "cost": REG.cost_per_run(c["model"], c["in"], c["out"]),
+            "blended": REG.blended_cost(c["model"]),
+            "index": REG.get_model(c["model"]).cost_index,
+            "open": REG.is_open_source(c["model"]),
+        })
+    exp["opt_eff"] = [_eff(c["prior"], c["complexity"], c.get("misuse", 0))
+                      for c in CASES["opt_eff"]]
+    exp["opt_eval"] = []
+    for c in CASES["opt_eval"]:
+        e = OPT.evaluate(c["nodes"], c["p_min"], c["budget"])
+        exp["opt_eval"].append({"c_op": e.c_op, "cost": e.cost, "feasible": e.feasible})
+    exp["opt_candidates"] = [
+        [o.model for o in OPT.candidate_models(c["task"], c["complexity"],
+                                               c.get("misuse", 0), c.get("target", 0))]
+        for c in CASES["opt_candidates"]
+    ]
+    exp["opt_alloc"] = []
+    for c in CASES["opt_alloc"]:
+        r = OPT.optimize_allocation(c["nodes"], c["p_min"], budget=c["budget"], prefer_oss=True)
+        exp["opt_alloc"].append({
+            "c_op": r.c_op, "cost": r.cost, "feasible": r.feasible,
+            "within": r.within_budget, "steps": r.steps,
+            "models": [n["id"] + ":" + (n.get("model") or "")
+                       + ("+ov:" + n["oversight_model"] if n.get("oversight_model") else "")
+                       for n in r.nodes],
+        })
     return exp
 
 
@@ -376,3 +444,32 @@ def test_browser_port_matches_python_reference():
                 assert g[k] is not None and _close(g[k], e[k]), f"seed_node {k} mismatch for {label}"
             else:
                 assert g[k] is None, f"seed_node {k} should be null for {label}"
+
+    # --- cost-aware allocation parity (mso-registry.js / mso-optimize.js) ---
+    for g, e in zip(got["opt_registry"], exp["opt_registry"]):
+        assert g["open"] == e["open"], "registry open flag mismatch"
+        assert g["index"] == e["index"], "registry cost_index mismatch"
+        for k in ["cost", "blended"]:
+            if e[k] is None:
+                assert g[k] is None, f"registry {k} should be null"
+            else:
+                assert _close(g[k], e[k]), f"registry {k} mismatch"
+
+    for g, e in zip(got["opt_eff"], exp["opt_eff"]):
+        assert _close(g, e), "effective_sigma mismatch"
+
+    for g, e in zip(got["opt_eval"], exp["opt_eval"]):
+        assert g["feasible"] == e["feasible"], "evaluate feasible mismatch"
+        for k in ["c_op", "cost"]:
+            assert _close(g[k], e[k]), f"evaluate {k} mismatch"
+
+    for g, e in zip(got["opt_candidates"], exp["opt_candidates"]):
+        assert g == e, f"candidate_models order mismatch:\n  js={g}\n  py={e}"
+
+    for g, e in zip(got["opt_alloc"], exp["opt_alloc"]):
+        assert g["feasible"] == e["feasible"], "optimize feasible mismatch"
+        assert g["within"] == e["within"], "optimize within_budget mismatch"
+        assert g["steps"] == e["steps"], f"optimize steps mismatch:\n  js={g['steps']}\n  py={e['steps']}"
+        assert g["models"] == e["models"], f"optimize final models mismatch:\n  js={g['models']}\n  py={e['models']}"
+        for k in ["c_op", "cost"]:
+            assert _close(g[k], e[k]), f"optimize {k} mismatch"

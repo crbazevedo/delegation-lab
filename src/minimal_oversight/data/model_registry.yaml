@@ -1,0 +1,70 @@
+# model_registry.yaml — cost + license metadata for the allocation optimizer.
+#
+# Each model carries its public API price (USD per MILLION tokens, input/output)
+# and license. The cost INDEX (1..100, log-scale) is DERIVED at load time from
+# the blended price — store dollars, derive the index (operator decision).
+#
+# license.open == true  => open-weights AND commercially usable (the "prefer
+# open-source" set). Mistral Large is open-WEIGHTS but research-only, so
+# open=false for commercial preference (license name records the nuance).
+#
+# Rerankers are natively priced per search/1k-queries; we record an approximate
+# $/Mtok equivalent (noted per cell) so one cost basis spans every component.
+#
+# COSTS ARE APPROXIMATE — refined from the pricing research sweep (w121kmb59).
+# Prices change; batch/cached tiers differ; open-weights self-host cost != API.
+
+meta:
+  schema_version: 1
+  cost_basis: usd_per_mtok        # input/output dollars per million tokens
+  blend: { input: 0.6, output: 0.4 }   # blended $/Mtok = 0.6*in + 0.4*out
+  observed_date: "2026-06-18"
+  status: sourced                 # prices from a cited pricing research sweep (most CONFIRMED)
+  sources: "official pricing pages (openai/anthropic/google/deepseek), OpenRouter, Voyage; see docs/methodology/priors-evidence.md"
+  index_anchors: { min: 0.05, max: 60.0 }   # log-scale 1..100 between these blends
+
+models:
+  # ---- Proprietary frontier LLMs --------------------------------------------
+  - { name: claude-opus-4,    provider: anthropic, modality: llm, license: { name: proprietary, open: false }, cost: { input: 15.0,  output: 75.0 } }
+  - { name: claude-opus-4.8,  provider: anthropic, modality: llm, license: { name: proprietary, open: false }, cost: { input: 5.0,   output: 25.0 }, note: "newer Opus tier (Opus 4.6/4.7 confirmed $5/$25); cheaper than Opus 4.0" }
+  - { name: claude-sonnet-4,  provider: anthropic, modality: llm, license: { name: proprietary, open: false }, cost: { input: 3.0,   output: 15.0 } }
+  - { name: claude-haiku-4,   provider: anthropic, modality: llm, license: { name: proprietary, open: false }, cost: { input: 1.0,   output: 5.0  } }
+  - { name: gpt-4o,           provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 2.5,   output: 10.0 } }
+  - { name: gpt-4o-mini,      provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 0.15,  output: 0.60 } }
+  - { name: gpt-5.4-nano,     provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 0.20,  output: 1.25 }, note: "official pricing page (developers.openai.com)" }
+  - { name: gpt-5.5,          provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 5.0,   output: 30.0 }, note: "official pricing page; frontier tier" }
+  - { name: openai-o3,        provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 2.0,   output: 8.0  }, note: "reasoning" }
+  - { name: o3-pro,           provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 20.0,  output: 80.0 }, note: "reasoning; premium" }
+  - { name: o4-mini-high,     provider: openai,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 1.1,   output: 4.4  }, note: "reasoning; mini" }
+  - { name: gemini-2-pro,     provider: google,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 1.25,  output: 5.0  } }
+  - { name: gemini-2-flash,   provider: google,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 0.10,  output: 0.40 } }
+  - { name: gemini-2.5-pro,   provider: google,    modality: llm, license: { name: proprietary, open: false }, cost: { input: 1.25,  output: 10.0 } }
+  - { name: gemini-2.5-flash-lite, provider: google, modality: llm, license: { name: proprietary, open: false }, cost: { input: 0.10, output: 0.40 } }
+
+  # ---- Open-weights LLMs (price = representative hosted API) -----------------
+  - { name: llama-3.3-70b,    provider: meta,      modality: llm, license: { name: Llama-Community, open: true  }, cost: { input: 0.88, output: 0.88 } }
+  - { name: deepseek-v3,      provider: deepseek,  modality: llm, license: { name: DeepSeek (MIT-style), open: true }, cost: { input: 0.27, output: 1.10 } }
+  - { name: deepseek-r1,      provider: deepseek,  modality: llm, license: { name: DeepSeek (MIT-style), open: true }, cost: { input: 0.55, output: 2.19 }, note: "reasoning; lower faithfulness" }
+  - { name: qwen2.5-72b,      provider: alibaba,   modality: llm, license: { name: Qwen (Apache-2.0), open: true }, cost: { input: 0.40, output: 0.40 } }
+  - { name: qwen3-8b,         provider: alibaba,   modality: llm, license: { name: Apache-2.0, open: true }, cost: { input: 0.10, output: 0.20 } }
+  - { name: mistral-large,    provider: mistral,   modality: llm, license: { name: MRL (research-only), open: false }, cost: { input: 2.0, output: 6.0 }, note: "open-weights but non-commercial license" }
+  - { name: kimi-k2.5,        provider: moonshot,  modality: llm, license: { name: Modified-MIT, open: true }, cost: { input: 0.60, output: 2.50 } }
+  - { name: kimi-2.6,         provider: moonshot,  modality: llm, license: { name: Modified-MIT, open: true }, cost: { input: 0.60, output: 2.50 }, note: "est — no public price for exact name" }
+  - { name: phi-4,            provider: microsoft, modality: llm, license: { name: MIT, open: true }, cost: { input: 0.07, output: 0.14 } }
+  - { name: fable-5,          provider: unknown,   modality: llm, license: { name: proprietary, open: false }, cost: { input: null, output: null }, note: "no public price or benchmark" }
+
+  # ---- Embedding models (input-only $/Mtok) ---------------------------------
+  - { name: openai-text-embedding-3-large, provider: openai, modality: embedding, license: { name: proprietary, open: false }, cost: { input: 0.13, output: 0.0 } }
+  - { name: openai-text-embedding-3-small, provider: openai, modality: embedding, license: { name: proprietary, open: false }, cost: { input: 0.02, output: 0.0 } }
+  - { name: cohere-embed-v3,  provider: cohere,    modality: embedding, license: { name: proprietary, open: false }, cost: { input: 0.10, output: 0.0 } }
+  - { name: e5-mistral-7b,    provider: open,      modality: embedding, license: { name: MIT, open: true }, cost: { input: 0.05, output: 0.0 }, note: "open-weights; self-host ~ compute-only" }
+  - { name: bge-m3,           provider: baai,      modality: embedding, license: { name: MIT, open: true }, cost: { input: 0.02, output: 0.0 }, note: "open-weights" }
+  - { name: granite-embedding-r2, provider: ibm,   modality: embedding, license: { name: Apache-2.0, open: true }, cost: { input: 0.02, output: 0.0 }, note: "open-weights" }
+  - { name: qwen3-embedding-8b, provider: alibaba, modality: embedding, license: { name: Apache-2.0, open: true }, cost: { input: 0.05, output: 0.0 }, note: "open-weights" }
+
+  # ---- Rerankers (natively per-search; ~$/Mtok-equiv noted) ------------------
+  - { name: cohere-rerank-3,  provider: cohere,    modality: reranker, license: { name: proprietary, open: false }, cost: { input: 0.20, output: 0.0 }, note: "$2/1k searches; ~$0.20/Mtok-equiv" }
+  - { name: bge-reranker-v2-m3, provider: baai,    modality: reranker, license: { name: MIT, open: true }, cost: { input: 0.02, output: 0.0 }, note: "open-weights cross-encoder" }
+  - { name: qwen3-reranker,   provider: alibaba,   modality: reranker, license: { name: Apache-2.0, open: true }, cost: { input: 0.05, output: 0.0 }, note: "open-weights cross-encoder" }
+  - { name: rankzephyr-7b,    provider: open,      modality: reranker, license: { name: research, open: false }, cost: { input: 0.05, output: 0.0 }, note: "open-weights listwise LLM; research license" }
+  - { name: rankgpt-gpt4,     provider: openai,    modality: reranker, license: { name: proprietary, open: false }, cost: { input: 10.0, output: 30.0 }, note: "listwise prompting over GPT-4; inherits GPT-4 token cost" }

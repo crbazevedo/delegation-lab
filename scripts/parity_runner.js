@@ -10,6 +10,8 @@ const fs = require("fs");
 const MSO = require("../web/mso-core.js");
 const MSOEstimate = require("../web/mso-estimate.js");
 const MSO_Priors = require("../web/mso-priors.js");
+const MSO_Registry = require("../web/mso-registry.js");
+const MSO_Optimize = require("../web/mso-optimize.js");
 
 const inPath = process.argv[2];
 const outPath = process.argv[3];
@@ -72,6 +74,29 @@ out.seed_node = (cases.seed_node || []).map((c) => {
     band_low: p.band.low,
     band_mid: p.band.mid,
     band_high: p.band.high,
+  };
+});
+
+out.opt_registry = (cases.opt_registry || []).map((c) => ({
+  cost: MSO_Registry.costPerRun(c.model, c.in, c.out),
+  blended: MSO_Registry.blendedCost(c.model),
+  index: MSO_Registry.costIndex(c.model),
+  open: MSO_Registry.isOpenSource(c.model),
+}));
+out.opt_eff = (cases.opt_eff || []).map((c) =>
+  MSO_Optimize.effectiveSigma(c.prior, c.complexity, c.misuse || 0));
+out.opt_eval = (cases.opt_eval || []).map((c) => {
+  const e = MSO_Optimize.evaluate(c.nodes, c.p_min, c.budget == null ? null : c.budget);
+  return { c_op: e.c_op, cost: e.cost, feasible: e.feasible };
+});
+out.opt_candidates = (cases.opt_candidates || []).map((c) =>
+  MSO_Optimize.candidateModels(c.task, c.complexity, c.misuse || 0, c.target || 0).map((o) => o.model));
+out.opt_alloc = (cases.opt_alloc || []).map((c) => {
+  const r = MSO_Optimize.optimizeAllocation(c.nodes, c.p_min, c.budget == null ? null : c.budget, true);
+  return {
+    c_op: r.c_op, cost: r.cost, feasible: r.feasible, within: r.within_budget,
+    steps: r.steps,
+    models: r.nodes.map((n) => n.id + ":" + (n.model || "") + (n.oversight_model ? "+ov:" + n.oversight_model : "")),
   };
 });
 
