@@ -274,7 +274,20 @@ var TEMPLATE_HINTS={
 };
 
 var state = {nodes:[], selected:null};
-var W=108, H=40, NS="http://www.w3.org/2000/svg";
+var W=156, H=54, NS="http://www.w3.org/2000/svg";
+// compact model name for node cards (keeps labels from overflowing)
+function shortModel(m){if(!m)return "";return m
+  .replace("openai-text-embedding-3-","oai-emb-")
+  .replace("claude-","").replace("openai-","")
+  .replace("-embedding","-emb").replace("embedding-","emb-")
+  .replace("-reranker","-rrk").replace("reranker","rrk")
+  .replace("gemini-2.5-","gem-").replace("gemini-2-","gem-").replace("gemini-","gem-")
+  .replace("deepseek-","ds-").replace("mistral-","mist-")
+  .replace("llama-3.3-","llama-").replace("qwen2.5-","qwen-")
+  .replace("-2026-03-17","").slice(0,15);}
+// per-1000-runs cost, compact, for a node card
+function compactNodeCost(n){var c=nodeCostOf(n);if(!c)return "";var k=c*1000;return "$"+(k<1?k.toFixed(2):k<100?k.toFixed(1):Math.round(k))+"/1k";}
+function truncW(s,maxChars){s=String(s||"");return s.length>maxChars?s.slice(0,maxChars-1)+"…":s;}
 // Retrieve uses the data (parallelogram) shape to reinforce that it is NOT an
 // agent — it's a vector index + search, not a language model.
 var CAT_SHAPE={Generate:"agent",Govern:"agent",Retrieve:"data",CRM:"tool",Dev:"tool",Comms:"tool",Human:"human",Data:"data"};
@@ -284,7 +297,10 @@ var drag=null, draw=null, pan=null, counter=0;
 function clampv(v,a,b){return Math.max(a,Math.min(b,v));}
 
 function resetSimRow(){simOn=false;simTokens=null;var sr=document.getElementById("simrow");if(sr)sr.innerHTML='Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.';}
-function loadTemplate(name){resetSimRow();document.getElementById("import-note").style.display="none";state.nodes=TEMPLATES[name]();state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
+// Lessons keep their hand-tuned coordinates (the action buttons reposition
+// specific nodes); workflows are auto-laid-out so the larger cards never overlap.
+var HAND_LAID={review_placement:1,reviewer_competence:1,merge_gate:1,review_loop:1,chain_depth:1,reviewer_corrector:1};
+function loadTemplate(name){resetSimRow();document.getElementById("import-note").style.display="none";var ns=TEMPLATES[name]();if(!HAND_LAID[name])ns=MSOEstimate.layout(ns,W,H);state.nodes=ns;state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
 function loadImported(parsed){resetSimRow();document.getElementById("lesson").style.display="none";state.nodes=MSOEstimate.layout(parsed.nodes,W,H);state.nodes.forEach(function(n){if(!n.label)n.label=String(n.id).replace(/_/g," ");});state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();var nn=document.getElementById("import-note");nn.style.display="block";nn.innerHTML="<b>Imported your pipeline</b> · "+parsed.note+". Edit any node in the inspector, slide p_min to your target, or press Run tokens.";}
 function showLesson(name){var h=TEMPLATE_HINTS[name],box=$("lesson");if(!h){box.style.display="none";return;}box.style.display="block";
   var acts=(h.actions||[]).map(function(a,i){return '<button data-act="'+i+'" style="margin-right:8px;margin-top:2px">'+a.label+'</button>';}).join("");
@@ -347,8 +363,14 @@ function render(){
     var stroke=sel?"#378ADD":sev, sw=sel?2.5:(rk&&rk.masking_index>1.4?2:1.5);
     var g=el("g",{transform:"translate("+n.x+","+n.y+")","data-node":n.id,style:"cursor:grab"});
     g.appendChild(shapeEl(cat,CAT_COLOR[cat]+"22",stroke,sw));
-    var t1=el("text",{x:16,y:16,fill:"var(--text-primary)","font-size":"11.5","font-family":"var(--font)","font-weight":"500"});t1.textContent=n.label.length>13?n.label.slice(0,12)+"…":n.label;g.appendChild(t1);
-    var t2=el("text",{x:16,y:29,fill:"var(--text-tertiary)","font-size":"9.5","font-family":"var(--font)"});t2.textContent=CONN[n.type].label+(rk?" M*"+rk.masking_index.toFixed(1):"");g.appendChild(t2);
+    var t1=el("text",{x:13,y:17,fill:"var(--text-primary)","font-size":"11.5","font-family":"var(--font)","font-weight":"600"});t1.textContent=truncW(n.label,22);g.appendChild(t1);
+    // line 2: model · cost when a model is assigned, else the component type
+    var sub=n.model?(shortModel(n.model)+" · "+compactNodeCost(n)):CONN[n.type].label;
+    var subColor=n.model?(MSO_Registry.isOpenSource(n.model)?"var(--tx-success)":"var(--text-secondary)"):"var(--text-tertiary)";
+    var t2=el("text",{x:13,y:32,fill:subColor,"font-size":"9.5","font-family":"var(--font)","font-weight":n.model?"500":"400"});t2.textContent=truncW(sub,26);g.appendChild(t2);
+    // line 3: component type (when model occupies line 2) + masking badge
+    var l3=(n.model?CONN[n.type].label:"")+(rk&&rk.masking_index>1.01?(n.model?" · ":"")+"M* "+rk.masking_index.toFixed(2):"");
+    if(l3){var t3=el("text",{x:13,y:45,fill:rk&&rk.masking_index>1.4?"#EF9F27":"var(--text-tertiary)","font-size":"8.8","font-family":"var(--font)"});t3.textContent=truncW(l3,30);g.appendChild(t3);}
     if(lastBottleneck===n.id)g.appendChild(el("circle",{cx:W-9,cy:8,r:4,fill:"#E24B4A"}));
     if(fin[n.id]>1){var gt=el("text",{x:W/2,y:-6,fill:"#7F77DD","font-size":"9.5","font-family":"var(--font)","text-anchor":"middle","font-weight":"500"});gt.textContent="gate · "+AGG_LABEL[n.aggregation];g.appendChild(gt);}
     if((n.rework||1)>1){g.appendChild(el("path",{d:"M"+(W*0.62)+" 2 C"+(W*0.86)+" -22,"+(W*0.14)+" -22,"+(W*0.38)+" 2",fill:"none",stroke:"#1D9E75","stroke-width":"1.6","marker-end":"url(#arr)"}));var rt=el("text",{x:W/2,y:-13,fill:"#1D9E75","font-size":"9.5","font-family":"var(--font)","text-anchor":"middle","font-weight":"500"});rt.textContent="↺ rework ×"+n.rework;g.appendChild(rt);}
