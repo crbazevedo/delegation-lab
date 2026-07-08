@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Competitive analysis of the online review controllers under two drift families.
 
-This operationalises the T2 finding in-repo. The online controller in
+This operationalises the T2 finding in-repo. The adaptive controller in
 ``minimal_oversight/online_control.py`` is judged against the *dynamic* (per-step)
 optimum: the GRID-snapped ``optimal_allocation`` -- the release-capable oracle that
 re-solves the minimal feasible allocation every step, rounded to the same delta

@@ -8,7 +8,7 @@ whole topology testbed, with per-node parameter dispersion (heterogeneous graphs
 Causal design. The simulation gives exact counterfactuals: the same workflow under
 the same drift realization is run under each policy, so policy is an intervention
 with no confounding (the paired re-run is the do-operator). We therefore report the
-*average treatment effect* (ATE) of online-MSO over baselines as a paired mean with
+*average treatment effect* (ATE) of adaptive-review over baselines as a paired mean with
 a 95% CI -- no propensity/IV adjustment is needed or appropriate. We then study
 *effect heterogeneity*: each workflow carries motif features (chain depth, max
 merge fan-in, presence of a weakest-link min gate, node count, sink catch rate),
@@ -169,7 +169,7 @@ def run(nodes, order, sinks, policy):
             b = greedy_resolve(sigma_raw, nodes, order, sinks)
         elif policy == "online-mab" and qg < P_MIN:
             mab_select(mab_N, mab_X, b, order, sigma_raw, nodes, sinks, qg)
-        elif policy in ("online-unif", "online-mso") and qg < P_MIN:
+        elif policy in ("online-unif", "adaptive-review") and qg < P_MIN:
             if policy == "online-unif":
                 for n in order:
                     b[n] = min(b[n] + DREVIEW / len(order), BMAX)
@@ -196,7 +196,7 @@ def main() -> int:
         f_unif, c_unif = run(nodes, order, sinks, "online-unif")
         f_mab, c_mab = run(nodes, order, sinks, "online-mab")
         f_grd, c_grd = run(nodes, order, sinks, "online-greedy")
-        f_mso, c_mso = run(nodes, order, sinks, "online-mso")
+        f_mso, c_mso = run(nodes, order, sinks, "adaptive-review")
         rows.append({"topo": topo, **features(topo),
                      "ite_vs_fixed": f_mso - f_fixed,
                      "ite_vs_unif": f_mso - f_unif,
@@ -216,13 +216,13 @@ def main() -> int:
 
     print(f"Testbed: {len(TOPOS)} topologies x {len(seeds)} seeds = {len(rows)} paired units\n")
     m, lo, hi = ci(A)
-    print(f"ATE online-MSO vs fixed     (Delta feasible-fraction): {m:+.3f}  95% CI [{lo:+.3f}, {hi:+.3f}]")
+    print(f"ATE adaptive-review vs fixed     (Delta feasible-fraction): {m:+.3f}  95% CI [{lo:+.3f}, {hi:+.3f}]")
     m, lo, hi = ci(U)
-    print(f"ATE online-MSO vs uniform   (Delta feasible-fraction): {m:+.3f}  95% CI [{lo:+.3f}, {hi:+.3f}]")
+    print(f"ATE adaptive-review vs uniform   (Delta feasible-fraction): {m:+.3f}  95% CI [{lo:+.3f}, {hi:+.3f}]")
     m, lo, hi = ci(M)
-    print(f"ATE online-MSO vs MAB (D-UCB)  (Delta feasible-fraction): {m:+.3f}  95% CI [{lo:+.3f}, {hi:+.3f}]")
+    print(f"ATE adaptive-review vs MAB (D-UCB)  (Delta feasible-fraction): {m:+.3f}  95% CI [{lo:+.3f}, {hi:+.3f}]")
     m, lo, hi = ci(R)
-    print(f"ATE online-MSO vs greedy re-solve (Delta feasible-fraction): {m:+.3f}  95% CI [{lo:+.3f}, {hi:+.3f}]")
+    print(f"ATE adaptive-review vs greedy re-solve (Delta feasible-fraction): {m:+.3f}  95% CI [{lo:+.3f}, {hi:+.3f}]")
     print(f"\nMean review committed (time-avg sum_v b_v): "
           f"MSO={np.mean([r['review_mso'] for r in rows]):.3f}  "
           f"greedy-resolve={np.mean([r['review_greedy'] for r in rows]):.3f}  "

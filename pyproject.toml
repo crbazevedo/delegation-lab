@@ -40,6 +40,7 @@ dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
     "networkx>=3.0",
+    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -62,7 +63,13 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.5",
 ]
-all = ["minimal-oversight[viz,notebooks,frameworks,dev]"]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+    "pymdown-extensions>=10.0",
+]
+all = ["minimal-oversight[viz,notebooks,frameworks,dev,docs]"]
 
 [project.urls]
 Homepage = "https://github.com/crbazevedo/delegation-lab"

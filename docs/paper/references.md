@@ -11,7 +11,7 @@ reading the code, find the corresponding paper concept.
 | (1) | Authorization function | $\alpha(x,t) = G(\sigma_\text{raw}(x,t))$ | Governance functional (conceptual) |
 | (2) | **Minimum Sufficient Oversight Principle** | $\min_\alpha \int \alpha^2 \sqrt{\det g}\, dx\, dt$ s.t. delivery | `solve_mso()` + `optimal_authority()` |
 | (3) | Fisher information | $g(\sigma) = 1/[\sigma(1-\sigma)]$ | `fisher_information()` |
-| (4) | Return Operator | $\partial\sigma/\partial t = \eta(\sigma_\text{skill,eff} - \sigma) - \delta(\sigma-\sigma_0)$ | `return_operator_step()` |
+| (4) | Competence Calibration Operator | $\partial\sigma/\partial t = \eta(\sigma_\text{skill,eff} - \sigma) - \delta(\sigma-\sigma_0)$ | `calibration_operator_step()` |
 | (5) | Fixed point | $\sigma_\text{raw}^* = (\eta\sigma_\text{skill}+\delta\sigma_0)/(\eta + \delta)$ | `sigma_raw_fixed_point()` |
 | (6) | Corrected fixed point | $\sigma_\text{corr}^* = \sigma_\text{raw}^* + (1-\sigma_\text{raw}^*)\times c$ | `sigma_corr_fixed_point()` |
 | (7) | Effective skill | $\sigma_\text{skill,eff}(v) = \sigma_\text{skill}(v) \times \text{AGG}(\ldots)$ | `effective_skill()` |

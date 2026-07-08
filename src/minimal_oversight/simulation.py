@@ -72,8 +72,8 @@ def simulate_single_node(
         # Drift
         current_skill = max(0.01, current_skill - drift_rate * dt)
 
-        # Return Operator ODE step
-        sigma_raw[t] = F.return_operator_step(
+        # Competence Calibration Operator ODE step
+        sigma_raw[t] = F.calibration_operator_step(
             sigma_raw[t - 1], current_skill, eta, delta, dt, sigma_0=sigma_0
         )
 
@@ -141,7 +141,7 @@ def simulate_pipeline(
             skill_eff = max(0.01, skill_eff - drift * config.dt)
 
             # ODE step
-            sigma_raw_h[t, j] = F.return_operator_step(
+            sigma_raw_h[t, j] = F.calibration_operator_step(
                 sigma_raw_h[t - 1, j],
                 skill_eff,
                 config.eta,

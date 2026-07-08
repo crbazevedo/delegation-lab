@@ -43,7 +43,7 @@ def fisher_volume_element(sigma: float | np.ndarray) -> float | np.ndarray:
 
 
 # ---------------------------------------------------------------------------
-# Return Operator (Equations 4, 5, 6)
+# Competence Calibration Operator (Equations 4, 5, 6)
 # ---------------------------------------------------------------------------
 
 def sigma_raw_fixed_point(
@@ -115,7 +115,7 @@ def masking_index(sigma_corr: float, sigma_raw: float) -> float:
     return sigma_corr / sigma_raw
 
 
-def return_operator_step(
+def calibration_operator_step(
     sigma: float,
     sigma_skill_eff: float,
     eta: float,
@@ -123,7 +123,7 @@ def return_operator_step(
     dt: float,
     sigma_0: float = 0.0,
 ) -> float:
-    """One Euler step of the Return Operator ODE.
+    """One Euler step of the Competence Calibration Operator ODE.
 
     dσ/dt = η(σ_skill,eff − σ) − δ(σ − σ₀)
 

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>When to release — ski-rental review control</title>
+<link rel="stylesheet" href="../theme.css" />
+<style>
+  .callout { font-size: 13px; color: var(--blue); margin: 2px 0 16px; }
+  .callout b { font-weight: 600; }
+  .dir { font-size: 12.5px; opacity: 0.85; }
+  details { border: 1px solid var(--border); border-radius: var(--radius); padding: 0 12px; margin: 4px 0 0; }
+  details > summary { cursor: pointer; padding: 10px 0; font-size: 14px; color: var(--text-secondary); }
+  details[open] > summary { border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .legend { font-size: 12px; color: var(--text-secondary); margin-top: 12px; display: flex; flex-wrap: wrap; gap: 14px; }
+  .legend i { font-style: normal; }
+  .swatch { display: inline-block; width: 22px; height: 0; vertical-align: middle; margin-right: 5px; }
+</style>
+</head>
+<body>
+<h1>When to release a recovered agent's review budget</h1>
+<p class="lede">A RAG support agent just caught up on a topic — fresh docs landed in its vector DB, so its answers are grounded again and the extra verification pass is now idle overhead. Keep <i>paying to verify</i> that topic, or switch it off and risk <i>re-paying</i> the setup cost when the next organic query shift outruns the knowledge base? Coverage drifts continuously and unscheduled — you can't know how long it stays good — so this is rent-or-buy. Drag the one slider and watch.</p>
+
+<div id="headline" class="banner"></div>
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+  <button id="play" type="button">▶ Watch it break</button>
+  <button id="reset" type="button">Reset</button>
+</div>
+
+<svg id="plot" viewBox="0 0 660 300" width="100%" style="display:block;background:var(--bg-surface);border-radius:var(--radius);border:1px solid var(--border)">
+  <!-- y grid + ticks (CR 1..5) -->
+  <line x1="52" y1="20" x2="52" y2="250" stroke="var(--border)"/>
+  <line x1="52" y1="250" x2="650" y2="250" stroke="var(--border)"/>
+  <text x="14" y="24" font-size="11" fill="var(--text-tertiary)" font-family="var(--font)">5×</text>
+  <text x="14" y="138" font-size="11" fill="var(--text-tertiary)" font-family="var(--font)">3×</text>
+  <text x="14" y="254" font-size="11" fill="var(--text-tertiary)" font-family="var(--font)">1×</text>
+  <text x="56" y="16" font-size="11" fill="var(--text-secondary)" font-family="var(--font)">review held (× the best-possible cost)</text>
+  <!-- reference lines -->
+  <line id="ln-clair" x1="52" x2="650" stroke="#8a8983" stroke-dasharray="5 4" stroke-width="1.5"/>
+  <line id="ln-bound" x1="52" x2="650" stroke="#8a8983" stroke-dasharray="2 3" stroke-width="1.5"/>
+  <!-- policy curves -->
+  <polyline id="pl-ctrl" fill="none" stroke="var(--teal)" stroke-width="2.5"/>
+  <polyline id="pl-ratchet" fill="none" stroke="var(--red)" stroke-width="2.5"/>
+  <!-- current-slack marker -->
+  <line id="marker" y1="20" y2="250" stroke="var(--text-tertiary)" stroke-dasharray="3 3" stroke-width="1"/>
+  <!-- escape stamp (hidden until the ratchet clips the frame top) -->
+  <g id="stamp" style="display:none">
+    <rect id="stamp-bg" x="0" y="22" width="232" height="20" rx="4" fill="var(--bg-danger)"/>
+    <text id="stamp-tx" x="0" y="36" font-size="12" font-weight="600" fill="var(--tx-danger)" font-family="var(--font)"></text>
+  </g>
+  <!-- reference labels -->
+  <text id="lb-ctrl" font-size="11" fill="var(--teal)" font-family="var(--font)">2λ controller (live)</text>
+  <text id="lb-bound" font-size="11" fill="#8a8983" font-family="var(--font)">1.95 worst-case bound</text>
+  <text x="470" y="246" font-size="11" fill="#8a8983" font-family="var(--font)">1.0 clairvoyant optimum</text>
+  <!-- x axis label -->
+  <text x="56" y="278" font-size="11" fill="var(--text-secondary)" font-family="var(--font)">brief coverage ←</text>
+  <text x="420" y="278" font-size="11" fill="var(--text-secondary)" font-family="var(--font)">→ long stable coverage (rare shifts)</text>
+</svg>
+
+<div class="grid" style="grid-template-columns:1fr 1.4fr;margin:14px 0 6px">
+  <div class="card">
+    <div class="l">the 2λ controller</div>
+    <div class="v" id="story-v">pays 1.88×</div>
+    <div class="l" style="margin-top:4px">1.0 = matches a perfect oracle · higher = worse</div>
+  </div>
+  <div class="muted" style="align-self:center">
+    <div>worst-case bound <code>2 − 1/(2λ) = 1.95×</code> — the ghost line it can approach but never cross.</div>
+    <div style="margin-top:4px">dwell* = <code>2λ = 20</code> steps · break-even: cumulative rent = the re-acquire cost.</div>
+  </div>
+</div>
+
+<div class="sl" style="margin-top:14px">
+  <label>how long the topic stays covered (slack τ)</label>
+  <input type="range" id="tau" min="10" max="360" step="2" value="40" />
+  <span id="tauv">—</span>
+</div>
+<p class="callout">↑ the one slider. <b>Drag right</b> — the longer a topic stays covered, the more re-verifying it wastes.</p>
+
+<details>
+  <summary>Advanced: why exactly 2λ?</summary>
+  <p class="muted" style="margin-top:0">This is the <b>worst case</b> — an adversary picks the relapse timing to defeat you. Release too early and you re-pay the <code>2λ</code> acquire cost on every blip (churn); hold forever and you pay rent without bound. Renting until cumulative rent equals the acquire cost — at <b>2λ steps</b> — is the break-even no adversary can beat.</p>
+  <svg id="ucurve" viewBox="0 0 660 220" width="100%" style="display:block;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius)">
+    <line x1="52" y1="16" x2="52" y2="180" stroke="var(--border)"/>
+    <line x1="52" y1="180" x2="650" y2="180" stroke="var(--border)"/>
+    <line id="u-floor" x1="52" x2="650" stroke="#8a8983" stroke-dasharray="5 4" stroke-width="1.5"/>
+    <polyline id="u-curve" fill="none" stroke="var(--blue)" stroke-width="2.5"/>
+    <circle id="u-min" r="5" fill="var(--teal)"/>
+    <text id="u-minlb" font-size="11" fill="var(--teal)" font-family="var(--font)"></text>
+    <text x="56" y="14" font-size="11" fill="var(--text-secondary)" font-family="var(--font)">worst-case cost (× best-possible)</text>
+    <text x="56" y="198" font-size="11" fill="var(--text-secondary)" font-family="var(--font)">release early ←</text>
+    <text x="470" y="198" font-size="11" fill="var(--text-secondary)" font-family="var(--font)">→ hold forever (ratchet)</text>
+    <text x="430" y="176" font-size="11" fill="#8a8983" font-family="var(--font)">1.0 clairvoyant floor</text>
+  </svg>
+  <div class="sl" style="margin-top:12px">
+    <label>release / re-acquire cost λ</label>
+    <input type="range" id="lam" min="1" max="20" step="1" value="10" />
+    <span id="lamv">10</span>
+  </div>
+  <p class="muted" id="u-ticks" style="margin-bottom:12px"></p>
+</details>
+
+<div class="legend">
+  <i><span class="swatch" style="border-top:2.5px solid var(--teal)"></span>2λ controller (live held cost)</i>
+  <i><span class="swatch" style="border-top:2.5px solid var(--red)"></span>never-release ratchet</i>
+  <i><span class="swatch" style="border-top:2px dashed #8a8983"></span>clairvoyant optimum (1.0)</i>
+  <i><span class="swatch" style="border-top:2px dotted #8a8983"></span>worst-case bound (ghost, 1.95)</i>
+</div>
+
+<p class="foot">
+Computed live by <code>adaptive-online.js</code> (the <code>skirental.py</code> port), pinned to the Python reference by <code>tests/test_parity_online.py</code> (|Δ| &lt; 1e-6). The teal line is the controller's <i>realized</i> full-instance cost; <code>1.95</code> is the proven per-phase worst-case bound it never crosses. Glosses: <i>slack τ</i> = how long a topic stays well-covered before the next query shift · <i>clairvoyant</i> = a policy that already knows the future and pays the least · <i>ratchet</i> = a controller that only ever adds review, never releases · <i>2λ</i> = the verification setup (release + re-acquire) cost.
+</p>
+
+<script src="../adaptive-online.js"></script>
+<script>
+var O = window.AdaptiveOnline;
+var $ = function (id) { return document.getElementById(id); };
+
+// hero instance: single sink, recurring need, dwell d = 2λ.
+var W = 1, LAM = 10, NCYC = 20, D = 20;
+var TAU_MIN = 10, TAU_MAX = 360, CR_MAX = 5;
+var PX0 = 52, PX1 = 650, PY0 = 20, PY1 = 250;
+var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var playing = false, raf = null;
+
+function xFor(tau) { return PX0 + (tau - TAU_MIN) / (TAU_MAX - TAU_MIN) * (PX1 - PX0); }
+function yFor(cr) { var c = Math.max(1, Math.min(CR_MAX, cr)); return PY1 - (c - 1) / (CR_MAX - 1) * (PY1 - PY0); }
+
+// closed-form costs (identical to the simulated module values; verified by parity).
+function ratchetCost(tau) { return (NCYC * (W + tau) + W) * O.BSTAR + LAM * O.BSTAR; }
+function crRatchet(tau) { return ratchetCost(tau) / O.optCost(W, tau, LAM, NCYC); }
+function crDwell(tau) { return O.dwellCost(W, tau, LAM, NCYC, D) / O.optCost(W, tau, LAM, NCYC); }
+
+function curve(fn, fromTau, toTau) {
+  var s = "";
+  for (var t = fromTau; t <= toTau; t += 2) s += xFor(t).toFixed(1) + "," + yFor(fn(t)).toFixed(1) + " ";
+  return s;
+}
+
+function setHeadline(rcr) {
+  var h = $("headline");
+  var dir = '<br><span class="dir">1.0 = matches a perfect oracle · higher = worse</span>';
+  if (rcr > CR_MAX) {
+    h.style.background = "var(--bg-danger)"; h.style.color = "var(--tx-danger)";
+    h.innerHTML = "<b>The never-release ratchet pays " + rcr.toFixed(1) + "× more — and is still climbing.</b>" + dir;
+  } else {
+    h.style.background = "var(--bg-success)"; h.style.color = "var(--tx-success)";
+    h.innerHTML = "<b>The 2λ controller never pays more than 2× the best-possible</b> — guaranteed, even against a worst-case relapse pattern." + dir;
+  }
+}
+
+function update() {
+  var tau = +$("tau").value;
+  $("tauv").textContent = tau + " steps";
+  // reference lines
+  $("ln-clair").setAttribute("y1", yFor(1)); $("ln-clair").setAttribute("y2", yFor(1));
+  $("ln-bound").setAttribute("y1", yFor(O.skirentalRatio(LAM))); $("ln-bound").setAttribute("y2", yFor(O.skirentalRatio(LAM)));
+  $("lb-bound").setAttribute("x", 470); $("lb-bound").setAttribute("y", yFor(O.skirentalRatio(LAM)) - 4);
+  // policy curves
+  $("pl-ctrl").setAttribute("points", curve(crDwell, TAU_MIN, TAU_MAX));
+  $("lb-ctrl").setAttribute("x", 70); $("lb-ctrl").setAttribute("y", yFor(crDwell(TAU_MAX)) + 14);
+  $("pl-ratchet").setAttribute("points", curve(crRatchet, TAU_MIN, tau));
+  // marker
+  $("marker").setAttribute("x1", xFor(tau)); $("marker").setAttribute("x2", xFor(tau));
+  // readouts
+  var rcr = crRatchet(tau), dcr = crDwell(tau);
+  $("story-v").textContent = "pays " + dcr.toFixed(2) + "×";
+  setHeadline(rcr);
+  // escape stamp — no axis rescale (LAW 7)
+  var st = $("stamp");
+  if (rcr > CR_MAX) {
+    var sx = Math.min(xFor(tau) - 234, PX1 - 234); if (sx < PX0) sx = PX0;
+    $("stamp-bg").setAttribute("x", sx);
+    $("stamp-tx").setAttribute("x", sx + 8);
+    $("stamp-tx").textContent = "unbounded · pays " + rcr.toFixed(1) + "× and rising";
+    st.style.display = "";
+  } else st.style.display = "none";
+}
+
+// ---- Advanced: the why-exactly-2λ worst-case U-curve ----
+function drawU() {
+  var lam = +$("lam").value;
+  $("lamv").textContent = lam;
+  var UX0 = 52, UX1 = 650, UY0 = 16, UY1 = 180, DMAX = 4 * lam, CRU = 3;
+  function ux(d) { return UX0 + (d - 1) / (DMAX - 1) * (UX1 - UX0); }
+  function uy(cr) { var c = Math.max(1, Math.min(CRU, cr)); return UY1 - (c - 1) / (CRU - 1) * (UY1 - UY0); }
+  var s = "", step = Math.max(1, Math.round(DMAX / 60));
+  for (var d = 1; d <= DMAX; d += step) s += ux(d).toFixed(1) + "," + uy(O.worstCaseRatio(d, lam)).toFixed(1) + " ";
+  $("u-curve").setAttribute("points", s);
+  $("u-floor").setAttribute("y1", uy(1)); $("u-floor").setAttribute("y2", uy(1));
+  var mm = O.minimaxDwell(lam); // {dwell: 2λ, ratio: 2-1/(2λ)}
+  $("u-min").setAttribute("cx", ux(mm.dwell)); $("u-min").setAttribute("cy", uy(mm.ratio));
+  $("u-minlb").setAttribute("x", ux(mm.dwell) - 18); $("u-minlb").setAttribute("y", uy(mm.ratio) - 9);
+  $("u-minlb").textContent = "min at d = 2λ = " + mm.dwell + "  (" + mm.ratio.toFixed(2) + "×)";
+  $("u-ticks").innerHTML = "Worst-case bounds <code>2 − 1/(2λ)</code> = " +
+    [1, 5, 10, 20].map(function (l) { return O.skirentalRatio(l).toFixed(2); }).join(" / ") +
+    " at λ = 1 / 5 / 10 / 20.";
+}
+
+// ---- controls ----
+function sweep() {
+  if (+$("tau").value >= 320) $("tau").value = 40;
+  playing = true; $("play").textContent = "❚❚ Pause";
+  (function fr() {
+    if (!playing) return;
+    var t = +$("tau").value;
+    if (t < 320) { $("tau").value = Math.min(320, t + 4); update(); raf = requestAnimationFrame(fr); }
+    else { playing = false; $("play").textContent = "▶ Watch it break"; }
+  })();
+}
+$("play").addEventListener("click", function () {
+  if (reduce) { $("tau").value = 320; update(); return; }
+  if (playing) { playing = false; this.textContent = "▶ Watch it break"; if (raf) cancelAnimationFrame(raf); }
+  else sweep();
+});
+$("reset").addEventListener("click", function () {
+  playing = false; $("play").textContent = "▶ Watch it break"; if (raf) cancelAnimationFrame(raf);
+  $("tau").value = 40; update();
+});
+$("tau").addEventListener("input", function () {
+  playing = false; $("play").textContent = "▶ Watch it break"; update();
+});
+$("lam").addEventListener("input", drawU);
+
+update();
+drawU();
+</script>
+</body>
+</html>

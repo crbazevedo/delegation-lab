@@ -1,4 +1,4 @@
-"""Online MSO review controller -- the runtime allocation policy.
+"""Adaptive review review controller -- the runtime allocation policy.
 
 This is the algorithm behind the paper's online result. A workflow runs under
 competence drift; the calibration operator carries each node's raw competence
@@ -15,7 +15,7 @@ Algorithm (one control step; ``sigma_raw`` is the operator's current state):
     5. return budget
 
 Invariants (machine-checked --- Z3: ``scripts/verify_online_control.py``;
-property tests: ``tests/test_online_control.py``; TLA+ spec: ``formal/OnlineMSO.tla``):
+property tests: ``tests/test_online_control.py``; TLA+ spec: ``formal/AdaptiveReview.tla``):
 
     INV-BUDGET     every budget[v] stays in [0, b_max], so the policy never
                    over-commits review.

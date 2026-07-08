@@ -126,7 +126,7 @@ def cyclic_adversary(h: int, rounds: int) -> list[int]:
 
 
 class SharedPoolController:
-    """Online MSO controller under a finite shared review pool of size ``h``.
+    """Adaptive review controller under a finite shared review pool of size ``h``.
 
     Drive it one bottleneck at a time: :meth:`request` takes the id of the sink that is
     currently the bottleneck and (re)funds it, evicting a funded sink by ``policy``

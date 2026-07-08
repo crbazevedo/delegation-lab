@@ -57,7 +57,7 @@ So the cockpit models a **reviewer** (detection, `c`) and a **corrector**
 For a node that *produces* work (drafting, code, extraction, classification,
 retrieval, reranking) the prior is a **raw-competence band** σ_raw = (low / mid /
 high). But a node in the model is parameterized by its underlying **skill
-(σ_skill)**, which the *return operator* damps toward an equilibrium by the gain
+(σ_skill)**, which the *competence calibration operator* damps toward an equilibrium by the gain
 **γ = η / (η + δ) = 10/12 ≈ 0.833** (observation rate η over observation + decay).
 At that equilibrium, raw competence is γ · σ_skill. So to make a freshly-seeded
 node *reproduce the prior's σ_raw*, we invert the relationship:
@@ -73,7 +73,7 @@ cockpit says so.)
 A **reviewer** node is seeded directly with the **catch rate (c)** from its prior
 band; a **corrector** node with the **fix rate (f)**. No γ inversion — these are
 already probabilities of an event (detect / repair), not competences subject to
-the return-operator dynamics.
+the calibration-operator dynamics.
 
 ### How wide is the band? → confidence
 
@@ -153,6 +153,6 @@ The retrieval, reranking, and grounded-generation distinctions all flow from the
   benchmarked sibling and flagged. Refine it from your own traces first.
 
 **The one-line method:** map a *cited* benchmark to a σ band under explicit
-normalization rules, invert through the return-operator gain to seed the node,
+normalization rules, invert through the calibration-operator gain to seed the node,
 keep detection and repair separate, and widen the band whenever the evidence is
 weak — then let your traces overwrite all of it.

@@ -48,7 +48,7 @@ cd web && python -m http.server 8000   # then open http://localhost:8000
 | **Feasibility & oversight cockpit** | `C_op` vs `p_min`, autonomy buffer `B_eff`, capacity cliff `H_crit`, per-node masking. |
 | **The masking pathology** | `M* = σ_corr/σ_raw`, reproducing the paper's `M*=1.83`. |
 | **Water-filling oversight** | The Euler–Lagrange allocation `α*(x)` at least cost. |
-| **The Return Operator, run on time** | The competence ODE `dσ/dt = η(σ_skill,eff − σ) − δ(σ − σ₀)` integrated forward: `σ_raw` drifts, `σ_corr` holds, masking widens; intervene to reset the autonomy window. |
+| **The Competence Calibration Operator, run on time** | The competence ODE `dσ/dt = η(σ_skill,eff − σ) − δ(σ − σ₀)` integrated forward: `σ_raw` drifts, `σ_corr` holds, masking widens; intervene to reset the autonomy window. |
 | **Token simulation (stochastic Petri net)** | Tasks as tokens flowing through the pipeline with real review loops; empirical end-to-end success converging to the analytic `C_op`. |
 | **Water-filling vs the baseline paradigm** | MSO vs uniform oversight at equal delivery, plus endogenous task allocation (scope selection); the advantage grows with task heterogeneity. |
 
@@ -60,7 +60,7 @@ Two browser modules sit on top of the package:
   `minimal_oversight._formulae` (plus capacity propagation, topology, and
   allocation). It is pinned to the Python package by `tests/test_parity.py`:
   every formula, plus end-to-end pipeline capacity, bottleneck identity, the
-  Return-Operator trajectory, motif descriptions, delegation centrality, risk
+  Calibration-Operator trajectory, motif descriptions, delegation centrality, risk
   ranking, and scope selection, must agree to within `1e-6`.
 - `web/mso-sim.js` — a lightweight stochastic-Petri-net token simulator. It is
   validated by `tests/test_sim_grounding.py`: the empirical end-to-end success

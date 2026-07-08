@@ -5,14 +5,15 @@ target ``p_min`` and an optional cost ``budget``, search for a cheaper allocatio
 that still clears the bar — or, starting from an all-expensive pipeline, the
 cheapest allocation that fits the budget while holding the bar.
 
-The search is a **greedy structural local-search** over three move types:
+The search is a **greedy local-search** over three move types:
 
 1. **Model swap** — change a node's model to another that has a prior for its
    task (cheapest that clears the node's bar; open-source preferred on ties).
-2. **Add oversight** — insert a reviewer+corrector node after a weak node
+2. **Add in-place oversight** — assign an oversight model to a weak node
    (detect *and* repair; the meaningful oversight unit, per *reviewer ≠
    corrector*).
-3. **Loop** — add a rework pass on a reviewed node (compounds the catch rate).
+3. **Rework pass** — add an additional reviewed pass on a node (compounds the
+   catch rate).
 
 Both directions fall out of the same loop: from a cheap, infeasible pipeline it
 *invests* (the move with the best ΔC_op per dollar) until feasible; from an

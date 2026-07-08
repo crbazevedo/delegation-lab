@@ -15,7 +15,7 @@ from minimal_oversight._formulae import (
     node_capacity,
     optimal_authority,
     recursive_chain_quality,
-    return_operator_step,
+    calibration_operator_step,
     sigma_corr_fixed_point,
     sigma_raw_fixed_point,
     solve_lambda,
@@ -38,7 +38,7 @@ class TestFisherInformation:
         assert len(result) == 3
 
 
-class TestReturnOperator:
+class TestCalibrationOperator:
     def test_fixed_point_worked_example(self):
         # Conservative σ₀=0 specialization: η=10, δ=2, σ_skill=0.80
         sigma_star = sigma_raw_fixed_point(0.80, eta=10, delta=2)
@@ -48,8 +48,8 @@ class TestReturnOperator:
         sigma_star = sigma_raw_fixed_point(0.80, eta=10, delta=2, sigma_0=0.50)
         assert pytest.approx(sigma_star, rel=1e-3) == 0.750
 
-    def test_return_operator_reverts_to_prior(self):
-        sigma_next = return_operator_step(
+    def test_calibration_operator_reverts_to_prior(self):
+        sigma_next = calibration_operator_step(
             sigma=0.70,
             sigma_skill_eff=0.70,
             eta=10,

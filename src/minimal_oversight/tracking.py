@@ -1,6 +1,6 @@
 """Tracking drifting competence under observation noise (the Kalman variant).
 
-The online controller never sees the true required budget ``r(t)``; it sees a noisy
+The adaptive controller never sees the true required budget ``r(t)``; it sees a noisy
 observation ``r(t) + N(0, sigma^2)``, and ``r(t)`` itself drifts. To stay feasible
 (``b >= r``) with probability ``>= 1 - delta`` it must hold a margin above its
 estimate, and that margin is pure holding overhead.

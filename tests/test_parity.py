@@ -258,12 +258,12 @@ def _python_expected() -> dict:
     exp["buffer"] = [F.effective_autonomy_buffer(*a) for a in CASES["buffer"]]
     exp["autonomy"] = [F.autonomy_time(*a) for a in CASES["autonomy"]]
     exp["crit_entropy"] = [F.critical_entropy(*a) for a in CASES["crit_entropy"]]
-    exp["ro_step"] = [F.return_operator_step(*a) for a in CASES["ro_step"]]
+    exp["ro_step"] = [F.calibration_operator_step(*a) for a in CASES["ro_step"]]
     exp["ro_traj"] = []
     for c in CASES["ro_traj"]:
         s = c["init"]
         for _ in range(c["steps"]):
-            s = F.return_operator_step(s, c["skill"], c["eta"], c["delta"], c["dt"], c["sigma0"])
+            s = F.calibration_operator_step(s, c["skill"], c["eta"], c["delta"], c["dt"], c["sigma0"])
         exp["ro_traj"].append(s)
     exp["estimate"] = []
     for c in CASES["estimate"]:

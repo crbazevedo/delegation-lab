@@ -1,4 +1,4 @@
-"""Property-based tests for the online MSO controller (complements the Z3 proofs).
+"""Property-based tests for the adaptive review controller (complements the Z3 proofs).
 
 Z3 (scripts/verify_online_control.py) discharges the algebraic invariants; these
 Hypothesis properties exercise the *whole* controller over thousands of random

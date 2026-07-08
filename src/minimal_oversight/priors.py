@@ -6,7 +6,7 @@ a pipeline node. This module loads a curated, provenance-bound prior table
 :class:`~minimal_oversight.models.Node` needs:
 
 - generator task-types -> ``sigma_skill`` (via ``sigma_raw_mid / gamma``), so the
-  model reproduces the prior's ``sigma_raw`` at the return-operator fixed point;
+  model reproduces the prior's ``sigma_raw`` at the calibration-operator fixed point;
 - the ``review`` task-type -> ``catch_rate`` (how well the model catches an
   upstream node's errors).
 

@@ -11,10 +11,10 @@ API — `analyze_pipeline()` and friends are unchanged from 0.1.2.
   (build/edit a delegated workflow from a connector library; read feasibility,
   masking, motifs, delegation centrality, and risk off it), plus focused
   explainers for feasibility, masking (M\*=1.83), water-filling allocation, the
-  Return Operator run on time, a stochastic-Petri-net token simulation, and a
+  Competence Calibration Operator run on time, a stochastic-Petri-net token simulation, and a
   water-filling-vs-baseline benchmark.
 - **`web/mso-core.js`**: a faithful browser port of `minimal_oversight._formulae`
-  (Fisher info, return-operator fixed points and ODE step, water-filling +
+  (Fisher info, calibration-operator fixed points and ODE step, water-filling +
   `solve_lambda`, capacity propagation, masking, motif detection, delegation
   centrality, SOTA score, scope selection).
 - **`web/mso-sim.js`**: a lightweight stochastic-Petri-net token simulator
@@ -53,7 +53,7 @@ Terminology alignment for the revised paper and documentation.
 Equation and documentation alignment for the revised arXiv submission.
 
 ### Core
-- Add the prior-aware Return Operator with `sigma_0` support in fixed-point,
+- Add the prior-aware Competence Calibration Operator with `sigma_0` support in fixed-point,
   simulation, capacity, and one-call analysis paths.
 - Make channel-capacity calculation explicit about revealed versus hidden
   review/action logs.

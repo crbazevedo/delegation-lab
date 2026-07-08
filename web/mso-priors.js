@@ -6,7 +6,7 @@
  *
  * Mirrors minimal_oversight.priors.seed_node (Python) exactly:
  *   - generator / retrieval / reranking task-types → sigma_skill = clamp(mid/γ, 0.05, 0.98)
- *     so gamma * sigma_skill == band.mid at the return-operator fixed point.
+ *     so gamma * sigma_skill == band.mid at the calibration-operator fixed point.
  *   - review task-type → catch_rate = clamp(mid, 0, 1)   (reviewer error-detection)
  *   - correction task-type → fix_rate = clamp(mid, 0, 1)  (corrector repair-success)
  *   - provenance.confidence = 1 − band_width (a crude evidence-strength proxy).
@@ -20,7 +20,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  var GAMMA = 10 / 12;   // η/(η+δ) return-operator fixed-point gain
+  var GAMMA = 10 / 12;   // η/(η+δ) calibration-operator fixed-point gain
 
   function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
 

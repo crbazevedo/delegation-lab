@@ -64,7 +64,7 @@ library, editable graph, merge gates, review loops, didactic lessons) — or
 **import your own pipeline** from traces or LangGraph — and read feasibility,
 masking, motifs, and risk off it; press **Run** to animate task tokens through
 the graph. Focused explainers cover the masking pathology
-(`M*=1.83`), water-filling allocation, the **Return Operator run on time**, a
+(`M*=1.83`), water-filling allocation, the **Competence Calibration Operator run on time**, a
 **stochastic-Petri-net token simulation**, and a **water-filling-vs-baseline
 benchmark**.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Machine-checked verification of the online MSO controller's invariants (Z3/SMT).
+"""Machine-checked verification of the adaptive review controller's invariants (Z3/SMT).
 
 Z3 is the SMT engine underlying Dafny, SPARK, and Boogie, so these are genuine
 formal-verification obligations, discharged by proving each property's negation

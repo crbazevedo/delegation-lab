@@ -42,7 +42,7 @@ baseline support level $\sigma_0$, the agent's measured competence converges to:
 
 $$\sigma_\text{raw}^* = \frac{\eta \cdot \sigma_\text{skill} + \delta \cdot \sigma_0}{\eta + \delta}$$
 
-This is the Return Operator's fixed point (Equation 5). The package default is
+This is the Competence Calibration Operator's fixed point (Equation 5). The package default is
 the conservative $\sigma_0=0$ specialization, which recovers the simpler
 $\eta\sigma_\text{skill}/(\eta+\delta)$ examples. The corrected quality is:
 

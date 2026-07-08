@@ -11,7 +11,7 @@ matrices, whereas a DAG adjacency is binary and strictly upper-triangular.)
 Each DAG carries motif features (depth, max fan-in, node count, fraction of
 min-gates, edge density). We run the same paired counterfactual as before (same
 DAG + same drift under each policy), then (1) report the average treatment effect
-of online-MSO, (2) check feature collinearity by Variance Inflation Factor so the
+of adaptive-review, (2) check feature collinearity by Variance Inflation Factor so the
 partial contributions are identifiable, and (3) regress the per-DAG effect on
 standardized features (OLS) for the debiased motif contributions.
 
@@ -38,7 +38,7 @@ from minimal_oversight.online_control import (  # noqa: E402
 def greedy_resolve(sigma_raw, wf, p_min, delta, b_max):
     """Strong deployable comparator: at each observation re-solve the full review
     allocation from scratch by greedy marginal water-filling to feasibility (vs the
-    MSO controller's single increment). Because delivered_quality is separable across
+    review controller's single increment). Because delivered_quality is separable across
     sinks and monotone, this greedy water-fill attains the per-step optimum up to the
     delta grid (the closed-form optimum is online_control.optimal_allocation; the
     equivalence is checked in tests/test_online_control.py)."""
@@ -132,7 +132,7 @@ def feasible_fraction(wf, skill0, policy):
         qg = min(corr[s] for s in wf.sinks)
         feas += int(qg >= P_MIN)
         review += sum(budget.values())
-        if policy == "online-mso":
+        if policy == "adaptive-review":
             budget = online_step(sigma_raw, budget, wf, P_MIN, DREVIEW, BMAX)
         elif policy == "online-greedy":
             budget = greedy_resolve(sigma_raw, wf, P_MIN, DREVIEW, BMAX)
@@ -170,7 +170,7 @@ def main() -> int:
                 f_unif, c_unif = feasible_fraction(wf, skill0, "online-unif")
                 f_mab, c_mab = feasible_fraction(wf, skill0, "online-mab")
                 f_grd, c_grd = feasible_fraction(wf, skill0, "online-greedy")
-                f_mso, c_mso = feasible_fraction(wf, skill0, "online-mso")
+                f_mso, c_mso = feasible_fraction(wf, skill0, "adaptive-review")
                 rows.append({**features(wf),
                              "ite_vs_fixed": f_mso - f_fixed,
                              "ite_vs_unif": f_mso - f_unif,
@@ -190,10 +190,10 @@ def main() -> int:
 
     print(f"Erdos-Renyi DAG ensemble: {len(rows)} graphs "
           f"(n in 4..8, p in {{.30,.45,.60}}, 40 seeds each)\n")
-    m, lo, hi = ci(A); print(f"ATE online-MSO vs fixed       : {m:+.3f}  95% CI [{lo:+.3f},{hi:+.3f}]")
-    m, lo, hi = ci(U); print(f"ATE online-MSO vs uniform     : {m:+.3f}  95% CI [{lo:+.3f},{hi:+.3f}]")
-    m, lo, hi = ci(M); print(f"ATE online-MSO vs MAB (D-UCB)   : {m:+.3f}  95% CI [{lo:+.3f},{hi:+.3f}]")
-    m, lo, hi = ci(R); print(f"ATE online-MSO vs greedy re-solve: {m:+.3f}  95% CI [{lo:+.3f},{hi:+.3f}]")
+    m, lo, hi = ci(A); print(f"ATE adaptive-review vs fixed       : {m:+.3f}  95% CI [{lo:+.3f},{hi:+.3f}]")
+    m, lo, hi = ci(U); print(f"ATE adaptive-review vs uniform     : {m:+.3f}  95% CI [{lo:+.3f},{hi:+.3f}]")
+    m, lo, hi = ci(M); print(f"ATE adaptive-review vs MAB (D-UCB)   : {m:+.3f}  95% CI [{lo:+.3f},{hi:+.3f}]")
+    m, lo, hi = ci(R); print(f"ATE adaptive-review vs greedy re-solve: {m:+.3f}  95% CI [{lo:+.3f},{hi:+.3f}]")
     print(f"\nMean review committed (time-avg sum_v b_v): "
           f"MSO={np.mean([r['review_mso'] for r in rows]):.3f}  "
           f"greedy-resolve={np.mean([r['review_greedy'] for r in rows]):.3f}  "

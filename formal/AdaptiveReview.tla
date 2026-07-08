@@ -1,6 +1,6 @@
------------------------------- MODULE OnlineMSO ------------------------------
+------------------------------ MODULE AdaptiveReview ------------------------------
 (***************************************************************************)
-(* Formal specification of the online MSO review controller's control     *)
+(* Formal specification of the adaptive review review controller's control     *)
 (* loop (the reference implementation is minimal_oversight/online_control.py).*)
 (*                                                                         *)
 (* This abstracts the per-node review budget as an integer count in 0..K   *)
@@ -33,7 +33,7 @@
 (*       that settles into the band and stops: no add-then-release cycle.        *)
 (*                                                                         *)
 (* HOW TO CHECK (requires the TLA+ tools / Java -- not run in the authoring  *)
-(* environment):  tlc OnlineMSO.tla -config OnlineMSO.cfg                    *)
+(* environment):  tlc AdaptiveReview.tla -config AdaptiveReview.cfg                    *)
 (* The algebraic invariants (corrected/min/product/mean monotonicity, budget *)
 (* -cap safety, non-harmful add step, release-preserves-feasibility, and the  *)
 (* deadband no-cycle fact) are separately machine-checked with Z3 in          *)

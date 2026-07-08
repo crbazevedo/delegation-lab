@@ -51,7 +51,7 @@ Each layer degrades the signal. The recursive formula accounts for the fact that
 
 $$\sigma_\text{corr}^*(i) = R\big(\sigma_\text{skill} \times \sigma_\text{corr}^*(i-1)\big), \quad \sigma_\text{corr}^*(0) = 1$$
 
-where $R(\cdot)$ is the Return Operator at fixed point (Equation 11).
+where $R(\cdot)$ is the Competence Calibration Operator at fixed point (Equation 11).
 
 ??? example "Verify the math"
     ```python

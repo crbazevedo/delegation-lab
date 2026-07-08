@@ -10,7 +10,7 @@ quality at the target. We compare four runtime policies on a depth-3 chain:
   none          no review (b=0 throughout)
   fixed         a fixed uniform review budget set once at t=0
   online-unif   when Q_G < p_min, add a review increment spread over all nodes
-  online-MSO    when Q_G < p_min, add the increment to the max-marginal node
+  adaptive-review    when Q_G < p_min, add the increment to the max-marginal node
 
 Reported per policy: mean delivered quality, fraction of the run feasible, and
 total review spent (area under the budget). The point: under drift, fixed review
@@ -72,10 +72,10 @@ def run(policy: str, eta: float) -> dict:
                 sigma_raw[i], skill_eff, eta, DELTA_DECAY, DT)
         qg, _ = q_of(sigma_raw, budgets)
         # online policies react to a shortfall
-        if policy in ("online-unif", "online-mso") and qg < P_MIN:
+        if policy in ("online-unif", "adaptive-review") and qg < P_MIN:
             if policy == "online-unif":
                 budgets = np.minimum(budgets + DELTA_REVIEW / DEPTH, B_MAX)
-            else:  # online-mso: increment the node with the best marginal on Q_G
+            else:  # adaptive-review: increment the node with the best marginal on Q_G
                 best, best_gain = None, 0.0
                 for i in range(DEPTH):
                     if budgets[i] + DELTA_REVIEW > B_MAX:
@@ -97,14 +97,14 @@ def main() -> int:
         print(f"=== Online review under drift (depth-{DEPTH} chain, drift={DRIFT}, "
               f"eta={eta}, p_min={P_MIN}) ===")
         print(f"{'policy':12s} {'meanQ':>7s} {'feasible%':>10s} {'total review':>13s}")
-        for pol in ("none", "fixed", "online-unif", "online-mso"):
+        for pol in ("none", "fixed", "online-unif", "adaptive-review"):
             r = run(pol, eta)
             print(f"{r['policy']:12s} {r['meanQ']:7.3f} {r['feasible_frac']*100:9.0f}% "
                   f"{r['total_review']:13.2f}")
-    print("\n=== Observation-frequency (eta) sweep, online-MSO ===")
+    print("\n=== Observation-frequency (eta) sweep, adaptive-review ===")
     print(f"{'eta':>5s} {'feasible%':>10s} {'total review':>13s}")
     for eta in (5.0, 10.0, 20.0):
-        r = run("online-mso", eta)
+        r = run("adaptive-review", eta)
         print(f"{eta:5.0f} {r['feasible_frac']*100:9.0f}% {r['total_review']:13.2f}")
     return 0
 
