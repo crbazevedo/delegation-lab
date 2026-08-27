@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MSO — masking detector</title>
+<link rel="stylesheet" href="../theme.css" />
+</head>
+<body>
+<h1>The masking pathology</h1>
+<p class="lede">A corrector lifts an agent's output above its true competence. The system <em>looks</em> reliable (σ_corr) while raw skill (σ_raw) quietly decays — so trust calibrated on observed output is wrong. The masking index <code>M* = σ_corr/σ_raw</code> measures the gap.</p>
+
+<div class="sl"><label>Agent skill σ_skill</label><input type="range" id="skill" min="0.30" max="0.95" step="0.01" value="0.55" /><span id="skillv">0.55</span></div>
+<div class="sl"><label>Corrector catch rate c</label><input type="range" id="catch" min="0.40" max="0.95" step="0.01" value="0.70" /><span id="catchv">0.70</span></div>
+
+<div class="grid" style="margin:16px 0 14px">
+  <div class="card"><div class="l">Raw competence σ_raw</div><div class="v" id="sraw">—</div></div>
+  <div class="card"><div class="l">After correction σ_corr</div><div class="v" id="scorr">—</div></div>
+  <div class="card"><div class="l">Masking index M*</div><div class="v" id="mstar">—</div></div>
+</div>
+<div id="repro" class="banner" style="background:var(--bg-surface);color:var(--text-secondary);font-size:13px"></div>
+
+<div style="margin:6px 0 22px">
+  <div class="muted" style="margin-bottom:6px">what you see vs what's real</div>
+  <div class="bar" style="height:22px"><div id="b-raw" style="position:absolute;left:0;top:0;height:100%;background:#378ADD"></div><div id="b-mask" style="position:absolute;top:0;height:100%;background:#EF9F27"></div></div>
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);margin-top:4px"><span>σ_raw (true)</span><span>masking lift</span></div>
+</div>
+
+<h2>Masking across the sales pipeline</h2>
+<p class="muted" style="margin:-4px 0 10px">per-node M* from <code>analyze_pipeline()</code> — bars sorted by severity</p>
+<div id="ledger"></div>
+
+<p class="foot">Computed by <code>mso-core.js</code> (pinned to <code>minimal-oversight==0.1.2</code>). At σ_skill=0.55, c=0.70 this reproduces the paper's Experiment 1 value <b>M*=1.83</b> exactly. M* &gt; 1 means the corrector is doing the work; the agent could be failing silently underneath.</p>
+
+<script src="../mso-core.js"></script>
+<script>
+var $=function(id){return document.getElementById(id);};
+var SALES=[
+ {id:'lead_enrich',label:'Lead enrich',sigma_skill:0.80,catch_rate:0.60,parents:[],aggregation:'product'},
+ {id:'lead_score',label:'Lead scoring',sigma_skill:0.62,catch_rate:0.65,parents:['lead_enrich'],aggregation:'product'},
+ {id:'outreach_draft',label:'Outreach draft',sigma_skill:0.50,catch_rate:0.55,parents:['lead_score'],aggregation:'product'},
+ {id:'deal_forecast',label:'Deal forecast',sigma_skill:0.45,catch_rate:0.70,parents:['lead_score'],aggregation:'product'},
+ {id:'crm_write',label:'CRM write',sigma_skill:0.85,catch_rate:0.70,parents:['outreach_draft','deal_forecast'],aggregation:'product'},
+ {id:'meeting_book',label:'Meeting book',sigma_skill:0.65,catch_rate:0.60,parents:['crm_write'],aggregation:'product'}
+];
+function render(){
+  var skill=+$('skill').value, c=+$('catch').value;
+  $('skillv').textContent=skill.toFixed(2); $('catchv').textContent=c.toFixed(2);
+  var sraw=MSO.sigmaRawFixedPoint(skill,10,2,0), scorr=MSO.sigmaCorrFixedPoint(sraw,c), m=MSO.maskingIndex(scorr,sraw);
+  $('sraw').textContent=sraw.toFixed(3); $('scorr').textContent=scorr.toFixed(3);
+  var mEl=$('mstar');mEl.textContent=m.toFixed(2)+'×';mEl.style.color=m>1.8?'var(--tx-danger)':(m>1.4?'var(--tx-warning)':'var(--text-primary)');
+  $('b-raw').style.width=(sraw*100).toFixed(1)+'%';
+  $('b-mask').style.left=(sraw*100).toFixed(1)+'%';$('b-mask').style.width=((scorr-sraw)*100).toFixed(1)+'%';
+  var near=Math.abs(skill-0.55)<0.005&&Math.abs(c-0.70)<0.005;
+  $('repro').innerHTML=near?'✓ paper Experiment 1: σ_skill=0.55, c=0.70 → <b>M*=1.83</b> (matches exactly).':'Set σ_skill=0.55 and c=0.70 to reproduce the paper\'s M*=1.83.';
+  var r=MSO.analyzePipeline({nodes:SALES},{p_min:0.80});
+  var rows=SALES.map(function(n){return {label:n.label,m:r.perNode[n.id].masking,sr:r.perNode[n.id].sigma_raw,sc:r.perNode[n.id].sigma_corr};}).sort(function(a,b){return b.m-a.m;});
+  $('ledger').innerHTML=rows.map(function(d){var col=d.m>1.8?'#E24B4A':(d.m>1.4?'#EF9F27':'#1D9E75');
+    return '<div style="display:grid;grid-template-columns:124px 1fr 130px;gap:10px;align-items:center;margin-bottom:9px">'+
+      '<div style="font-size:12px;font-weight:500">'+d.label+'</div>'+
+      '<div class="bar"><div style="position:absolute;left:0;top:0;height:100%;width:'+(d.sr*100).toFixed(1)+'%;background:#378ADD"></div>'+
+      '<div style="position:absolute;top:0;height:100%;left:'+(d.sr*100).toFixed(1)+'%;width:'+((d.sc-d.sr)*100).toFixed(1)+'%;background:'+col+'"></div></div>'+
+      '<div style="font-size:11px;color:var(--text-secondary);text-align:right">M*='+d.m.toFixed(2)+'</div></div>';}).join('');
+}
+['skill','catch'].forEach(function(id){$(id).addEventListener('input',render);});
+render();
+</script>
+</body>
+</html>

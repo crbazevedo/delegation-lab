@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MSO — governance cockpit</title>
+<link rel="stylesheet" href="../theme.css" />
+<style>
+body { max-width: 1180px; }
+.cockpit { display: grid; grid-template-columns: 168px 1fr 268px; gap: 14px; align-items: start; }
+.palette h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-tertiary); margin: 12px 0 6px; font-weight: 500; }
+.chip { display: flex; align-items: center; gap: 7px; width: 100%; text-align: left; padding: 6px 8px; margin-bottom: 5px; font-size: 12px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+.canvas-wrap { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+svg.canvas { width: 100%; height: 460px; display: block; touch-action: none; cursor: default; }
+.panel .sec { margin-bottom: 14px; }
+.panel h3 { font-size: 13px; font-weight: 500; margin: 0 0 7px; }
+.minicard { background: var(--bg-surface); border-radius: var(--radius); padding: 8px 10px; }
+.minicard .l { font-size: 11px; color: var(--text-secondary); }
+.minicard .v { font-size: 16px; font-weight: 500; }
+.mtag { font-size: 10px; padding: 1px 6px; border-radius: 9px; font-weight: 500; }
+.field { margin-bottom: 8px; }
+.field label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 2px; }
+.field input[type=text], .field select { width: 100%; font: inherit; font-size: 13px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-page); color: var(--text-primary); }
+.rng { display: flex; align-items: center; gap: 8px; }
+.rng input { flex: 1; }
+.rng b { font-size: 12px; min-width: 34px; text-align: right; font-weight: 500; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+.toolbar select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-page); color: var(--text-primary); }
+.hint { font-size: 11px; color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+<h1>MSO governance cockpit</h1>
+<p class="lede">Build or load a delegated workflow, edit it, and read the governance off it live — feasibility, masking, motifs, and risk — all computed by the paper's equations.</p>
+
+<div class="toolbar">
+  <label class="hint">Load template
+    <select id="tpl"><optgroup label="Workflows"><option value="sales">Sales — lead to deal</option><option value="support">Customer support triage</option><option value="github">GitHub PR review</option><option value="rag">RAG research assistant</option><option value="content">Content pipeline</option><option value="incident">Incident response</option><option value="finance">Finance close</option></optgroup><optgroup label="Lessons (try the hint)"><option value="review_placement">Lesson · reviewer placement</option><option value="reviewer_competence">Lesson · reviewer competence</option><option value="merge_gate">Lesson · merge gate type</option><option value="review_loop">Lesson · review loop</option><option value="chain_depth">Lesson · chain depth &amp; masking</option></optgroup><option value="blank">Blank canvas</option></select>
+  </label>
+  <span class="rng" style="gap:6px"><span class="hint">p_min</span><input type="range" id="pmin" min="0.50" max="0.95" step="0.01" value="0.80" style="width:110px"><b id="pminv">0.80</b></span>
+  <span class="rng" style="gap:6px"><span class="hint">H(W)</span><input type="range" id="hw" min="0" max="6" step="0.1" value="0" style="width:90px"><b id="hwv">0.0</b></span>
+  <span class="seg"><button id="zout" title="zoom out" aria-label="zoom out">−</button><button id="zfit" title="fit to view">Fit</button><button id="zin" title="zoom in" aria-label="zoom in">+</button></span>
+  <button id="run" type="button">▶ Run tokens</button>
+  <button id="import-btn" type="button" style="border-color:var(--blue);color:var(--blue)">⤓ Import your pipeline</button>
+  <span class="hint">click a connector to add · drag ● to link · drag canvas to pan · scroll to zoom · Delete to remove</span>
+</div>
+
+<div id="lesson" style="display:none;background:var(--bg-warning);color:var(--tx-warning);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px;line-height:1.5"></div>
+<div id="import-note" style="display:none;background:var(--bg-success);color:var(--tx-success);border-radius:var(--radius);padding:9px 13px;margin-bottom:12px;font-size:13px"></div>
+
+<div id="import-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:680px;width:92%;max-height:88vh;overflow:auto;padding:20px 22px">
+    <div style="font-size:17px;font-weight:500;margin-bottom:4px">Analyze your own pipeline</div>
+    <p class="muted" style="margin:0 0 12px">Paste one of: <b>trace events</b> (estimates real catch rate &amp; masking per node), a <b>LangGraph graph</b> (<code>app.get_graph().to_json()</code>), or plain <code>{nodes:[…]}</code>. Auto-detected. Nothing leaves your browser.</p>
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <button type="button" class="ex" data-ex="traces" style="font-size:12px">sample: traces</button>
+      <button type="button" class="ex" data-ex="langgraph" style="font-size:12px">sample: LangGraph</button>
+      <button type="button" class="ex" data-ex="nodes" style="font-size:12px">sample: nodes</button>
+    </div>
+    <textarea id="import-text" spellcheck="false" style="width:100%;height:240px;font-family:var(--mono);font-size:12px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--bg-surface);color:var(--text-primary)" placeholder='[{"task_id":"1","node_id":"draft","outcome":1,"corrected":1},{"task_id":"1","node_id":"review","outcome":0,"corrected":1}, ...]'></textarea>
+    <div id="import-err" style="color:var(--tx-danger);font-size:12px;min-height:16px;margin-top:6px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button type="button" id="import-cancel">Cancel</button>
+      <button type="button" id="import-go" class="on">Analyze pipeline</button>
+    </div>
+  </div>
+</div>
+
+<div class="cockpit">
+  <div class="palette" id="palette"></div>
+  <div class="canvas-wrap"><svg class="canvas" id="svg"></svg>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;padding:7px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--text-secondary)">
+      <span><svg width="22" height="13" style="vertical-align:middle"><rect x="1" y="1" width="20" height="11" rx="4" fill="#EF9F2722" stroke="#EF9F27"/></svg> AI agent</span>
+      <span><svg width="22" height="13" style="vertical-align:middle"><polygon points="3,1 19,1 21,6.5 19,12 3,12 1,6.5" fill="#378ADD22" stroke="#378ADD"/></svg> tool / connector</span>
+      <span><svg width="22" height="13" style="vertical-align:middle"><rect x="1" y="1" width="20" height="11" rx="5.5" fill="#63992222" stroke="#639922"/></svg> human</span>
+      <span><svg width="22" height="13" style="vertical-align:middle"><polygon points="4,1 21,1 18,12 1,12" fill="#88878022" stroke="#888780"/></svg> data</span>
+    </div>
+  </div>
+  <div class="panel">
+    <div id="banner" class="banner" style="font-size:12px"></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="minicard"><div class="l">C_op</div><div class="v" id="cop">—</div></div>
+      <div class="minicard"><div class="l">B_eff</div><div class="v" id="beff">—</div></div>
+      <div class="minicard"><div class="l">worst M*</div><div class="v" id="mstar">—</div></div>
+      <div class="minicard"><div class="l">motifs</div><div class="v" id="nmotif">—</div></div>
+    </div>
+    <div id="simrow" style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.</div>
+    <div class="sec" id="inspector-sec" style="display:none">
+      <h3>Selected node</h3>
+      <div id="inspector"></div>
+    </div>
+    <div class="sec"><h3>Motifs</h3><div id="motifs"></div></div>
+    <div class="sec"><h3>Risk ranking</h3><div id="risk"></div></div>
+    <div class="sec"><h3>Prescriptions</h3><div id="rx"></div></div>
+  </div>
+</div>
+
+<p class="foot">Every value is computed by <code>mso-core.js</code> (Fisher info, capacity propagation, masking, water-filling, motif detection, delegation centrality), pinned to <code>minimal-oversight==0.1.2</code> by the parity test. Connector parameters are illustrative defaults — edit any node to match your system.</p>
+
+<script src="../mso-core.js"></script>
+<script src="../mso-sim.js"></script>
+<script src="../mso-estimate.js"></script>
+<script>
+var CONN = {
+  hubspot:{label:"HubSpot",cat:"CRM",skill:0.85,catch:0.50,drift:0.02},
+  salesforce:{label:"Salesforce",cat:"CRM",skill:0.85,catch:0.50,drift:0.02},
+  github:{label:"GitHub",cat:"Dev",skill:0.88,catch:0.50,drift:0.02},
+  jira:{label:"Jira",cat:"Dev",skill:0.85,catch:0.50,drift:0.02},
+  ci:{label:"CI check",cat:"Dev",skill:0.9,catch:0.6,drift:0.01},
+  slack:{label:"Slack",cat:"Comms",skill:0.85,catch:0.50,drift:0.03},
+  zendesk:{label:"Zendesk",cat:"Comms",skill:0.85,catch:0.50,drift:0.03},
+  llm:{label:"LLM agent",cat:"AI",skill:0.50,catch:0.55,drift:0.12},
+  classifier:{label:"Classifier",cat:"AI",skill:0.62,catch:0.65,drift:0.05},
+  rag:{label:"RAG retriever",cat:"AI",skill:0.60,catch:0.60,drift:0.07},
+  reviewer:{label:"Human reviewer",cat:"Human",skill:0.90,catch:0.80,drift:0.01},
+  approver:{label:"Approver gate",cat:"Human",skill:0.92,catch:0.85,drift:0.01},
+  enrich:{label:"Enrichment",cat:"Data",skill:0.80,catch:0.60,drift:0.04},
+  db:{label:"Datastore",cat:"Data",skill:0.90,catch:0.50,drift:0.01}
+};
+var CAT_COLOR = {CRM:"#378ADD",Dev:"#7F77DD",Comms:"#1D9E75",AI:"#EF9F27",Human:"#639922",Data:"#888780"};
+var MOTIF_COLOR = {chain:"#888780",fan_out:"#EF9F27",merge:"#7F77DD",diamond:"#E24B4A",single:"#888780"};
+
+function nd(id,type,x,y,parents,over){over=over||{};var c=CONN[type];return {id:id,label:over.label||c.label,type:type,x:x,y:y,parents:(parents||[]).slice(),sigma_skill:over.skill!=null?over.skill:c.skill,catch_rate:over.catch!=null?over.catch:c.catch,drift_rate:over.drift!=null?over.drift:c.drift,aggregation:over.agg||"product",rework:over.rework||1};}
+var AGG_LABEL={product:"all-required",min:"weakest-link",mean:"vote / redundant"};
+var TEMPLATES = {
+  sales: function(){var n=[
+    nd("lead_enrich","enrich",20,200,[],{label:"Lead enrich"}),
+    nd("lead_score","classifier",165,200,["lead_enrich"],{label:"Lead scoring",skill:0.62}),
+    nd("outreach_draft","llm",310,108,["lead_score"],{label:"Outreach draft",skill:0.50}),
+    nd("deal_forecast","classifier",310,300,["lead_score"],{label:"Deal forecast",skill:0.45,catch:0.70}),
+    nd("crm_write","salesforce",455,200,["outreach_draft","deal_forecast"],{label:"CRM write",skill:0.85,catch:0.70}),
+    nd("meeting_book","hubspot",600,200,["crm_write"],{label:"Meeting book",skill:0.65,catch:0.60})];return n;},
+  support: function(){var n=[
+    nd("intake","zendesk",20,200,[],{label:"Ticket intake"}),
+    nd("triage","llm",165,200,["intake"],{label:"LLM triage",skill:0.55}),
+    nd("billing","llm",310,108,["triage"],{label:"Billing agent",skill:0.5}),
+    nd("tech","rag",310,300,["triage"],{label:"Tech agent",skill:0.58}),
+    nd("review","reviewer",455,200,["billing","tech"],{label:"Human review"}),
+    nd("notify","slack",600,200,["review"],{label:"Notify customer"})];return n;},
+  github: function(){var n=[
+    nd("pr","github",20,200,[],{label:"PR opened"}),
+    nd("review","llm",165,200,["pr"],{label:"LLM review",skill:0.52}),
+    nd("ci","ci",310,200,["review"],{label:"CI check"}),
+    nd("approve","approver",455,200,["ci"],{label:"Human approve"}),
+    nd("merge","github",600,200,["approve"],{label:"Merge"})];return n;},
+  rag: function(){var n=[
+    nd("query","db",20,200,[],{label:"User query"}),
+    nd("retriever","rag",165,200,["query"],{label:"Retriever",skill:0.6}),
+    nd("web","rag",310,108,["retriever"],{label:"Web search",skill:0.55}),
+    nd("kb","rag",310,300,["retriever"],{label:"KB search",skill:0.65}),
+    nd("synth","llm",455,200,["web","kb"],{label:"Synthesize",skill:0.5}),
+    nd("factcheck","llm",600,200,["synth"],{label:"Fact check",skill:0.55,catch:0.7}),
+    nd("answer","db",745,200,["factcheck"],{label:"Answer"})];return n;},
+  content: function(){var n=[
+    nd("brief","db",20,200,[],{label:"Brief"}),
+    nd("draft","llm",165,200,["brief"],{label:"Draft",skill:0.5}),
+    nd("edit","reviewer",310,200,["draft"],{label:"Editor"}),
+    nd("seo","classifier",455,200,["edit"],{label:"SEO check",skill:0.66}),
+    nd("publish","db",600,200,["seo"],{label:"Publish (CMS)"})];return n;},
+  incident: function(){var n=[
+    nd("alert","slack",20,200,[],{label:"Alert"}),
+    nd("triage","llm",165,200,["alert"],{label:"Triage",skill:0.55}),
+    nd("investigate","rag",310,108,["triage"],{label:"Investigate",skill:0.58}),
+    nd("mitigate","llm",310,300,["triage"],{label:"Mitigate",skill:0.5}),
+    nd("review","reviewer",455,200,["investigate","mitigate"],{label:"IC review"}),
+    nd("postmortem","llm",600,200,["review"],{label:"Postmortem",skill:0.6})];return n;},
+  finance: function(){var n=[
+    nd("ledger","db",20,200,[],{label:"Ledger"}),
+    nd("reconcile","classifier",165,200,["ledger"],{label:"Reconcile",skill:0.66}),
+    nd("ap","llm",310,108,["reconcile"],{label:"AP agent",skill:0.52}),
+    nd("ar","llm",310,300,["reconcile"],{label:"AR agent",skill:0.52}),
+    nd("control","approver",455,200,["ap","ar"],{label:"Controller"}),
+    nd("report","db",600,200,["control"],{label:"Report"})];return n;},
+  review_placement: function(){return [
+    nd("req","db",20,200,[],{label:"Request"}),
+    nd("weak","llm",175,200,["req"],{label:"Weak agent",skill:0.45}),
+    nd("reviewer","reviewer",335,108,["weak"],{label:"Reviewer"}),
+    nd("branchA","classifier",500,108,["reviewer"],{label:"Branch A",skill:0.6}),
+    nd("branchB","classifier",500,300,["weak"],{label:"Branch B",skill:0.6})];},
+  reviewer_competence: function(){return [
+    nd("req","db",20,200,[],{label:"Request"}),
+    nd("agent","llm",185,200,["req"],{label:"Draft agent",skill:0.5}),
+    nd("reviewer","reviewer",350,200,["agent"],{label:"Reviewer",catch:0.45})];},
+  merge_gate: function(){return [
+    nd("src","db",20,200,[],{label:"Request"}),
+    nd("a","llm",180,108,["src"],{label:"Agent A",skill:0.6}),
+    nd("b","llm",180,300,["src"],{label:"Agent B",skill:0.6}),
+    nd("merge","classifier",350,200,["a","b"],{label:"Merge gate",skill:0.7,agg:"product"})];},
+  review_loop: function(){return [
+    nd("req","db",20,200,[],{label:"Request"}),
+    nd("agent","llm",185,200,["req"],{label:"Draft agent",skill:0.5}),
+    nd("reviewer","reviewer",350,200,["agent"],{label:"Reviewer",catch:0.5,rework:1})];},
+  chain_depth: function(){return [
+    nd("a","llm",20,200,[],{label:"Agent 1",skill:0.7}),
+    nd("b","llm",150,200,["a"],{label:"Agent 2",skill:0.7}),
+    nd("c","llm",280,200,["b"],{label:"Agent 3",skill:0.7}),
+    nd("d","llm",410,200,["c"],{label:"Agent 4",skill:0.7}),
+    nd("e","llm",540,200,["d"],{label:"Agent 5",skill:0.7})];},
+  blank: function(){return [];}
+};
+var TEMPLATE_HINTS={
+  review_placement:{title:"Reviewer placement.",body:"The reviewer sits on Branch A only, so Branch B is still fed raw by the weak agent → INFEASIBLE. A reviewer lifts only what is downstream of it. Move it ABOVE the fan-out (right after the weak agent) and both branches inherit the correction. (This is the paper's diamond lesson: correct the shared source, not each branch.)",actions:[{label:"Move reviewer upstream",fn:function(){var a=byId("branchA"),b=byId("branchB"),r=byId("reviewer");if(!a||!b||!r)return;r.parents=["weak"];r.x=335;r.y=200;a.parents=["reviewer"];b.parents=["reviewer"];a.y=108;b.y=300;a.x=500;b.x=500;}}]},
+  reviewer_competence:{title:"Reviewer competence.",body:"C_op falls just short: the reviewer's catch rate c is too low to correct the weak draft (σ_corr = σ_raw + (1−σ_raw)·c). Select the reviewer and raise c — or click below — and watch B_eff cross zero.",actions:[{label:"Raise reviewer catch → 0.85",fn:function(){var r=byId("reviewer");if(r)r.catch_rate=0.85;}}]},
+  merge_gate:{title:"Merge gate.",body:"The merge is set to ALL-REQUIRED: both branches must be right, so independent errors compound → INFEASIBLE. When the branches do the same job, redesign the merge to take a VOTE (redundant) so a wrong branch is outvoted instead of poisoning the result.",actions:[{label:"Make merge a vote",fn:function(){var g=byId("merge");if(g)g.aggregation="mean";}}]},
+  review_loop:{title:"Review loop.",body:"One review pass leaves errors uncaught. A rework loop sends failures back to the agent; each pass compounds the catch rate as 1−(1−c)^k. Raise the reviewer's rework passes and C_op climbs. Loops are modeled by this steady-state effect on effective catch — MSO analyzes the acyclic projection (the package's review edges are metadata, not forward DAG edges).",actions:[{label:"Set review loop → ×3",fn:function(){var r=byId("reviewer");if(r)r.rework=3;}}]},
+  chain_depth:{title:"Chain depth & masking.",body:"Every delegation hop multiplies effective skill and compounds masking (paper Exp. 4). At depth 5 even capable agents decay below target. Remove hops and watch C_op climb toward the single-agent ceiling — only at depth 1 does it clear p_min. Depth itself is the constraint, not any one agent.",actions:[{label:"Remove last hop",fn:function(){var order=["e","d","c","b"];for(var i=0;i<order.length;i++){if(byId(order[i])){var rm=order[i];state.nodes=state.nodes.filter(function(n){return n.id!==rm;});state.nodes.forEach(function(n){n.parents=(n.parents||[]).filter(function(p){return p!==rm;});});break;}}}}]}
+};
+
+var state = {nodes:[], selected:null};
+var W=108, H=40, NS="http://www.w3.org/2000/svg";
+var CAT_SHAPE={AI:"agent",CRM:"tool",Dev:"tool",Comms:"tool",Human:"human",Data:"data"};
+var view={k:1,x:0,y:0};
+var svg=document.getElementById("svg"), $=function(id){return document.getElementById(id);};
+var drag=null, draw=null, pan=null, counter=0;
+function clampv(v,a,b){return Math.max(a,Math.min(b,v));}
+
+function resetSimRow(){simOn=false;simTokens=null;var sr=document.getElementById("simrow");if(sr)sr.innerHTML='Press <b>Run tokens</b> to simulate tasks through this graph and compare empirical success to the analytic C_op.';}
+function loadTemplate(name){resetSimRow();document.getElementById("import-note").style.display="none";state.nodes=TEMPLATES[name]();state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();showLesson(name);}
+function loadImported(parsed){resetSimRow();document.getElementById("lesson").style.display="none";state.nodes=MSOEstimate.layout(parsed.nodes,W,H);state.nodes.forEach(function(n){if(!n.label)n.label=String(n.id).replace(/_/g," ");});state.selected=null;counter=state.nodes.length;analyze();fit();showInspector();var nn=document.getElementById("import-note");nn.style.display="block";nn.innerHTML="<b>Imported your pipeline</b> · "+parsed.note+". Edit any node in the inspector, slide p_min to your target, or press Run tokens.";}
+function showLesson(name){var h=TEMPLATE_HINTS[name],box=$("lesson");if(!h){box.style.display="none";return;}box.style.display="block";
+  var acts=(h.actions||[]).map(function(a,i){return '<button data-act="'+i+'" style="margin-right:8px;margin-top:2px">'+a.label+'</button>';}).join("");
+  box.innerHTML='<b>Lesson — '+h.title+'</b> '+h.body+(acts?'<div style="margin-top:8px">'+acts+'</div>':'');
+  box.querySelectorAll("[data-act]").forEach(function(b){b.addEventListener("click",function(){h.actions[+b.getAttribute("data-act")].fn();render();analyze();fit();showInspector();});});}
+function el(tag,attrs){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);return e;}
+function edges(){var es=[];state.nodes.forEach(function(n){(n.parents||[]).forEach(function(p){es.push({from:p,to:n.id});});});return es;}
+function byId(id){for(var i=0;i<state.nodes.length;i++)if(state.nodes[i].id===id)return state.nodes[i];return null;}
+function effCatch(n){var k=n.rework||1;return k>1?1-Math.pow(1-n.catch_rate,k):n.catch_rate;}
+function pipeline(){return {nodes:state.nodes.map(function(n){return {id:n.id,sigma_skill:n.sigma_skill,catch_rate:effCatch(n),parents:(n.parents||[]).slice(),aggregation:n.aggregation};})};}
+function reaches(from,to){var es=edges(),adj={};es.forEach(function(e){(adj[e.from]=adj[e.from]||[]).push(e.to);});var seen={},q=[from];while(q.length){var x=q.shift();if(x===to)return true;(adj[x]||[]).forEach(function(y){if(!seen[y]){seen[y]=true;q.push(y);}});}return false;}
+function evtPt(e){var r=svg.getBoundingClientRect();return {x:(e.clientX-r.left-view.x)/view.k,y:(e.clientY-r.top-view.y)/view.k};}
+
+function shapeEl(cat,fill,stroke,sw){
+  var s=CAT_SHAPE[cat]||"agent",a={fill:fill,stroke:stroke,"stroke-width":sw};
+  if(s==="tool"){a.points="12,0 "+(W-12)+",0 "+W+","+(H/2)+" "+(W-12)+","+H+" 12,"+H+" 0,"+(H/2);return el("polygon",a);}
+  if(s==="data"){a.points="14,0 "+W+",0 "+(W-14)+","+H+" 0,"+H;return el("polygon",a);}
+  a.width=W;a.height=H;a.rx=(s==="human"?H/2:10);return el("rect",a);
+}
+function fit(){
+  if(!state.nodes.length){view={k:1,x:0,y:0};render();return;}
+  var minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  state.nodes.forEach(function(n){minX=Math.min(minX,n.x);minY=Math.min(minY,n.y);maxX=Math.max(maxX,n.x+W);maxY=Math.max(maxY,n.y+H);});
+  var cw=svg.clientWidth||666,ch=svg.clientHeight||460,m=34;
+  var k=clampv(Math.min((cw-2*m)/(maxX-minX),(ch-2*m)/(maxY-minY),1.35),0.3,1.35);
+  view.k=k;view.x=(cw-(maxX-minX)*k)/2-minX*k;view.y=(ch-(maxY-minY)*k)/2-minY*k;render();
+}
+function zoomAt(mx,my,f){var wx=(mx-view.x)/view.k,wy=(my-view.y)/view.k;view.k=clampv(view.k*f,0.3,2.5);view.x=mx-wx*view.k;view.y=my-wy*view.k;render();}
+
+function render(){
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  var defs=el("defs",{});var mk=el("marker",{id:"arr",viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"7",markerHeight:"7",orient:"auto-start-reverse"});
+  var pa=el("path",{d:"M0 0L10 5L0 10z",fill:"var(--text-tertiary)"});mk.appendChild(pa);defs.appendChild(mk);svg.appendChild(defs);
+  var world=el("g",{transform:"translate("+view.x+","+view.y+") scale("+view.k+")"});svg.appendChild(world);
+  var risks=lastRisk||{};
+  var fin={};edges().forEach(function(e){fin[e.to]=(fin[e.to]||0)+1;});
+  edges().forEach(function(ed){var a=byId(ed.from),b=byId(ed.to);if(!a||!b)return;
+    var sx=a.x+W,sy=a.y+H/2,tx=b.x,ty=b.y+H/2;
+    var sel=state.selected&&state.selected.kind==="edge"&&state.selected.from===ed.from&&state.selected.to===ed.to;
+    var p=el("path",{d:"M"+sx+" "+sy+" C"+(sx+40)+" "+sy+","+(tx-40)+" "+ty+","+tx+" "+ty,fill:"none",stroke:sel?"#378ADD":"var(--text-tertiary)","stroke-width":sel?"2.5":"1.5","marker-end":"url(#arr)",style:"cursor:pointer"});
+    p.addEventListener("pointerdown",function(ev){ev.stopPropagation();state.selected={kind:"edge",from:ed.from,to:ed.to};render();analyze();});
+    world.appendChild(p);});
+  if(draw){var f=byId(draw.from);if(f)world.appendChild(el("path",{d:"M"+(f.x+W)+" "+(f.y+H/2)+" L"+draw.x+" "+draw.y,fill:"none",stroke:"#378ADD","stroke-width":"2","stroke-dasharray":"4 3","pointer-events":"none"}));}
+  state.nodes.forEach(function(n){
+    var cat=CONN[n.type].cat,rk=risks[n.id];
+    var sel=state.selected&&state.selected.kind==="node"&&state.selected.id===n.id;
+    var sev=rk?(rk.masking_index>1.8?"#E24B4A":(rk.masking_index>1.4?"#EF9F27":CAT_COLOR[cat])):CAT_COLOR[cat];
+    var stroke=sel?"#378ADD":sev, sw=sel?2.5:(rk&&rk.masking_index>1.4?2:1.5);
+    var g=el("g",{transform:"translate("+n.x+","+n.y+")","data-node":n.id,style:"cursor:grab"});
+    g.appendChild(shapeEl(cat,CAT_COLOR[cat]+"22",stroke,sw));
+    var t1=el("text",{x:16,y:16,fill:"var(--text-primary)","font-size":"11.5","font-family":"var(--font)","font-weight":"500"});t1.textContent=n.label.length>13?n.label.slice(0,12)+"…":n.label;g.appendChild(t1);
+    var t2=el("text",{x:16,y:29,fill:"var(--text-tertiary)","font-size":"9.5","font-family":"var(--font)"});t2.textContent=CONN[n.type].label+(rk?" M*"+rk.masking_index.toFixed(1):"");g.appendChild(t2);
+    if(lastBottleneck===n.id)g.appendChild(el("circle",{cx:W-9,cy:8,r:4,fill:"#E24B4A"}));
+    if(fin[n.id]>1){var gt=el("text",{x:W/2,y:-6,fill:"#7F77DD","font-size":"9.5","font-family":"var(--font)","text-anchor":"middle","font-weight":"500"});gt.textContent="gate · "+AGG_LABEL[n.aggregation];g.appendChild(gt);}
+    if((n.rework||1)>1){g.appendChild(el("path",{d:"M"+(W*0.62)+" 2 C"+(W*0.86)+" -22,"+(W*0.14)+" -22,"+(W*0.38)+" 2",fill:"none",stroke:"#1D9E75","stroke-width":"1.6","marker-end":"url(#arr)"}));var rt=el("text",{x:W/2,y:-13,fill:"#1D9E75","font-size":"9.5","font-family":"var(--font)","text-anchor":"middle","font-weight":"500"});rt.textContent="↺ rework ×"+n.rework;g.appendChild(rt);}
+    var port=el("circle",{cx:W,cy:H/2,r:5.5,fill:"#378ADD",stroke:"var(--bg-page)","stroke-width":"1.5",style:"cursor:crosshair"});
+    port.addEventListener("pointerdown",function(ev){ev.stopPropagation();var pt=evtPt(ev);draw={from:n.id,x:pt.x,y:pt.y};svg.setPointerCapture(ev.pointerId);});
+    g.appendChild(port);
+    g.addEventListener("pointerdown",function(ev){if(draw)return;var pt=evtPt(ev);drag={id:n.id,dx:pt.x-n.x,dy:pt.y-n.y,moved:false};svg.setPointerCapture(ev.pointerId);state.selected={kind:"node",id:n.id};render();showInspector();});
+    world.appendChild(g);});
+  (simTokens||[]).forEach(function(tk){var a=byId(tk.path[tk.seg]),b=byId(tk.path[tk.seg+1]);if(!a||!b)return;
+    var x=(a.x+W/2)+(b.x-a.x)*tk.t,y=(a.y+H/2)+(b.y-a.y)*tk.t;
+    world.appendChild(el("circle",{cx:x,cy:y,r:5,fill:tk.ok?"#1D9E75":"#E24B4A",stroke:"var(--bg-page)","stroke-width":"1"}));});
+}
+svg.addEventListener("pointerdown",function(e){if(e.target===svg){state.selected=null;pan={sx:e.clientX,sy:e.clientY,ox:view.x,oy:view.y};svg.setPointerCapture(e.pointerId);showInspector();render();}});
+svg.addEventListener("pointermove",function(e){
+  if(drag){var pt=evtPt(e);var n=byId(drag.id);if(n){n.x=pt.x-drag.dx;n.y=pt.y-drag.dy;drag.moved=true;render();}}
+  else if(draw){var p2=evtPt(e);draw.x=p2.x;draw.y=p2.y;render();}
+  else if(pan){view.x=pan.ox+(e.clientX-pan.sx);view.y=pan.oy+(e.clientY-pan.sy);render();}});
+svg.addEventListener("pointerup",function(e){
+  if(draw){var tgt=document.elementFromPoint(e.clientX,e.clientY);var g=tgt&&tgt.closest?tgt.closest("[data-node]"):null;
+    if(g){var toId=g.getAttribute("data-node");if(toId!==draw.from&&!reaches(toId,draw.from)){var t=byId(toId);if(t&&t.parents.indexOf(draw.from)<0)t.parents.push(draw.from);}}
+    draw=null;render();analyze();}
+  if(drag){if(!drag.moved){state.selected={kind:"node",id:drag.id};showInspector();}drag=null;}
+  pan=null;});
+svg.addEventListener("wheel",function(e){e.preventDefault();var r=svg.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,e.deltaY<0?1.12:1/1.12);},{passive:false});
+window.addEventListener("keydown",function(e){if((e.key==="Delete"||e.key==="Backspace")&&state.selected){if(document.activeElement&&/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))return;deleteSelected();}});
+
+function deleteSelected(){var s=state.selected;if(!s)return;
+  if(s.kind==="node"){state.nodes=state.nodes.filter(function(n){return n.id!==s.id;});state.nodes.forEach(function(n){n.parents=(n.parents||[]).filter(function(p){return p!==s.id;});});}
+  else if(s.kind==="edge"){var t=byId(s.to);if(t)t.parents=t.parents.filter(function(p){return p!==s.from;});}
+  state.selected=null;render();analyze();showInspector();}
+function addNode(type){counter++;var id=type+"_"+counter;var cw=svg.clientWidth||666;var x=(cw/2-view.x)/view.k-W/2+((counter%3)*22-22);var y=(220-view.y)/view.k+((counter%3)*18);state.nodes.push(nd(id,type,x,y,[]));state.selected={kind:"node",id:id};render();analyze();showInspector();}
+
+function buildPalette(){var cats={};Object.keys(CONN).forEach(function(t){var c=CONN[t].cat;(cats[c]=cats[c]||[]).push(t);});
+  var html="";["AI","Human","CRM","Dev","Comms","Data"].forEach(function(cat){if(!cats[cat])return;html+="<h3>"+cat+"</h3>";cats[cat].forEach(function(t){html+='<button class="chip" data-add="'+t+'"><span class="dot" style="background:'+CAT_COLOR[cat]+'"></span>'+CONN[t].label+'</button>';});});
+  $("palette").innerHTML=html;
+  $("palette").querySelectorAll("[data-add]").forEach(function(b){b.addEventListener("click",function(){addNode(b.getAttribute("data-add"));});});}
+
+function showInspector(){var sec=$("inspector-sec"),box=$("inspector");
+  if(!state.selected||state.selected.kind!=="node"){sec.style.display="none";return;}
+  var n=byId(state.selected.id);if(!n){sec.style.display="none";return;}sec.style.display="block";
+  var opts=Object.keys(CONN).map(function(t){return '<option value="'+t+'"'+(t===n.type?" selected":"")+'>'+CONN[t].label+'</option>';}).join("");
+  var aggs=["product","min","mean"].map(function(a){return '<option value="'+a+'"'+(a===n.aggregation?" selected":"")+'>'+AGG_LABEL[a]+'</option>';}).join("");
+  box.innerHTML='<div class="field"><label>Name</label><input type="text" id="f-label" value="'+n.label.replace(/"/g,"&quot;")+'"></div>'+
+    '<div class="field"><label>Connector</label><select id="f-type">'+opts+'</select></div>'+
+    '<div class="field"><label>Agent skill σ_skill</label><div class="rng"><input type="range" id="f-skill" min="0.2" max="0.98" step="0.01" value="'+n.sigma_skill+'"><b id="f-skillv">'+n.sigma_skill.toFixed(2)+'</b></div></div>'+
+    '<div class="field"><label>Corrector catch c</label><div class="rng"><input type="range" id="f-catch" min="0.2" max="0.95" step="0.01" value="'+n.catch_rate+'"><b id="f-catchv">'+n.catch_rate.toFixed(2)+'</b></div></div>'+
+    '<div class="field"><label>Drift σ_drift</label><div class="rng"><input type="range" id="f-drift" min="0" max="0.3" step="0.01" value="'+n.drift_rate+'"><b id="f-driftv">'+n.drift_rate.toFixed(2)+'</b></div></div>'+
+    '<div class="field"><label>Merge aggregation (gate)</label><select id="f-agg">'+aggs+'</select></div>'+
+    '<div class="field"><label>Review rework passes (loop) — c_eff='+effCatch(n).toFixed(2)+'</label><div class="rng"><input type="range" id="f-rework" min="1" max="4" step="1" value="'+(n.rework||1)+'"><b id="f-reworkv">×'+(n.rework||1)+'</b></div></div>'+
+    '<button id="f-del" style="color:var(--tx-danger)">Delete node</button>';
+  $("f-label").addEventListener("input",function(){n.label=this.value;render();});
+  $("f-type").addEventListener("change",function(){n.type=this.value;render();analyze();});
+  $("f-skill").addEventListener("input",function(){n.sigma_skill=+this.value;$("f-skillv").textContent=n.sigma_skill.toFixed(2);render();analyze();});
+  $("f-catch").addEventListener("input",function(){n.catch_rate=+this.value;$("f-catchv").textContent=n.catch_rate.toFixed(2);render();analyze();});
+  $("f-drift").addEventListener("input",function(){n.drift_rate=+this.value;$("f-driftv").textContent=n.drift_rate.toFixed(2);});
+  $("f-agg").addEventListener("change",function(){n.aggregation=this.value;render();analyze();});
+  $("f-rework").addEventListener("input",function(){n.rework=+this.value;$("f-reworkv").textContent="×"+n.rework;render();analyze();});
+  $("f-del").addEventListener("click",deleteSelected);
+}
+
+var lastRisk=null, lastBottleneck=null;
+function analyze(){
+  var pmin=+$("pmin").value, hw=+$("hw").value;
+  $("pminv").textContent=pmin.toFixed(2); $("hwv").textContent=hw.toFixed(1);
+  if(state.nodes.length===0){$("banner").style.background="var(--bg-surface)";$("banner").style.color="var(--text-secondary)";$("banner").textContent="Add nodes from the palette, or load a template.";
+    ["cop","beff","mstar","nmotif"].forEach(function(id){$(id).textContent="—";});$("motifs").innerHTML="";$("risk").innerHTML="";$("rx").innerHTML="";lastRisk=null;lastBottleneck=null;render();return;}
+  var pipe=pipeline();
+  var r=MSO.analyzePipeline(pipe,{p_min:pmin,process_entropy:hw});
+  var motifs=MSO.detectMotifs(pipe), risks=MSO.rankNodesByRisk(pipe);
+  lastRisk={};risks.forEach(function(x){lastRisk[x.name]=x;});lastBottleneck=r.bottleneck;
+  var labelOf={};state.nodes.forEach(function(n){labelOf[n.id]=n.label;});
+  var b=$("banner");
+  if(!r.feasible){b.style.background="var(--bg-danger)";b.style.color="var(--tx-danger)";b.innerHTML="<b>INFEASIBLE</b> · C_op="+r.cop.toFixed(3)+" &lt; p_min="+pmin.toFixed(2)+". Bottleneck: <b>"+labelOf[r.bottleneck]+"</b>.";}
+  else if(r.beff<=0){b.style.background="var(--bg-warning)";b.style.color="var(--tx-warning)";b.innerHTML="<b>AT RISK</b> · C_op="+r.cop.toFixed(3)+" ≥ p_min, but B_eff="+r.beff.toFixed(3)+" ≤ 0 at H(W)="+hw.toFixed(1)+".";}
+  else{b.style.background="var(--bg-success)";b.style.color="var(--tx-success)";b.innerHTML="<b>FEASIBLE</b> · C_op="+r.cop.toFixed(3)+", B_eff="+r.beff.toFixed(3)+".";}
+  $("cop").textContent=r.cop.toFixed(3);
+  $("beff").textContent=r.beff.toFixed(3);$("beff").style.color=r.beff>0?"var(--tx-success)":"var(--tx-danger)";
+  var worst=risks.slice().sort(function(a,b){return b.masking_index-a.masking_index;})[0];
+  $("mstar").textContent=worst?worst.masking_index.toFixed(2):"—";
+  $("nmotif").textContent=motifs.length;
+  $("motifs").innerHTML=motifs.length?motifs.map(function(m){var desc=m.risk_description.split(". ")[0];Object.keys(labelOf).sort(function(a,b){return b.length-a.length;}).forEach(function(id){desc=desc.replace(new RegExp('\\b'+id.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g'),labelOf[id]);});return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.4"><span class="mtag" style="background:'+MOTIF_COLOR[m.motif]+'22;color:'+MOTIF_COLOR[m.motif]+'">'+m.motif+'</span> '+desc+'.</div>';}).join(""):'<span class="hint">none</span>';
+  $("risk").innerHTML=risks.slice(0,5).map(function(x){return '<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px"><span>'+(x.is_bottleneck?'<span style="color:var(--tx-danger)">●</span> ':'')+labelOf[x.name]+'</span><span class="hint">M*'+x.masking_index.toFixed(2)+' · DC'+x.delegation_centrality.toFixed(1)+' · S'+x.sota_score.toFixed(1)+'</span></div>';}).join("");
+  var rx=[];
+  if(!r.feasible)rx.push("Redesign: "+labelOf[r.bottleneck]+" caps C_op at "+r.cop.toFixed(3)+". Strengthen it, add a corrector, or lower p_min.");
+  risks.filter(function(x){return x.masking_index>1.4;}).slice(0,2).forEach(function(x){rx.push("Add a blind audit at "+labelOf[x.name]+" (M*="+x.masking_index.toFixed(2)+", DC="+x.delegation_centrality.toFixed(1)+") — review alone masks competence.");});
+  motifs.filter(function(m){return m.motif==="diamond";}).slice(0,1).forEach(function(m){rx.push("Diamond detected — correct the shared source ("+(labelOf[m.nodes[0]]||m.nodes[0])+"), not the merge.");});
+  $("rx").innerHTML=rx.length?rx.slice(0,3).map(function(t){return '<div style="font-size:11.5px;margin-bottom:6px;line-height:1.45">→ '+t+'</div>';}).join(""):'<span class="hint">no actions — healthy pipeline</span>';
+  render();
+}
+["pmin","hw"].forEach(function(id){$(id).addEventListener("input",analyze);});
+$("tpl").addEventListener("change",function(){loadTemplate(this.value);});
+$("zfit").addEventListener("click",fit);
+$("zin").addEventListener("click",function(){zoomAt(svg.clientWidth/2,svg.clientHeight/2,1.2);});
+$("zout").addEventListener("click",function(){zoomAt(svg.clientWidth/2,svg.clientHeight/2,1/1.2);});
+buildPalette();
+window.addEventListener("resize",function(){render();});
+var simTokens=null, simOn=false, simRng=MSOSim.makeRng(7), simLast=0, simSpawn=0;
+function childrenMap(){var c={};state.nodes.forEach(function(n){c[n.id]=[];});state.nodes.forEach(function(n){(n.parents||[]).forEach(function(p){if(c[p])c[p].push(n.id);});});return c;}
+function randomPath(ch){var srcs=state.nodes.filter(function(n){return !(n.parents&&n.parents.length);}).map(function(n){return n.id;});if(!srcs.length)return null;var cur=srcs[Math.floor(simRng()*srcs.length)],path=[cur],guard=0;while(ch[cur]&&ch[cur].length&&guard++<30){cur=ch[cur][Math.floor(simRng()*ch[cur].length)];path.push(cur);}return path;}
+function runSim(){
+  if(state.nodes.length===0)return;
+  var s=MSOSim.simulateTokens(pipeline(),{n:20000,rng:MSOSim.makeRng(7)});
+  var a=MSO.analyzePipeline(pipeline(),{p_min:+$("pmin").value});
+  $("simrow").innerHTML='<b style="color:var(--text-primary)">empirical end-to-end '+s.endToEndSuccess.toFixed(3)+'</b> over 20k tokens · analytic C_op '+a.cop.toFixed(3)+' · gap '+Math.abs(s.endToEndSuccess-a.cop).toFixed(3);
+  simTokens=[];simOn=true;$("run").textContent="❚❚ Stop";simLast=0;requestAnimationFrame(simLoop);
+  runSim._end=s.endToEndSuccess;
+}
+function simLoop(ts){
+  if(!simOn){simTokens=null;render();return;}
+  if(!simLast)simLast=ts;var dt=Math.min(50,ts-simLast);simLast=ts;
+  var ch=childrenMap();
+  simSpawn+=dt;if(simSpawn>140&&simTokens.length<24){simSpawn=0;var p=randomPath(ch);if(p&&p.length>1)simTokens.push({path:p,seg:0,t:0,ok:simRng()<(runSim._end||0.8)});}
+  for(var i=simTokens.length-1;i>=0;i--){var tk=simTokens[i];tk.t+=dt/650;if(tk.t>=1){tk.seg++;tk.t=0;if(tk.seg>=tk.path.length-1)simTokens.splice(i,1);}}
+  render();requestAnimationFrame(simLoop);
+}
+$("run").addEventListener("click",function(){if(simOn){simOn=false;this.textContent="▶ Run tokens";}else runSim();});
+var IMPORT_SAMPLES={
+  traces: JSON.stringify([
+    {task_id:"1",path:["intake","draft","review"],outcomes:{intake:1,draft:0,review:0},corrected:{intake:1,draft:1,review:1}},
+    {task_id:"2",path:["intake","draft","review"],outcomes:{intake:1,draft:1,review:1},corrected:{intake:1,draft:1,review:1}},
+    {task_id:"3",path:["intake","draft","review"],outcomes:{intake:1,draft:0,review:0},corrected:{intake:1,draft:0,review:1}},
+    {task_id:"4",path:["intake","draft","review"],outcomes:{intake:0,draft:0,review:1},corrected:{intake:1,draft:1,review:1}},
+    {task_id:"5",path:["intake","draft","review"],outcomes:{intake:1,draft:1,review:0},corrected:{intake:1,draft:1,review:0}},
+    {task_id:"6",path:["intake","draft","review"],outcomes:{intake:1,draft:0,review:0},corrected:{intake:1,draft:1,review:1}}
+  ],null,1),
+  langgraph: JSON.stringify({nodes:[{id:"planner"},{id:"researcher"},{id:"writer"},{id:"reviewer"}],edges:[{source:"planner",target:"researcher"},{source:"researcher",target:"writer"},{source:"writer",target:"reviewer"}]},null,2),
+  nodes: JSON.stringify({nodes:[{id:"extract",sigma_skill:0.6,catch_rate:0.5},{id:"summarize",sigma_skill:0.5,catch_rate:0.55,parents:["extract"]},{id:"review",sigma_skill:0.85,catch_rate:0.8,parents:["summarize"]}]},null,2)
+};
+$("import-btn").addEventListener("click",function(){$("import-err").textContent="";$("import-modal").style.display="flex";});
+$("import-cancel").addEventListener("click",function(){$("import-modal").style.display="none";});
+$("import-modal").addEventListener("click",function(e){if(e.target===this)this.style.display="none";});
+[].forEach.call(document.querySelectorAll(".ex"),function(b){b.addEventListener("click",function(){$("import-text").value=IMPORT_SAMPLES[b.getAttribute("data-ex")];$("import-err").textContent="";});});
+$("import-go").addEventListener("click",function(){
+  var txt=$("import-text").value.trim();
+  try{
+    if(!txt)throw new Error("Paste your pipeline JSON first, or try a sample above.");
+    var parsed=MSOEstimate.buildPipeline(txt);
+    if(!parsed.nodes||!parsed.nodes.length)throw new Error("No nodes found in the input.");
+    $("import-modal").style.display="none";loadImported(parsed);
+  }catch(err){$("import-err").textContent="⚠ "+err.message;}
+});
+loadTemplate("sales");
+</script>
+</body>
+</html>

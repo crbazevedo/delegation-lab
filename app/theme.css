@@ -1,0 +1,59 @@
+/* theme.css — self-contained light/dark theme for the MSO companion widgets.
+   No build step, no dependencies. Auto-adapts to the OS color scheme. */
+:root {
+  --bg-page: #ffffff;
+  --bg-surface: #f6f6f4;
+  --bg-tertiary: #ecece8;
+  --text-primary: #1a1a18;
+  --text-secondary: #5f5e5a;
+  --text-tertiary: #8a8983;
+  --border: rgba(0, 0, 0, 0.12);
+  --blue: #378ADD; --teal: #1D9E75; --amber: #EF9F27; --red: #E24B4A;
+  --bg-success: #E1F5EE; --tx-success: #0F6E56;
+  --bg-warning: #FAEEDA; --tx-warning: #854F0B;
+  --bg-danger: #FCEBEB; --tx-danger: #A32D2D;
+  --radius: 8px; --radius-lg: 12px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-page: #1f1e1c; --bg-surface: #2a2926; --bg-tertiary: #35332f;
+    --text-primary: #f0efe9; --text-secondary: #b4b2a9; --text-tertiary: #888780;
+    --border: rgba(255, 255, 255, 0.14);
+    --bg-success: #04342C; --tx-success: #5DCAA5;
+    --bg-warning: #412402; --tx-warning: #FAC775;
+    --bg-danger: #501313; --tx-danger: #F09595;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: var(--font); color: var(--text-primary); background: var(--bg-page);
+  margin: 0; padding: 24px; line-height: 1.6; font-size: 15px;
+  max-width: 760px; margin-left: auto; margin-right: auto;
+}
+h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+h2 { font-size: 17px; font-weight: 500; margin: 0 0 10px; }
+.lede { color: var(--text-secondary); margin: 0 0 20px; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--bg-tertiary); padding: 1px 5px; border-radius: 4px; }
+a { color: var(--blue); }
+.card { background: var(--bg-surface); border-radius: var(--radius); padding: 12px; }
+.card .l { font-size: 12px; color: var(--text-secondary); }
+.card .v { font-size: 21px; font-weight: 500; margin-top: 2px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 11px; }
+.sl { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+.sl label { font-size: 13px; color: var(--text-secondary); min-width: 150px; }
+.sl span { font-size: 13px; font-weight: 500; min-width: 64px; text-align: right; }
+input[type=range] { flex: 1; accent-color: var(--blue); height: 22px; }
+button { font: inherit; font-size: 13px; background: transparent; color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 12px; cursor: pointer; }
+button:hover { background: var(--bg-surface); }
+button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.seg button { border: 0; border-radius: 0; }
+.banner { border-radius: var(--radius-lg); padding: 12px 14px; font-size: 14px; margin-bottom: 16px; }
+.foot { font-size: 12px; color: var(--text-tertiary); margin-top: 18px; border-top: 1px solid var(--border); padding-top: 10px; }
+.rx { display: flex; gap: 8px; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; margin-bottom: 7px; background: var(--bg-page); }
+.bar { height: 15px; border-radius: 4px; background: var(--bg-tertiary); position: relative; overflow: hidden; }
+.muted { color: var(--text-secondary); font-size: 13px; }
+.tag { font-size: 11px; padding: 1px 7px; border-radius: 10px; }

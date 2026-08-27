@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MSO — water-filling oversight allocation</title>
+<link rel="stylesheet" href="../theme.css" />
+</head>
+<body>
+<h1>Water-filling oversight</h1>
+<p class="lede">The Minimum Sufficient Oversight Principle places review effort to meet a delivery target at least cost. The Euler-Lagrange solution <code>α*(x) = min(1, (λ/2)·σ_raw·√(σ_raw(1−σ_raw)))</code> grants autonomy where it's cheap and concentrates oversight <code>(1−α)</code> where competence is low.</p>
+
+<div class="sl"><label>Delivery target p_min</label><input type="range" id="pmin" min="0.20" max="0.52" step="0.01" value="0.40" /><span id="pminv">0.40</span></div>
+<div style="margin:6px 0 4px"><span class="seg"><button id="m-mso" class="on" type="button">MSO water-filling</button><button id="m-uni" type="button">Uniform oversight</button></span></div>
+
+<div class="grid" style="margin:16px 0 18px">
+  <div class="card"><div class="l">Water level λ</div><div class="v" id="lam">—</div></div>
+  <div class="card"><div class="l">Governance cost ∫α²√g</div><div class="v" id="cost">—</div></div>
+  <div class="card"><div class="l">Delivery ∫α·σ</div><div class="v" id="deliv">—</div></div>
+  <div class="card"><div class="l">vs uniform</div><div class="v" id="save">—</div></div>
+</div>
+
+<h2>Per-task allocation</h2>
+<p class="muted" style="margin:-4px 0 10px"><span style="display:inline-block;width:10px;height:10px;background:#1D9E75;border-radius:2px"></span> authority granted α* &nbsp; <span style="display:inline-block;width:10px;height:10px;background:#E24B4A;border-radius:2px"></span> oversight (1−α*)</p>
+<div id="ledger"></div>
+
+<p class="foot">Computed by <code>mso-core.js</code> (<code>solveMSO</code> → bisection on λ, identical to <code>minimal_oversight.allocation.solve_mso</code>, pinned by the parity test). Governance cost is the Fisher-weighted oversight integral <code>∫α²√g dx</code>; water-filling is the least-cost policy meeting the same delivery, so MSO never costs more than uniform.</p>
+
+<script src="../mso-core.js"></script>
+<script>
+var $=function(id){return document.getElementById(id);};
+var TASKS=[
+ {id:'lead_enrich',label:'Lead enrich',skill:0.80},
+ {id:'lead_score',label:'Lead scoring',skill:0.62},
+ {id:'outreach_draft',label:'Outreach draft',skill:0.50},
+ {id:'deal_forecast',label:'Deal forecast',skill:0.45},
+ {id:'crm_write',label:'CRM write',skill:0.85},
+ {id:'meeting_book',label:'Meeting book',skill:0.65}
+];
+var SRAW=TASKS.map(function(t){return MSO.sigmaRawFixedPoint(t.skill,10,2,0);});
+var mode='mso';
+function render(){
+  var pmin=+$('pmin').value; $('pminv').textContent=pmin.toFixed(2);
+  var res=MSO.solveMSO(SRAW,pmin);
+  var alpha;
+  if(mode==='mso'){alpha=res.alphaStar;}
+  else{var sumSig=SRAW.reduce(function(a,b){return a+b;},0);var au=Math.max(0,Math.min(1,res.delivery/sumSig));alpha=SRAW.map(function(){return au;});}
+  var cost=0,deliv=0;for(var i=0;i<SRAW.length;i++){cost+=alpha[i]*alpha[i]*MSO.fisherVolumeElement(SRAW[i]);deliv+=alpha[i]*SRAW[i];}
+  $('lam').textContent=mode==='mso'?res.lam.toFixed(2):'—';
+  $('cost').textContent=cost.toFixed(2);
+  $('deliv').textContent=deliv.toFixed(2);
+  var sumSig2=SRAW.reduce(function(a,b){return a+b;},0);var au=Math.max(0,Math.min(1,res.delivery/sumSig2));
+  var costU=0;for(var k=0;k<SRAW.length;k++){costU+=au*au*MSO.fisherVolumeElement(SRAW[k]);}
+  var saveEl=$('save');
+  if(mode==='mso'){var pct=costU>0?(costU-cost)/costU*100:0;saveEl.textContent='−'+Math.max(0,pct).toFixed(0)+'% cost';saveEl.style.color='var(--tx-success)';}
+  else{saveEl.textContent='baseline';saveEl.style.color='var(--text-secondary)';}
+  var rows=TASKS.map(function(t,i){return {label:t.label,sr:SRAW[i],a:alpha[i]};}).sort(function(a,b){return a.sr-b.sr;});
+  $('ledger').innerHTML=rows.map(function(d){
+    return '<div style="display:grid;grid-template-columns:124px 1fr 132px;gap:10px;align-items:center;margin-bottom:9px">'+
+      '<div style="font-size:12px;font-weight:500">'+d.label+'</div>'+
+      '<div class="bar"><div style="position:absolute;left:0;top:0;height:100%;width:'+(d.a*100).toFixed(1)+'%;background:#1D9E75"></div>'+
+      '<div style="position:absolute;top:0;height:100%;left:'+(d.a*100).toFixed(1)+'%;width:'+((1-d.a)*100).toFixed(1)+'%;background:#E24B4A"></div></div>'+
+      '<div style="font-size:11px;color:var(--text-secondary);text-align:right">σ_raw='+d.sr.toFixed(2)+' · α*='+d.a.toFixed(2)+'</div></div>';}).join('');
+}
+function setMode(m){mode=m;$('m-mso').classList.toggle('on',m==='mso');$('m-uni').classList.toggle('on',m==='uni');render();}
+$('pmin').addEventListener('input',render);
+$('m-mso').addEventListener('click',function(){setMode('mso');});
+$('m-uni').addEventListener('click',function(){setMode('uni');});
+render();
+</script>
+</body>
+</html>
