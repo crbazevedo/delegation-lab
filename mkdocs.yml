@@ -58,6 +58,7 @@ nav:
   - Home: index.md
   - Quick Start: quickstart.md
   - Try it live ↗: https://crbazevedo.github.io/delegation-lab/app/widgets/cockpit.html
+  - Talk · AGI Club São Paulo 2026 ↗: https://crbazevedo.github.io/delegation-lab/talks/agi-club-sp-2026/
   - Concepts:
     - What is a Delegation?: concepts/delegation.md
     - The Masking Problem: concepts/masking.md
