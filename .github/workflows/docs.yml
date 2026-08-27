@@ -9,6 +9,7 @@ on:
       - "mkdocs.yml"
       - "src/**"
       - "web/**"
+      - "talks/**"
 
 permissions:
   contents: write
@@ -31,6 +32,12 @@ jobs:
         run: |
           cp -r web docs/app
           rm -f docs/app/README.md
+
+      - name: Stage talks into the docs site (served at /talks/)
+        run: |
+          mkdir -p docs/talks
+          cp -r talks/* docs/talks/
+          find docs/talks -name README.md -delete
 
       - name: Deploy to GitHub Pages
         run: mkdocs gh-deploy --force

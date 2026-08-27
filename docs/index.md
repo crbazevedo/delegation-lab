@@ -4,7 +4,15 @@
 
 Companion package to [*Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems*](https://github.com/crbazevedo/delegation-lab) (Azevedo, 2026).
 
-Current release: [`v0.1.2`](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.2) / [`minimal-oversight==0.1.2`](https://pypi.org/project/minimal-oversight/0.1.2/)
+Current release: [`v0.1.3`](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.3) / [`minimal-oversight==0.1.3`](https://pypi.org/project/minimal-oversight/0.1.3/)
+
+---
+
+!!! info "Talk in Brazilian Portuguese"
+    **Minimal Oversight - AGI Club Sao Paulo 2026** connects the theory,
+    production traces, workflow topology, and practical review patterns in one
+    self-contained presentation. [Open the interactive deck](https://crbazevedo.github.io/delegation-lab/talks/agi-club-sp-2026/)
+    or [download the PDF](https://crbazevedo.github.io/delegation-lab/talks/agi-club-sp-2026/minimal-oversight-agi-club-sp-2026.pdf).
 
 ---
 

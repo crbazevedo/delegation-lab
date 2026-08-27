@@ -1,0 +1,1812 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Minimal Oversight · AGI Club, São Paulo · PT-BR</title>
+<meta name="description" content="Apresentação sobre supervisão mínima suficiente para sistemas de IA delegados, com teoria, evidência e aplicações práticas.">
+<link rel="canonical" href="https://crbazevedo.github.io/delegation-lab/talks/agi-club-sp-2026/">
+<meta property="og:title" content="Minimal Oversight · AGI Club São Paulo 2026">
+<meta property="og:description" content="Quanto revisar os agentes de IA — e onde?">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://crbazevedo.github.io/delegation-lab/talks/agi-club-sp-2026/">
+<!-- Tradução PT-BR baseada no master inglês; 53 lâminas. -->
+<style>
+  :root{
+    --bg:#FFFFFF; --panel:#F5F5F2; --panel2:#EDEDE9;
+    --ink:#111111; --ink2:#494946; --mut:#8B8B85;
+    --hair:rgba(17,17,17,.18); --grid:#E6E6E1;
+    --amber:#E03A00; --amberS:#B93000; --blue:#1D4ED8; --aqua:#0F766E;
+    --good:#15803D; --crit:#B42318;
+    --sans:ui-sans-serif,-apple-system,"SF Pro Display","SF Pro Text","Helvetica Neue","Segoe UI",Roboto,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,"Cascadia Code","JetBrains Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden}
+  ::selection{background:rgba(224,58,0,.16)}
+
+  #stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;transform:translate(-50%,-50%) scale(1)}
+  .slide{position:absolute;inset:0;padding:72px 92px 58px;display:flex;flex-direction:column;opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .32s ease,transform .32s ease,visibility .32s}
+  .slide.on{opacity:1;visibility:visible;transform:none}
+
+  .crumb{position:absolute;top:32px;left:92px;font:500 12px/1 var(--mono);letter-spacing:.2em;color:var(--mut);text-transform:uppercase}
+  .crumb b{color:var(--amber);font-weight:500}
+  .foot{position:absolute;bottom:24px;left:92px;right:92px;display:flex;justify-content:space-between;align-items:baseline;font:400 13px/1.4 var(--mono);color:var(--mut);letter-spacing:.04em}
+
+  h2{font-size:40px;font-weight:700;letter-spacing:-.03em;line-height:1.12;text-wrap:balance;margin-bottom:10px}
+  .lede{font-size:24px;line-height:1.45;color:var(--ink2);max-width:60ch;text-wrap:pretty}
+  .body{display:flex;flex-direction:column;flex:1;min-height:0;padding-top:4px}
+  .kicker{margin-top:auto;padding-top:14px;border-top:2.5px solid var(--ink);font-size:26px;font-weight:600;letter-spacing:-.01em;line-height:1.3}
+  .kicker::before{content:"→  ";color:var(--amber);font-weight:700}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+  .cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:stretch}
+
+  .card{background:var(--panel);border:1px solid var(--hair);border-radius:0;padding:20px 22px}
+  .card h3{font-size:22px;font-weight:640;margin-bottom:8px;letter-spacing:-.01em}
+  .card p{font-size:19px;line-height:1.5;color:var(--ink2)}
+  .card .tag{display:block;font:500 12px/1 var(--mono);letter-spacing:.16em;color:var(--amber);text-transform:uppercase;margin-bottom:10px}
+
+  ul.list{list-style:none;display:flex;flex-direction:column;gap:16px;font-size:23px;line-height:1.42}
+  ul.list li{padding-left:24px;position:relative;color:var(--ink);max-width:56ch}
+  ul.list li::before{content:"";position:absolute;left:2px;top:.62em;width:9px;height:2px;background:var(--amber)}
+  ul.list li .d{color:var(--ink2)}
+  ul.list.tight{gap:13px;font-size:21px}
+
+  .chip{display:inline-block;border:1.2px solid var(--ink);border-radius:0;padding:9px 17px;font:500 15px/1 var(--mono);letter-spacing:.06em;color:var(--ink2);margin:0 8px 8px 0;white-space:nowrap}
+  .chip.hot{border-color:var(--amber);color:var(--amber)}
+
+  .statement{font-size:62px;font-weight:750;letter-spacing:-.035em;line-height:1.05;text-wrap:balance;max-width:21ch}
+  .statement em{font-style:normal;color:var(--amber)}
+  .hero-num{font-size:140px;font-weight:300;letter-spacing:-.03em;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .hero-k{font:500 14px/1.5 var(--mono);color:var(--mut);letter-spacing:.13em;margin-top:10px;text-transform:uppercase}
+
+  .title-slide{justify-content:center}
+  .title-slide .over{font:500 13px/1 var(--mono);letter-spacing:.3em;color:var(--amber);text-transform:uppercase;margin-bottom:26px}
+  .title-slide h1{font-size:96px;font-weight:700;letter-spacing:-.035em;line-height:.98}
+  .title-slide .sub{margin-top:26px;font-size:24px;color:var(--ink2);max-width:52ch;line-height:1.45}
+  .title-slide .who{margin-top:34px;font:400 14px/1.8 var(--mono);color:var(--mut);letter-spacing:.05em}
+  .title-slide .who b{color:var(--ink);font-weight:500}
+  .motif{position:absolute;left:0;right:0;bottom:0;height:150px;pointer-events:none}
+
+  .divider{justify-content:center}
+  .divider .n{font-family:Georgia,'Times New Roman',serif;font-size:180px;font-weight:600;letter-spacing:.02em;line-height:1;color:#EBE9E4}
+  .divider .t{font:500 14px/1 var(--mono);letter-spacing:.32em;color:var(--amber);text-transform:uppercase;margin:24px 0 16px}
+  .divider .th{font-size:52px;font-weight:640;letter-spacing:-.02em;line-height:1.16;max-width:24ch;text-wrap:balance}
+  .divider .sub{margin-top:18px;font-size:24px;color:var(--ink2);max-width:60ch;line-height:1.6}
+  .divider .sub b{color:var(--ink);font-weight:560}
+
+  .acts{display:flex;flex-direction:column;margin-top:6px}
+  .act{display:grid;grid-template-columns:52px 320px 1fr;gap:24px;align-items:baseline;padding:14px 4px;border-bottom:1px solid var(--hair)}
+  .act:first-child{border-top:1px solid var(--hair)}
+  .act .rn{font:300 26px/1 var(--mono);color:var(--amber)}
+  .act .nm{font-size:22px;font-weight:640;letter-spacing:-.01em}
+  .act .ds{font-size:19px;color:var(--ink2);line-height:1.4}
+  .act .tm{font:400 12px/1.5 var(--mono);color:var(--mut);text-align:right;letter-spacing:.06em}
+
+  .stat{background:var(--panel);border:1px solid var(--hair);border-radius:0;padding:18px 22px}
+  .stat .v{font-size:56px;font-weight:300;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+  .stat .k{font:500 13px/1.55 var(--mono);letter-spacing:.1em;color:var(--mut);text-transform:uppercase;margin-top:9px}
+
+  table.mini{border-collapse:collapse;width:100%;font-size:20px}
+  table.mini th{font:500 12.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mut);text-align:left;padding:0 12px 10px 0}
+  table.mini td{padding:10px 12px 10px 0;border-top:1px solid var(--hair);color:var(--ink2);line-height:1.35;vertical-align:top}
+  table.mini td:first-child{color:var(--ink);font-weight:520}
+
+  .eq{font:400 30px/1.55 var(--mono);color:var(--ink);background:#fff;border:1.5px solid var(--ink);border-radius:0;padding:18px 24px;display:inline-block}
+  .eq .a{color:var(--amber)} .eq .m{color:var(--ink2)}
+  .worked{font:400 25px/1.9 var(--mono);color:var(--ink2);margin-top:14px}
+  .worked b{color:var(--ink);font-weight:560}
+  .worked .res{color:var(--amber);font-weight:600}
+
+  .pv{display:flex;gap:16px;align-items:baseline;border:1px solid var(--hair);border-left:3px solid var(--amber);border-radius:0;background:var(--panel);padding:10px 16px;margin:0 0 14px;font-size:17.5px;line-height:1.4}
+  .pv .p{font:500 11px/1.5 var(--mono);letter-spacing:.14em;color:var(--amber);text-transform:uppercase;white-space:nowrap}
+  .pv .txt{color:var(--ink)}
+  .pv .vd{margin-left:auto;font:500 11px/1.5 var(--mono);letter-spacing:.1em;color:var(--ink2);white-space:nowrap;text-transform:uppercase}
+
+  .kill{display:inline-block;border:1.2px solid var(--crit);color:var(--crit);border-radius:0;padding:8px 14px;font:500 12.5px/1.4 var(--mono);letter-spacing:.04em}
+
+  .ctag{position:absolute;top:26px;right:92px;font:500 12px/1 var(--mono);letter-spacing:.14em;color:var(--amber);text-transform:uppercase;border:1.2px solid var(--amber);border-radius:0;padding:7px 13px}
+
+  .contract{background:#141414;border:1px solid #141414;border-radius:0;padding:19px 23px;font:400 17.5px/1.9 var(--mono);color:#B9B9B0}
+  .contract .k{color:#8B8B85} .contract .v{color:#F2F2F0} .contract .hl{color:#FF7847}
+
+  .ep{background:#141414;border:1px solid #141414;border-radius:0;padding:15px 21px;font:400 17.5px/2 var(--mono);color:#B9B9B0}
+  .ep b{color:#F2F2F0;font-weight:540} .ep .a{color:#FF7847} .ep .g{color:#4ADE80}
+
+  .ladder2{display:grid;grid-template-columns:1fr 1fr 1fr 1.3fr;gap:12px;margin-bottom:16px}
+  .ladder2 .r{border:1px solid var(--hair);border-radius:0;padding:11px 14px;background:var(--panel)}
+  .ladder2 .r b{display:block;font-size:16px;font-weight:640;margin-bottom:3px}
+  .ladder2 .r span{font-size:13px;color:var(--mut);line-height:1.35;display:block}
+  .ladder2 .r.hot{border-color:rgba(224,58,0,.5)} .ladder2 .r.hot b{color:var(--amber)}
+
+  .tomb{border:1px solid var(--hair);border-radius:0;background:var(--panel);padding:17px 19px}
+  .tomb .h{font:500 16px/1.4 var(--mono);color:var(--ink);text-decoration:line-through;text-decoration-color:rgba(180,35,24,.85);text-decoration-thickness:2px;margin-bottom:7px}
+  .tomb .c{font-size:17px;color:var(--ink2);line-height:1.45}
+  .tomb .c b{color:var(--amber);font-weight:560}
+
+  .port{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:14px}
+  .port .p{border:1px solid var(--hair);border-radius:0;background:var(--panel);padding:16px 12px;text-align:center}
+  .port .p .s{font:400 30px/1 var(--mono);color:var(--ink);display:block;margin-bottom:7px;font-variant-numeric:tabular-nums}
+  .port .p .d{font-size:14.5px;color:var(--ink2);line-height:1.35}
+  .port .p .d .a{color:var(--amber)}
+
+  svg text{font-family:var(--mono)}
+  .svgwrap{overflow-x:auto}
+
+  #hud{position:fixed;right:26px;bottom:20px;font:400 12px/1 var(--mono);color:var(--mut);letter-spacing:.12em;z-index:40}
+  #bar{position:fixed;left:0;bottom:0;height:2px;background:var(--amber);width:0;z-index:40;transition:width .3s ease}
+  #notes{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);border-top:2px solid var(--ink);padding:20px 48px 26px;z-index:50;display:none;backdrop-filter:blur(6px)}
+  #notes.on{display:block}
+  #notes .nt{font:500 10.5px/1 var(--mono);letter-spacing:.2em;color:var(--amber);text-transform:uppercase;margin-bottom:10px}
+  #notes .nb{font:400 15px/1.6 var(--sans);color:var(--ink2);max-width:1100px}
+  #toc{position:fixed;inset:0;background:rgba(255,255,255,.97);z-index:60;display:none;padding:64px 96px;overflow-y:auto}
+  #toc.on{display:block}
+  #toc h4{font:500 12px/1 var(--mono);letter-spacing:.24em;color:var(--amber);text-transform:uppercase;margin-bottom:22px}
+  #toc ol{columns:2;column-gap:70px;list-style:none}
+  #toc li{margin-bottom:8px;break-inside:avoid}
+  #toc button{all:unset;cursor:pointer;font:400 15px/1.5 var(--mono);color:var(--ink2);display:flex;gap:16px}
+  #toc button:hover,#toc button:focus-visible{color:var(--amber);outline:none}
+  #toc button .i{color:var(--mut);min-width:30px;text-align:right}
+
+  @media (prefers-reduced-motion:reduce){.slide{transition:none}#bar{transition:none}}
+  @media print{
+    html,body{overflow:visible;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #stage{position:static;width:1280px;height:auto;transform:none!important}
+    .slide{position:relative;inset:auto;width:1280px;height:720px;opacity:1!important;visibility:visible!important;transform:none!important;page-break-after:always;break-after:page}
+    #stage>section:last-of-type{page-break-after:auto;break-after:auto}
+    #hud,#bar,#notes,#toc{display:none!important}
+    @page{size:1280px 720px;margin:0}
+  }
+  section[data-hidden="true"]{display:none!important}
+</style>
+
+</head><body><div id="stage">
+
+<!-- S1 · TITLE -->
+<section class="slide title-slide" data-title="Título" data-notes="[0:00] Boa noite. Esta apresentação responde a uma pergunta operacional: de quanta supervisão um sistema de agentes precisa, e em que pontos do fluxo essa supervisão produz mais resultado? Vou apresentar uma formulação teórica, evidência empírica e um exemplo executável. O objetivo não é eliminar revisão humana. É usar uma quantidade limitada de revisão de forma verificável.">
+  <div class="over">AGI Club · São Paulo · 2026</div>
+  <h1>Minimal<br>Oversight</h1>
+  <p class="sub" style="font-size:27px"><span style="color:var(--ink)">Quanta revisão os agentes de IA precisam — e onde?</span><br>Um sistema, um framework, 150.000 traces reais de execuções</p>
+  <div class="who" style="font-size:15px"><b>Carlos R. B. Azevedo</b> · Senior Director of AI Engineering · github.com/crbazevedo · arXiv:2606.15563</div>
+  <svg class="motif" viewBox="0 0 1280 150" preserveAspectRatio="none" aria-hidden="true">
+    <g>
+      <rect x="0" y="96" width="150" height="54" fill="#EDEDE9"></rect><rect x="158" y="118" width="150" height="32" fill="#EDEDE9"></rect>
+      <rect x="316" y="64" width="150" height="86" fill="#EDEDE9"></rect><rect x="474" y="126" width="150" height="24" fill="#EDEDE9"></rect>
+      <rect x="632" y="104" width="150" height="46" fill="#EDEDE9"></rect><rect x="790" y="72" width="150" height="78" fill="#EDEDE9"></rect>
+      <rect x="948" y="130" width="150" height="20" fill="#EDEDE9"></rect><rect x="1106" y="98" width="174" height="52" fill="#EDEDE9"></rect>
+      <line x1="0" y1="92" x2="1280" y2="92" stroke="#E03A00" stroke-width="1.5" stroke-dasharray="6 7" opacity=".7"></line>
+    </g>
+  </svg>
+</section>
+
+<!-- BIO · WHO IS TALKING -->
+<section class="slide" data-title="Quem está falando" data-notes="[0:25] Meu trabalho combina decisão sob incerteza, otimização e construção de sistemas de inteligência artificial. Aqui, aplico essas ferramentas a um problema cotidiano: agentes produzem trabalho mais rápido do que uma equipe consegue revisar.">
+  <span class="crumb">QUEM FALA</span>
+  <div class="body">
+    <h2>Carlos R. B. Azevedo</h2>
+    <p class="lede" style="margin-top:4px">Pesquisador e engenheiro de IA · São Paulo</p>
+    <div style="margin-block:auto">
+      <ul class="list" style="font-size:24px;gap:22px;max-width:62ch">
+        <li>Doutor em engenharia de computação. Pesquisa sobre <b>tomada de decisão sob incerteza</b>: otimização multiobjetivo, aprendizado antecipatório e simulação estocástica.</li>
+        <li>Liderou equipes de IA e ciência de dados na indústria e em consultoria.</li>
+        <li>Escreveu a teoria <b style="color:var(--amber)">Minimal Oversight</b> (arXiv:2606.15563) e desenvolve o <b>delegation-lab</b> abertamente.</li>
+      </ul>
+    </div>
+    <p class="kicker">Cada afirmação desta noite remete a um paper, um lab ou uma execução registrada.</p>
+  </div>
+  <div class="foot"><span>github.com/crbazevedo · @crbazevedo</span></div>
+</section>
+
+<!-- ARTIFACTS · WHAT TONIGHT STANDS ON -->
+<section class="slide" data-title="O que sustenta esta noite" data-notes="[0:40] Há três fontes para o que vou mostrar. O paper contém a teoria. O delegation-lab contém as equações e os fluxos executáveis. E o estudo empírico usa um log desidentificado de produção, com aproximadamente cento e cinquenta mil eventos. Quando eu apresentar um resultado, vou distinguir cálculo, medição observacional, simulação e execução ao vivo.">
+  <span class="crumb">O MATERIAL</span>
+  <div class="body">
+    <h2>O que sustenta esta noite</h2>
+    <div class="cols3" style="margin-block:auto">
+      <div class="card" style="padding:26px 28px"><span class="tag">o paper</span><h3>Minimal Oversight</h3><p style="margin-top:6px">A teoria: a menor revisão que mantém a qualidade acima da meta.<br><br><b style="color:var(--ink)">arXiv:2606.15563</b> · público</p></div>
+      <div class="card" style="padding:26px 28px;border-color:rgba(224,58,0,.45)"><span class="tag">o lab</span><h3>delegation-lab</h3><p style="margin-top:6px">Código executável: as equações, os fluxos de trabalho e o harness das execuções ao vivo.<br><br><b style="color:var(--ink)">github.com/crbazevedo/delegation-lab</b><br>pip install minimal-oversight</p></div>
+      <div class="card" style="padding:26px 28px"><span class="tag">os dados</span><h3>Um log de produção</h3><p style="margin-top:6px">Dois meses de entrega multiagente real, desidentificados.<br><br><b style="color:var(--ink)">150.000 eventos</b></p></div>
+    </div>
+    <p class="kicker">O paper e o lab são públicos. Tudo mostrado esta noite pode ser reexecutado a partir deles.</p>
+  </div>
+</section>
+
+<!-- S2 · THE SCENE -->
+<section class="slide" data-title="A cena" data-notes="[1:05] Comecemos por uma situação comum. Em dois meses, uma equipe abriu oitocentas e setenta e sete tarefas para agentes, da descrição inicial até o merge. Essas tarefas produziram cerca de cento e cinquenta mil eventos. Havia uma pessoa responsável por revisar o conjunto. Se cada tarefa recebesse apenas cinco minutos de atenção, seriam mais de nove dias úteis de leitura contínua. Portanto, a pergunta prática não é simplesmente se devemos revisar. Precisamos decidir quanto revisar, onde revisar e quando a meta de qualidade não pode ser atingida apenas com revisão.">
+  <span class="crumb">O PROBLEMA</span>
+  <div class="body">
+    <h2>Dois meses de trabalho de agentes. Uma pessoa lendo tudo.</h2>
+    <div style="display:flex;gap:72px;margin-block:auto;align-items:flex-end">
+      <div><div class="hero-num">877</div><div class="hero-k">tarefas, issue → merge</div></div>
+      <div><div class="hero-num">150.000</div><div class="hero-k">eventos registrados</div></div>
+      <div><div class="hero-num" style="color:var(--amber)">1</div><div class="hero-k">revisor</div></div>
+    </div>
+    <p class="lede" style="margin-top:20px;font-size:26px">Ler tudo, a 5 minutos por tarefa: <b style="color:var(--amber)">9 dias úteis</b>.</p>
+    <div style="margin-top:22px">
+      <span class="chip hot">Quanta revisão?</span>
+      <span class="chip hot">Onde no workflow?</span>
+      <span class="chip hot">Quando a autonomia é impossível?</span>
+    </div>
+  </div>
+  <div class="foot"><span>dados de produção · desidentificados</span></div>
+</section>
+
+<!--EVO · SIX YEARS OF THE QUESTION-->
+<section class="slide" data-title="Seis anos da pergunta" data-notes="[1:55] A pergunta mudou de escala. No gráfico da esquerda, calculamos a cobertura de revisão necessária para atingir noventa por cento de qualidade, usando resultados históricos do SWE-bench Verified, um benchmark de tarefas reais de engenharia de software, e mantendo constantes a capacidade de detectar e de corrigir erros. Barras acima de cem por cento significam inviabilidade: mesmo revisar todas as tarefas não bastaria. No gráfico da direita, a METR, uma organização independente de avaliação, mede o horizonte de tarefas: o tempo que um especialista humano levaria para executar uma tarefa que o agente resolve com cinquenta por cento de probabilidade. Esse horizonte passou de segundos para horas. Não significa que o agente opera por doze horas sem falhar; significa que ele enfrenta tarefas humanamente maiores. A consequência é direta: a revisão por resposta pode diminuir, enquanto a necessidade de governar o sistema inteiro aumenta.">
+  <span class="crumb">O PROBLEMA · SEIS ANOS</span>
+  <div class="body">
+    <h2>A necessidade muda de forma desde 2020</h2>
+    <div class="cols" style="grid-template-columns:1fr 1fr;align-items:start;margin-top:4px">
+      <div><svg viewBox="0 0 560 364" width="520" aria-label="Porcentagem das tarefas que precisam ser revisadas para atingir 90% de qualidade, por modelo, de agosto de 2024 a fevereiro de 2026: 125%, 118%, 108%, 99%, 88% e 70%."><text x="4" y="16" fill="#6E6E68" font-size="13.5">cobertura necessária para uma meta de 90% · calculada</text><text x="4" y="34" fill="#494946" font-size="12">modelos de pesos abertos cruzam depois: Kimi K2 Thinking, nov 25, precisa de 96%</text><line x1="52" y1="316.0" x2="540" y2="316.0" stroke="#E6E6E1" stroke-width="1"></line><line x1="52" y1="223.5" x2="540" y2="223.5" stroke="#E6E6E1" stroke-width="1"></line><line x1="52" y1="131.0" x2="540" y2="131.0" stroke="#B42318" stroke-width="1.5" stroke-dasharray="6 5"></line><g font-size="12" fill="#494946"><text x="46" y="320.0" text-anchor="end">0</text><text x="46" y="227.5" text-anchor="end">50%</text><text x="46" y="135.0" text-anchor="end">100%</text></g><text x="540" y="107.0" text-anchor="end" fill="#B42318" font-size="12.5">inviável acima desta linha</text><rect x="64" y="84.8" width="58" height="231.2" fill="#B42318"></rect><text x="93" y="77.8" text-anchor="middle" fill="#B42318" font-size="16.5" font-weight="600">125%</text><text x="93" y="332" text-anchor="middle" fill="#111111" font-size="12.5" font-weight="600">ago 24</text><text x="93" y="346" text-anchor="middle" fill="#494946" font-size="11">GPT-4o</text><text x="93" y="360" text-anchor="middle" fill="#6E6E68" font-size="11">33%</text><rect x="146" y="97.7" width="58" height="218.3" fill="#B42318"></rect><text x="175" y="90.7" text-anchor="middle" fill="#B42318" font-size="16.5" font-weight="600">118%</text><text x="175" y="332" text-anchor="middle" fill="#111111" font-size="12.5" font-weight="600">out 24</text><text x="175" y="346" text-anchor="middle" fill="#494946" font-size="11">Sonnet 3.5</text><text x="175" y="360" text-anchor="middle" fill="#6E6E68" font-size="11">49%</text><rect x="228" y="116.2" width="58" height="199.8" fill="#B42318"></rect><text x="257" y="109.2" text-anchor="middle" fill="#B42318" font-size="16.5" font-weight="600">108%</text><text x="257" y="332" text-anchor="middle" fill="#111111" font-size="12.5" font-weight="600">fev 25</text><text x="257" y="346" text-anchor="middle" fill="#494946" font-size="11">Sonnet 3.7</text><text x="257" y="360" text-anchor="middle" fill="#6E6E68" font-size="11">62%</text><rect x="310" y="132.8" width="58" height="183.2" fill="#111111"></rect><text x="339" y="125.8" text-anchor="middle" fill="#111111" font-size="16.5" font-weight="600">99%</text><text x="339" y="332" text-anchor="middle" fill="#111111" font-size="12.5" font-weight="600">abr 25</text><text x="339" y="346" text-anchor="middle" fill="#494946" font-size="11">o3</text><text x="339" y="360" text-anchor="middle" fill="#6E6E68" font-size="11">69%</text><rect x="392" y="153.2" width="58" height="162.8" fill="#111111"></rect><text x="421" y="146.2" text-anchor="middle" fill="#111111" font-size="16.5" font-weight="600">88%</text><text x="421" y="332" text-anchor="middle" fill="#111111" font-size="12.5" font-weight="600">ago 25</text><text x="421" y="346" text-anchor="middle" fill="#494946" font-size="11">GPT-5</text><text x="421" y="360" text-anchor="middle" fill="#6E6E68" font-size="11">75%</text><rect x="474" y="186.5" width="58" height="129.5" fill="#111111"></rect><text x="503" y="179.5" text-anchor="middle" fill="#111111" font-size="16.5" font-weight="600">70%</text><text x="503" y="332" text-anchor="middle" fill="#111111" font-size="12.5" font-weight="600">fev 26</text><text x="503" y="346" text-anchor="middle" fill="#494946" font-size="11">Opus 4.6</text><text x="503" y="360" text-anchor="middle" fill="#6E6E68" font-size="11">81%</text><line x1="52" y1="316" x2="540" y2="316" stroke="#111111" stroke-width="1.5"></line></svg></div>
+      <div><svg viewBox="0 0 560 356" width="520" aria-label="Duração de tarefa concluída com 50% de acerto, de 8 segundos em 2020 a cerca de 12 horas em 2026, em escala logarítmica."><text x="4" y="16" fill="#6E6E68" font-size="13.5">duração de tarefa concluída com 50% de confiabilidade · METR 1.1</text><line x1="70" y1="253.5" x2="540" y2="253.5" stroke="#E6E6E1" stroke-width="1"></line><text x="64" y="257.5" text-anchor="end" fill="#494946" font-size="11.5">1 min</text><line x1="70" y1="191.0" x2="540" y2="191.0" stroke="#E6E6E1" stroke-width="1"></line><text x="64" y="195.0" text-anchor="end" fill="#494946" font-size="11.5">10 min</text><line x1="70" y1="142.4" x2="540" y2="142.4" stroke="#E6E6E1" stroke-width="1"></line><text x="64" y="146.4" text-anchor="end" fill="#494946" font-size="11.5">1 h</text><line x1="70" y1="74.9" x2="540" y2="74.9" stroke="#E6E6E1" stroke-width="1"></line><text x="64" y="78.9" text-anchor="end" fill="#494946" font-size="11.5">12 h</text><text x="77.2" y="334" text-anchor="middle" fill="#494946" font-size="11.5">2020</text><text x="149.5" y="334" text-anchor="middle" fill="#494946" font-size="11.5">2021</text><text x="221.8" y="334" text-anchor="middle" fill="#494946" font-size="11.5">2022</text><text x="294.2" y="334" text-anchor="middle" fill="#494946" font-size="11.5">2023</text><text x="366.5" y="334" text-anchor="middle" fill="#494946" font-size="11.5">2024</text><text x="438.8" y="334" text-anchor="middle" fill="#494946" font-size="11.5">2025</text><text x="511.1" y="334" text-anchor="middle" fill="#494946" font-size="11.5">2026</text><polyline points="107.6,306.9 308.6,215.9 393.2,200.7 425.0,171.5 449.6,142.2 482.2,109.3 502.4,106.6 503.8,99.3 507.5,94.3 518.3,75.0" fill="none" stroke="#111111" stroke-width="2.5"></polyline><circle cx="107.6" cy="306.9" r="3.5" fill="#111111"></circle><text x="117.6" y="310.9" text-anchor="start" fill="#111111" font-size="12.5" font-weight="600">GPT-3 · 8 s</text><circle cx="308.6" cy="215.9" r="3.5" fill="#111111"></circle><text x="298.6" y="207.9" text-anchor="end" fill="#111111" font-size="12.5" font-weight="600">GPT-4 · 4 min</text><circle cx="393.2" cy="200.7" r="3.5" fill="#111111"></circle><circle cx="425.0" cy="171.5" r="3.5" fill="#111111"></circle><circle cx="449.6" cy="142.2" r="3.5" fill="#111111"></circle><text x="435.6" y="146.2" text-anchor="end" fill="#111111" font-size="12.5" font-weight="600">Sonnet 3.7 · 1 h</text><circle cx="482.2" cy="109.3" r="3.5" fill="#111111"></circle><text x="470.2" y="99.3" text-anchor="end" fill="#111111" font-size="12.5" font-weight="600">GPT-5 · 3,4 h</text><circle cx="502.4" cy="106.6" r="3.5" fill="#111111"></circle><circle cx="503.8" cy="99.3" r="3.5" fill="#111111"></circle><circle cx="507.5" cy="94.3" r="3.5" fill="#111111"></circle><circle cx="518.3" cy="75.0" r="5" fill="#E03A00"></circle><text x="506.3" y="67.0" text-anchor="end" fill="#E03A00" font-size="12.5" font-weight="600">Opus 4.6 · 12 h</text><text x="90" y="70" fill="#E03A00" font-size="13" font-weight="600">duplicação≈7 meses (2019–2025)</text><text x="90" y="88" fill="#E03A00" font-size="13" font-weight="600">≈ 4 meses pós-2023</text><line x1="70" y1="316" x2="540" y2="316" stroke="#111111" stroke-width="1.5"></line></svg></div>
+    </div>
+    <p style="font-size:18px;line-height:1.5;color:var(--ink2);margin-top:10px;max-width:1120px">A alucinação caiu dentro de cada instrumento fixo: sumarização fundamentada passou de <b style="color:var(--ink)">3,0%</b> (GPT-4, 2023) para cerca de <b style="color:var(--ink)">1%</b> (2025); o conjunto de dados mais difícil de nov 2025 reposicionou a fronteira entre <b style="color:var(--ink)">2 e 15%</b>. A lembrança em domínio aberto sem navegação ainda erra perto de <b style="color:var(--ink)">40%</b>.</p>
+    <p class="kicker">A revisão por tarefa caiu; a supervisão migrou para o sistema.</p>
+  </div>
+  <div class="foot"><span>calculado: identidade de viabilidade (c 0,80 · f 0,85) sobre SWE-bench Verified (retirado em fev 2026) · METR 1.1 · HHEM</span></div>
+</section>
+
+<!-- S3 · THREE COMMON ANSWERS -->
+<section class="slide" data-title="Três respostas comuns" data-notes="[3:00] Três respostas parecem naturais. Revisar tudo uniformemente. Confiar na qualidade final do pipeline. Ou concentrar atenção no agente mais fraco. Veremos que as três podem desperdiçar revisão ou produzir uma estimativa errada da capacidade real. A alternativa exige primeiro registrar o trabalho como um sistema observável.">
+  <span class="crumb">O PROBLEMA · RESPOSTAS COMUNS</span>
+  <div class="body">
+    <h2>Três respostas que todo mundo tenta primeiro</h2>
+    <div class="cols3" style="margin-top:14px">
+      <div class="card"><span class="tag">resposta 1</span><h3>“Revisar tudo uniformemente.”</h3><p>Parece seguro. A frota supera um leitor só.</p></div>
+      <div class="card"><span class="tag">resposta 2</span><h3>“Confiar no ci verde.”</h3><p>Mergeou limpo, então o agente deve ser bom.</p></div>
+      <div class="card"><span class="tag">resposta 3</span><h3>“Vigiar o trabalho mais fraco.”</h3><p>Olhos seniores nas mudanças mais arriscadas.</p></div>
+    </div>
+    <div class="acts" style="margin-top:24px">
+      <div class="act"><span class="rn">I</span><span class="nm">O Sistema</span><span class="ds">cada ação deixa registro</span></div>
+      <div class="act"><span class="rn">II</span><span class="nm">A Teoria</span><span class="ds">a aritmética da revisão</span></div>
+      <div class="act"><span class="rn">III</span><span class="nm">O Teste</span><span class="ds">quatro previsões contra os dados</span></div>
+      <div class="act"><span class="rn">IV</span><span class="nm">A Prática</span><span class="ds">execuções ao vivo + os hábitos</span></div>
+    </div>
+    <p class="kicker">As três respostas falham esta noite contra a teoria e 150.000 rastros reais.</p>
+  </div>
+</section>
+
+<!-- S4 · DIVIDER I -->
+<section class="slide divider" data-title="I · O Sistema" data-notes="[3:35] Primeiro, o sistema de medição.">
+  <div class="n">I</div>
+  <div class="t">O Sistema</div>
+  <p class="th">O que fica registrado quando agentes trabalham?</p>
+  <p class="sub">Quatro partes de um plano de controle, uma tarefa de exemplo.</p>
+</section>
+
+<!-- S5 · THE STAGE -->
+<section class="slide on" data-title="O plano de controle + a tarefa de exemplo" data-notes="[3:40] Chamarei de modelo o componente que gera respostas. Agente é o modelo operando com contexto, memória e ferramentas. Harness é o ambiente que executa e restringe o agente. Acima disso, o plano de controle coordena contratos, agenda, políticas, avaliação e observabilidade. Contratos descem para os agentes; eventos e resultados sobem. Para quem constrói agentes, a consequência é importante: não é possível governar apenas pelo prompt ou pela resposta final. Precisamos observar o objeto completo que produz o resultado.">
+  <span class="crumb"><b>I · O SISTEMA</b> · O SETUP</span>
+  <span class="ctag">plano de controle vs plano de dados</span>
+  <div class="body">
+    <h2>Um plano de controle acima de todos os agentes</h2>
+    <div class="ladder2">
+      <div class="r"><b>Modelo</b><span>os pesos</span></div>
+      <div class="r"><b>Agente</b><span>modelo + ferramentas, em loop</span></div>
+      <div class="r"><b>Harness</b><span>Claude Code, Codex CLI</span></div>
+      <div class="r hot"><b>Plano de controle</b><span>planeja · despacha · checa · audita</span></div>
+    </div>
+    <div class="svgwrap">
+    <svg viewBox="0 0 1100 300" width="1096" aria-label="Arquitetura do plano de controle">
+      <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#8B8B85"></path></marker>
+      <marker id="arA" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#E03A00"></path></marker></defs>
+      <rect x="30" y="8" width="1040" height="108" rx="0" fill="#FFFFFF" stroke="rgba(224,58,0,.5)"></rect>
+      <text x="56" y="34" fill="#E03A00" font-size="11.5" letter-spacing="3">PLANO DE CONTROLE</text>
+      <g font-size="14.5" fill="#111111">
+        <rect x="56" y="48" width="150" height="52" rx="0" fill="#F5F5F2" stroke="rgba(224,58,0,.45)"></rect><text x="131" y="70" text-anchor="middle">o log</text><text x="131" y="86" text-anchor="middle" fill="#8B8B85">caixa-preta</text>
+        <rect x="222" y="48" width="150" height="52" rx="0" fill="#F5F5F2" stroke="rgba(224,58,0,.45)"></rect><text x="297" y="70" text-anchor="middle">contratos</text><text x="297" y="86" text-anchor="middle">por tarefa</text>
+        <rect x="388" y="48" width="150" height="52" rx="0" fill="#F5F5F2" stroke="rgba(224,58,0,.45)"></rect><text x="463" y="70" text-anchor="middle">checagens</text><text x="463" y="86" text-anchor="middle">de qualidade</text>
+        <rect x="554" y="48" width="150" height="52" rx="0" fill="#F5F5F2" stroke="rgba(224,58,0,.45)"></rect><text x="629" y="70" text-anchor="middle">planejador &amp;</text><text x="629" y="86" text-anchor="middle">loop</text>
+        <rect x="720" y="48" width="150" height="52" rx="0" fill="#F5F5F2" stroke="rgba(17,17,17,.2)"></rect><text x="795" y="70" text-anchor="middle" fill="#8B8B85">autorização</text><text x="795" y="86" text-anchor="middle" fill="#8B8B85"><br></text>
+        <rect x="886" y="48" width="150" height="52" rx="0" fill="#F5F5F2" stroke="rgba(224,58,0,.45)"></rect><text x="961" y="70" text-anchor="middle">admission</text><text x="961" y="86" text-anchor="middle" fill="#8B8B85">no loop</text>
+      </g>
+      <g font-size="11.5" fill="#8B8B85">
+        <line x1="250" y1="116" x2="250" y2="168" stroke="#E03A00" stroke-width="1.6" marker-end="url(#arA)"></line>
+        <text x="262" y="146" fill="#E03A00">contratos ↓</text>
+        <line x1="840" y1="168" x2="840" y2="116" stroke="#8B8B85" stroke-width="1.6" marker-end="url(#ar)"></line>
+        <text x="852" y="146">eventos ↑</text>
+      </g>
+      <g font-size="15" fill="#111111">
+        <rect x="92" y="172" width="270" height="56" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.3)"></rect><text x="227" y="196" text-anchor="middle">harness A (Claude Code)</text><text x="227" y="215" text-anchor="middle" fill="#8B8B85" font-size="11.5">sessão · sessão · sessão</text>
+        <rect x="415" y="172" width="270" height="56" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.3)"></rect><text x="550" y="196" text-anchor="middle">harness B (Codex)</text><text x="550" y="215" text-anchor="middle" fill="#8B8B85" font-size="11.5">sessão · sessão</text>
+        <rect x="738" y="172" width="270" height="56" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.3)"></rect><text x="873" y="196" text-anchor="middle">agentes próprios de SDLC</text><text x="873" y="215" text-anchor="middle" fill="#8B8B85" font-size="11.5">via adaptadores</text>
+      </g>
+      <rect x="92" y="248" width="916" height="42" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.3)"></rect>
+      <text x="550" y="274" text-anchor="middle" fill="#494946" font-size="12.5">PLANO DE DADOS</text>
+      <g stroke="#8B8B85" stroke-width="1.3"><line x1="227" y1="228" x2="227" y2="244" marker-end="url(#ar)"></line><line x1="550" y1="228" x2="550" y2="244" marker-end="url(#ar)"></line><line x1="873" y1="228" x2="873" y2="244" marker-end="url(#ar)"></line></g>
+    </svg>
+    </div>
+    <div class="card" style="margin-top:12px;border-color:rgba(224,58,0,.4);padding:16px 22px"><p style="font-size:19px"><span style="font:500 11px/1 var(--mono);letter-spacing:.16em;color:var(--amber)">repositório compartilhado · CI · artefatos · checagens em cada merge</span></p><p style="font-size:19px"><b style="color:var(--ink)"><span style="color:var(--amber)">NOSSO EXEMPLO ·&nbsp;</span>“burst-guard”</b> <span style="color:var(--ink2)">: impedir que um tenant barulhento derrube a API para todos.</span></p></div>
+  </div>
+</section>
+
+<!-- S6 · THE LOG -->
+<section class="slide" data-title="O log" data-notes="[4:25] Cada tarefa deixa um log cronológico: contrato criado, leituras, edições, testes, crítica, correção, aprovação e resultado. O log é append-only: novos fatos são acrescentados e os anteriores não são reescritos. Os dashboards são derivados dele. Isso preserva a diferença entre o que o agente fez inicialmente e o que aconteceu depois das intervenções. Sem essa distinção, qualidade corrigida pode ser confundida com competência do agente.">
+  <span class="crumb"><b>I · O SISTEMA</b> · O LOG</span>
+  <span class="ctag">event sourcing</span>
+  <div class="body">
+    <h2>Uma tarefa, um log: tudo que “burst-guard” fez</h2>
+    <div class="svgwrap" style="margin:16px 0 8px">
+    <svg viewBox="0 0 1100 190" width="1096" aria-label="Linha do tempo de eventos do burst-guard">
+      <defs><marker id="ar6" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#8B8B85"></path></marker></defs>
+      <line x1="20" y1="95" x2="1080" y2="95" stroke="#C9C9C3" stroke-width="1.6" marker-end="url(#ar6)"></line>
+      <g font-size="13.5">
+        <circle cx="60" cy="95" r="5.5" fill="#E03A00"></circle><text x="60" y="58" text-anchor="middle" fill="#E03A00">contrato criado</text><text x="60" y="74" text-anchor="middle" fill="#8B8B85">t tamanho declarado</text>
+        <circle cx="155" cy="95" r="5.5" fill="#494946"></circle><text x="155" y="124" text-anchor="middle" fill="#494946">despachada</text><text x="155" y="140" text-anchor="middle" fill="#8B8B85">via Claude Code</text>
+        <circle cx="250" cy="95" r="5.5" fill="#494946"></circle><text x="250" y="58" text-anchor="middle" fill="#494946">leituras ×23</text><text x="250" y="74" text-anchor="middle" fill="#8B8B85">contexto</text>
+        <circle cx="345" cy="95" r="5.5" fill="#494946"></circle><text x="345" y="124" text-anchor="middle" fill="#494946">edições ×14</text><text x="345" y="140" text-anchor="middle" fill="#8B8B85">implementação</text>
+        <circle cx="440" cy="95" r="5.5" fill="#494946"></circle><text x="440" y="58" text-anchor="middle" fill="#494946">testes rodam</text><text x="440" y="74" text-anchor="middle" fill="#B42318">2 falhando</text>
+        <circle cx="535" cy="95" r="5.5" fill="#E03A00"></circle><text x="535" y="124" text-anchor="middle" fill="#E03A00">achado do agente crítico</text><text x="535" y="140" text-anchor="middle" fill="#8B8B85">um caso esquecido</text>
+        <circle cx="630" cy="95" r="5.5" fill="#E03A00"></circle><text x="630" y="58" text-anchor="middle" fill="#E03A00">correção aplicada</text><text x="630" y="74" text-anchor="middle" fill="#8B8B85">retry</text>
+        <circle cx="725" cy="95" r="5.5" fill="#494946"></circle><text x="725" y="124" text-anchor="middle" fill="#494946">testes rodam</text><text x="725" y="140" text-anchor="middle" fill="#15803D">tudo verde</text>
+        <circle cx="820" cy="95" r="5.5" fill="#494946"></circle><text x="820" y="58" text-anchor="middle" fill="#494946">PR aberto</text><text x="820" y="74" text-anchor="middle" fill="#8B8B85">diff + evidência</text>
+        <circle cx="915" cy="95" r="5.5" fill="#E03A00"></circle><text x="915" y="124" text-anchor="middle" fill="#E03A00">humano aprova</text><text x="915" y="140" text-anchor="middle" fill="#8B8B85">merge feito</text>
+        <circle cx="1010" cy="95" r="5.5" fill="#E03A00"></circle><text x="1010" y="58" text-anchor="middle" fill="#E03A00">resultado avaliado</text><text x="1010" y="74" text-anchor="middle" fill="#8B8B85">dano: menor</text>
+      </g>
+    </svg>
+    </div>
+    <ul class="list">
+      <li>Append-only: cada evento tipado, com timestamp, atribuído. <b>Dashboards são computados a partir dele.</b></li>
+      <li>Se não está no log, não aconteceu.</li>
+      <li>Um incidente dá replay passo a passo, uma semana depois.</li>
+    </ul>
+    <p class="kicker">Este log é <span style="color:var(--amber)">o conjunto de dados</span> do Ato III.</p>
+  </div>
+</section>
+
+<!-- S7 · THE CONTRACT -->
+<section class="slide" data-title="O contrato" data-notes="[5:00] Antes da execução, cada tarefa recebe um contrato: objetivo, critérios de conclusão, escopo de leitura e escrita, nível de autonomia e tamanho estimado. Esses campos servem a dois propósitos. Eles limitam o que o agente pode fazer e fornecem sinais de risco conhecidos antes do trabalho começar. O tamanho declarado reaparecerá nos dados como um sinal simples e útil.">
+  <span class="crumb"><b>I · O SISTEMA</b> · O CONTRATO</span>
+  <span class="ctag">design by contract</span>
+  <div class="body">
+    <h2>Toda tarefa começa como um contrato escrito</h2>
+    <div class="cols" style="margin-block:auto;grid-template-columns:1.05fr .95fr">
+      <div class="contract" style="padding:24px 28px">
+        <span class="k">tarefa:</span> <span class="v">burst-guard</span><br>
+        <span class="k">objetivo:</span> <span class="v">rate limiting por tenant na API pública</span><br>
+        <span class="k">pronto quando:</span> <span class="v">429 ao estourar · config por tenant · docs</span><br>
+        <span class="k">pode ler:</span> <span class="v">api/gateway/** · docs/limits.md</span><br>
+        <span class="k">pode escrever:</span> <span class="v">api/gateway/limits/**</span><br>
+        <span class="k">autonomia:</span> <span class="v">implementa + abre PR · merge segue humano</span><br>
+        <span class="hl">tamanho declarado: M</span>
+      </div>
+      <ul class="list tight" style="align-self:center">
+        <li>O&nbsp; prompt é um ponteiro para este contrato.</li>
+        <li>Ele não muda enquanto a tarefa roda.</li>
+        <li>Áreas de escrita nunca se sobrepõem; agentes paralelos não colidem.</li>
+        <li><b style="color:var(--amber)">O tamanho é declarado antes de existir código.</b></li>
+      </ul>
+    </div>
+    <p class="kicker">Fixado de antemão: o que foi pedido, a quem, com quais limites.</p>
+  </div>
+</section>
+
+<!-- WAVES · WORK IS A GRAPH -->
+<section class="slide" data-title="Trabalho é um grafo" data-notes="[5:35] As tarefas não formam apenas uma lista; formam um grafo de dependências. Tudo o que tem insumos prontos pode rodar em paralelo, desde que não haja conflito de escrita e que exista capacidade de revisão. A topologia do grafo importa porque ela determina como erros se propagam. Uma cadeia acumula degradação; um fan-out replica um erro para vários ramos; um merge concentra decisões.">
+  <span class="crumb"><b>I · O SISTEMA</b> · O CRONOGRAMA</span>
+  <span class="ctag">directly-follows graph (DFG)</span>
+  <div class="body">
+    <h2>O trabalho forma um grafo de dependências</h2>
+    <div class="svgwrap" style="margin:12px 0 10px">
+    <svg viewBox="0 0 1100 312" width="1096" aria-label="Grafo de dependências das tarefas dividido em três ondas">
+      <defs><marker id="arW" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#8B8B85"></path></marker></defs>
+      <rect x="60" y="34" width="260" height="256" rx="0" fill="rgba(17,17,17,.03)"></rect>
+      <rect x="430" y="34" width="260" height="256" rx="0" fill="rgba(224,58,0,.09)"></rect>
+      <rect x="800" y="34" width="260" height="256" rx="0" fill="rgba(17,17,17,.03)"></rect>
+      <g font-size="14" fill="#8B8B85">
+        <text x="190" y="22" text-anchor="middle">onda 1 · pronta agora</text>
+        <text x="560" y="22" text-anchor="middle" fill="#E03A00">onda 2 · após a onda 1</text>
+        <text x="930" y="22" text-anchor="middle">onda 3</text>
+      </g>
+      <g font-size="15" fill="#111111">
+        <rect x="115" y="60" width="150" height="42" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="190" y="86" text-anchor="middle">quota-ledger</text>
+        <rect x="115" y="148" width="150" height="42" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="190" y="174" text-anchor="middle">tenant-schema</text>
+        <rect x="115" y="236" width="150" height="42" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="190" y="262" text-anchor="middle">sdk-bump</text>
+        <rect x="485" y="44" width="150" height="42" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="560" y="70" text-anchor="middle">usage-meter</text>
+        <rect x="485" y="118" width="150" height="42" rx="0" fill="#FFFFFF" stroke="rgba(224,58,0,.7)" stroke-width="1.8"></rect><text x="560" y="144" text-anchor="middle" fill="#E03A00">burst-guard</text>
+        <rect x="485" y="192" width="150" height="42" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="560" y="218" text-anchor="middle">retry-budget</text>
+        <rect x="485" y="248" width="150" height="42" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="560" y="274" text-anchor="middle">rate-docs</text>
+        <rect x="855" y="100" width="150" height="42" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="930" y="126" text-anchor="middle">canary-rollout</text>
+        <rect x="855" y="204" width="150" height="42" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="930" y="230" text-anchor="middle">status-page</text>
+      </g>
+      <g stroke="#8B8B85" stroke-width="1.4" fill="none">
+        <line x1="265" y1="81" x2="481" y2="65" marker-end="url(#arW)"></line>
+        <line x1="265" y1="81" x2="481" y2="139" marker-end="url(#arW)"></line>
+        <line x1="265" y1="169" x2="481" y2="139" marker-end="url(#arW)"></line>
+        <line x1="265" y1="169" x2="481" y2="213" marker-end="url(#arW)"></line>
+        <line x1="265" y1="257" x2="481" y2="213" marker-end="url(#arW)"></line>
+        <line x1="265" y1="257" x2="481" y2="269" marker-end="url(#arW)"></line>
+        <line x1="635" y1="65" x2="851" y2="121" marker-end="url(#arW)"></line>
+        <line x1="635" y1="139" x2="851" y2="121" marker-end="url(#arW)"></line>
+        <line x1="635" y1="213" x2="851" y2="225" marker-end="url(#arW)"></line>
+        <line x1="635" y1="269" x2="851" y2="225" marker-end="url(#arW)"></line>
+      </g>
+
+    </svg>
+    </div>
+    <ul class="list tight">
+      <li>Uma onda: toda tarefa com insumos prontos, tudo de uma vez.</li>
+      <li>O paralelismo esbarra em escrita sobreposta e capacidade de revisão. <b style="color:var(--amber)">Computação nunca limita.</b></li>
+    </ul>
+    <p class="kicker">O grafo de dependências limita a velocidade do trabalho.</p>
+  </div>
+</section>
+
+<!-- PLANNER · FACTORED MDP -->
+<section class="slide" data-title="Escolher o que roda quando" data-notes="[6:10] A cada resultado novo, o sistema precisa escolher a próxima ação: executar, revisar, repetir, reduzir escopo ou esperar. Isso é um problema de decisão sob incerteza. O estado contém estimativas de habilidade, estágio e risco. A política escolhe ações que procuram manter a qualidade e reduzir o custo de revisão. Na prática, isso evita um plano fixo: se a habilidade estimada cai, a cobertura aumenta; quando a evidência melhora, ela pode diminuir.">
+  <span class="crumb"><b>I · O SISTEMA</b> · O PLANEJADOR</span>
+  <span class="ctag">mdp fatorado · rddl</span>
+  <div class="body">
+    <h2>Escolher o que roda quando é um problema de decisão</h2>
+    <div class="cols" style="margin-top:12px;grid-template-columns:1.1fr .9fr">
+      <div>
+        <div class="contract" style="font-size:15.5px;line-height:2">
+          <span class="k">// o mundo do planejador, em RDDL</span><br>
+          <span class="v">stage(t) : {intake, build, ship, done};</span>&nbsp;&nbsp;<span class="hl">// variáveis por tarefa</span><br>
+          <span class="v">skill(t) : real;&nbsp;&nbsp;dispatch(t), review(t) : action;</span><br>
+          <span class="v">stage’(t) = if dispatch(t)</span>&nbsp;&nbsp;<span class="hl">// despacho: uma aposta com probabilidades conhecidas</span><br>
+          <span class="v">&nbsp;&nbsp;then Discrete(done: skill(t), build: 1−skill(t)) else stage(t);</span><br>
+          <span class="k">// atualização do lab: skill 0.78→0.70 ⇒ coverage 0.90→1.00</span><br>
+          <span class="hl" style="font-weight:600">reward = Σ<sub>t</sub> [ quality(t) − λ·review(t) ];&nbsp;&nbsp;// a tese</span>
+        </div>
+      </div>
+      <ul class="list tight" style="align-self:center">
+        <li>O estado é um punhado de variáveis por tarefa e por agente: <b>stage, tamanho declarado, habilidade estimada, revisão devida</b>.</li>
+        <li>O próximo valor de cada variável depende de poucos pais. A recompensa soma por tarefa.</li>
+        <li>Um solver devolve uma <b>política</b>: para cada estado, a próxima ação, recomputada a cada onda.</li>
+        <li>Resultados fora da previsão alimentam a próxima onda por construção.</li>
+      </ul>
+    </div>
+    <p class="kicker">O grafo e os escopos de escrita são restrições duras. <span style="color:var(--amber)">A política escolhe dentro delas.</span></p>
+  </div>
+  <div class="foot"><span>MDPs fatorados: Boutilier et al. · RDDL: Sanner</span></div>
+</section>
+
+<!-- DBN · THE PLANNER'S WORLD AS A BAYES NET -->
+<section class="slide" data-title="O modelo de transição como rede de Bayes" data-notes="[6:50] Esta figura mostra o mesmo modelo de decisão como uma rede de dependências probabilísticas. Um resultado revisado atualiza a estimativa da habilidade que o produziu; essa estimativa modifica a previsão das tarefas seguintes. O benefício da figura é tornar explícito o que depende de quê. Backlog, por exemplo, informa capacidade operacional, mas não prova qualidade.">
+  <span class="crumb"><b>I · O SISTEMA</b> · O PLANEJADOR, FORMALMENTE</span>
+  <span class="ctag">rede de bayes dinâmica (2tbn)</span>
+  <div class="body">
+    <h2>O modelo de transição, desenhado como rede de Bayes</h2>
+    <div class="cols" style="grid-template-columns:1.02fr .98fr;align-items:center;margin-top:2px">
+      <div>
+        <svg viewBox="0 0 660 380" width="620" aria-label="Rede bayesiana de duas fatias temporais do problema de planejamento">
+          <defs><marker id="arB" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#8B8B85"></path></marker>
+          <marker id="arBA" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#E03A00"></path></marker></defs>
+          <rect x="14" y="52" width="452" height="300" rx="0" fill="none" stroke="rgba(17,17,17,.35)" stroke-dasharray="7 6"></rect>
+          <text x="14" y="368" fill="#8B8B85" font-size="12">plate: uma cópia por tarefa</text>
+          <text x="120" y="44" text-anchor="middle" fill="#6E6E68" font-size="14">fatia t</text>
+          <text x="340" y="44" text-anchor="middle" fill="#6E6E68" font-size="14">fatia t+1</text>
+          <rect x="176" y="64" width="168" height="44" rx="0" fill="rgba(224,58,0,.08)" stroke="#E03A00" stroke-width="1.4"></rect>
+          <text x="260" y="83" text-anchor="middle" fill="#E03A00" font-size="15">ação aₜ</text>
+          <text x="260" y="100" text-anchor="middle" fill="#494946" font-size="11.5">dispatch·revisar·adiar</text>
+          <g fill="#FFFFFF" stroke="rgba(17,17,17,.5)" stroke-width="1.3">
+            <ellipse cx="120" cy="150" rx="54" ry="25"></ellipse><ellipse cx="120" cy="230" rx="54" ry="25"></ellipse><ellipse cx="120" cy="310" rx="54" ry="25"></ellipse>
+            <ellipse cx="340" cy="150" rx="54" ry="25"></ellipse><ellipse cx="340" cy="230" rx="54" ry="25"></ellipse><ellipse cx="340" cy="310" rx="54" ry="25"></ellipse>
+          </g>
+          <g font-size="15" fill="#111111" text-anchor="middle">
+            <text x="120" y="155">stage</text><text x="120" y="235">skill</text><text x="120" y="315">rev.&nbsp;devida</text>
+            <text x="340" y="155">stage′</text><text x="340" y="235">skill′</text><text x="340" y="315">devida′</text>
+          </g>
+          <g stroke="#8B8B85" stroke-width="1.4" fill="none">
+            <line x1="174" y1="150" x2="282" y2="150" marker-end="url(#arB)"></line>
+            <line x1="166" y1="214" x2="286" y2="162" marker-end="url(#arB)"></line>
+            <line x1="174" y1="230" x2="282" y2="230" marker-end="url(#arB)"></line>
+            <line x1="174" y1="310" x2="282" y2="310" marker-end="url(#arB)"></line>
+          </g>
+          <g stroke="#E03A00" stroke-width="1.4" fill="none">
+            <line x1="282" y1="108" x2="324" y2="128" marker-end="url(#arBA)"></line>
+            <path d="M344 98 C 455 140 455 250 390 300" marker-end="url(#arBA)"></path>
+            <path d="M344 84 C 490 84 545 130 560 162" marker-end="url(#arBA)"></path>
+          </g>
+          <text x="474" y="72" fill="#E03A00" font-size="13">custo da revisão</text>
+          <line x1="394" y1="155" x2="542" y2="182" stroke="#8B8B85" stroke-width="1.4" marker-end="url(#arB)"></line>
+          <rect x="547" y="167" width="46" height="46" rx="0" fill="rgba(224,58,0,.08)" stroke="#E03A00" stroke-width="1.4" transform="rotate(45 570 190)"></rect>
+          <text x="570" y="198" text-anchor="middle" fill="#E03A00" font-size="18">U</text>
+          <text x="570" y="246" text-anchor="middle" fill="#494946" font-size="13.5">qualidade − λ·revisão</text>
+        </svg>
+      </div>
+      <div>
+        <ul class="list tight" style="font-size:19px;gap:11px">
+          <li><b>Duas fatias de tempo. Uma seta por dependência.</b></li>
+          <li>Um resultado revisado atualiza a <b>skill</b>; a skill reprecifica as tarefas abertas do agente.</li>
+          <li><b>Revisão devida não tem seta para skill:</b> backlog não diz nada sobre qualidade.</li>
+          <li>Poucos pais por variável: tabelas pequenas, planejamento barato.</li>
+        </ul>
+        <div class="eq" style="font-size:14.5px;margin:10px 0;padding:10px 14px">P(s′ | s, a) = Π<sub>i</sub> P(s<sub>i</sub>′ | parents(s<sub>i</sub>′), a)</div>
+        <ul class="list tight" style="font-size:19px">
+          <li><b>Desenrolada para frente, planeja a onda. Condicionada no log, estima habilidade e deriva.</b></li>
+        </ul>
+      </div>
+    </div>
+    <p class="kicker">Um diagrama, duas direções: <span style="color:var(--amber)">prevê para frente, aprende para trás.</span></p>
+  </div>
+  <div class="foot"><span>Dean &amp; Kanazawa · Boutilier et al.</span></div>
+</section>
+
+<!-- S8 · THE CHECKS -->
+<section class="slide" data-title="As checagens" data-notes="[7:15] Quando uma saída volta, ela passa primeiro por checagens automáticas, depois por críticos especializados e, quando necessário, por uma pessoa. O humano não recebe apenas uma resposta: recebe evidência, como testes falhando, critérios violados e a correção proposta. Um erro encontrado deve se tornar um teste ou critério reutilizável. Isso reduz a necessidade de repetir julgamento humano sobre o mesmo tipo de falha.">
+  <span class="crumb"><b>I · O SISTEMA</b> · AS CHECAGENS</span>
+  <span class="ctag">defesa em profundidade</span>
+  <div class="body">
+    <h2>Três camadas de checagens, depois um humano</h2>
+    <div class="svgwrap" style="margin-block:auto">
+    <svg viewBox="0 0 1100 152" width="1096" aria-label="Pipeline de checagens">
+      <defs><marker id="ar2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#8B8B85"></path></marker><marker id="arA2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#E03A00"></path></marker></defs>
+      <g font-size="15" fill="#111111">
+        <rect x="10" y="30" width="150" height="60" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.3)"></rect><text x="85" y="56" text-anchor="middle">saída do agente</text><text x="85" y="74" text-anchor="middle" fill="#8B8B85" font-size="11">diff + evidência</text>
+        <rect x="216" y="30" width="180" height="60" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.3)"></rect><text x="306" y="56" text-anchor="middle">checagens autom.</text><text x="306" y="74" text-anchor="middle" fill="#8B8B85" font-size="11">testes·análise estática</text>
+        <rect x="452" y="30" width="180" height="60" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.3)"></rect><text x="542" y="56" text-anchor="middle">dois críticos</text><text x="542" y="74" text-anchor="middle" fill="#8B8B85" font-size="13">bugs·premissas·contexto</text>
+        <rect x="688" y="30" width="180" height="60" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.3)"></rect><text x="778" y="56" text-anchor="middle">humano</text><text x="778" y="74" text-anchor="middle" fill="#8B8B85" font-size="11">pausa registrada</text>
+        <rect x="924" y="30" width="160" height="60" rx="0" fill="#FFFFFF" stroke="rgba(224,58,0,.55)"></rect><text x="1004" y="56" text-anchor="middle" fill="#E03A00">merge</text><text x="1004" y="74" text-anchor="middle" fill="#8B8B85" font-size="11">com evidência</text>
+      </g>
+      <g stroke="#8B8B85" stroke-width="1.5">
+        <line x1="160" y1="60" x2="212" y2="60" marker-end="url(#ar2)"></line><line x1="396" y1="60" x2="448" y2="60" marker-end="url(#ar2)"></line>
+        <line x1="632" y1="60" x2="684" y2="60" marker-end="url(#ar2)"></line><line x1="868" y1="60" x2="920" y2="60" marker-end="url(#ar2)"></line>
+      </g>
+      <path d="M542 94 C 500 124 180 126 90 94" fill="none" stroke="#E03A00" stroke-width="1.4" stroke-dasharray="5 6" marker-end="url(#arA2)"></path>
+      <text x="330" y="146" fill="#E03A00" font-size="13.5">retries limitados, depois escala para um humano</text>
+    </svg>
+    </div>
+    <div class="ep">
+      <b>checagens</b>&nbsp;&nbsp;testes · estática · CI <span class="g">→ passou</span><br>
+      <b>crítico</b>&nbsp;&nbsp;<span class="a">“limites são por tenant; os testes só cobrem o tenant padrão”</span> → detectado<br>
+      <b>retry</b>&nbsp;&nbsp;testes de tenant adicionados <span class="g">→ verde</span>&nbsp;&nbsp;·&nbsp;&nbsp;<b>humano</b>&nbsp;&nbsp;aprova em 30 s <span class="g">→ merge feito</span>
+    </div>
+    <p class="kicker">Cada erro encontrado vira <span style="color:var(--amber)">uma nova checagem automática</span>.</p>
+  </div>
+</section>
+
+<!-- LOOP · RUNS ALONE -->
+<section class="slide" data-title="O loop que roda sozinho" data-notes="[7:55] O loop completo transforma intenção em tarefas, admite apenas o trabalho permitido, executa, avalia e atualiza o plano. Autonomia aqui não significa ausência de controle. Significa que as regras de admissão, pausa, escalonamento e registro são executáveis e permanecem ativas sem acompanhamento contínuo.">
+  <span class="crumb"><b>I · O SISTEMA</b> · O LOOP</span>
+  <span class="ctag">loop autonômico (MAPE-K)</span>
+  <div class="body">
+    <h2>O loop que roda sozinho</h2>
+    <div class="cols" style="margin-top:10px;grid-template-columns:1.05fr .95fr;align-items:center">
+      <div>
+        <svg viewBox="0 0 560 244" width="540" aria-label="Loop autônomo de entrega">
+          <defs><marker id="arL" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#E03A00"></path></marker></defs>
+          <g font-size="14.5" fill="#111111">
+            <rect x="20" y="20" width="118" height="44" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="79" y="47" text-anchor="middle">intake</text>
+            <rect x="158" y="20" width="118" height="44" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="217" y="47" text-anchor="middle">admission</text>
+            <rect x="296" y="20" width="118" height="44" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="355" y="47" text-anchor="middle">planejar ondas</text>
+            <rect x="434" y="20" width="118" height="44" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="493" y="47" text-anchor="middle">dispatch</text>
+            <rect x="434" y="170" width="118" height="44" rx="0" fill="#FFFFFF" stroke="rgba(224,58,0,.5)"></rect><text x="493" y="197" text-anchor="middle">checagens</text>
+            <rect x="227" y="170" width="118" height="44" rx="0" fill="#FFFFFF" stroke="rgba(224,58,0,.5)"></rect><text x="286" y="197" text-anchor="middle">merge</text>
+            <rect x="20" y="170" width="118" height="44" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="79" y="197" text-anchor="middle">retrospectiva</text>
+          </g>
+          <g stroke="#E03A00" stroke-width="1.5" fill="none">
+            <line x1="138" y1="42" x2="154" y2="42" marker-end="url(#arL)"></line>
+            <line x1="276" y1="42" x2="292" y2="42" marker-end="url(#arL)"></line>
+            <line x1="414" y1="42" x2="430" y2="42" marker-end="url(#arL)"></line>
+            <line x1="493" y1="64" x2="493" y2="166" marker-end="url(#arL)"></line>
+            <line x1="430" y1="192" x2="349" y2="192" marker-end="url(#arL)"></line>
+            <line x1="223" y1="192" x2="142" y2="192" marker-end="url(#arL)"></line>
+            <line x1="79" y1="170" x2="79" y2="68" marker-end="url(#arL)"></line>
+          </g>
+          <circle cx="493" cy="170" r="5" fill="#E03A00"></circle>
+          <circle cx="286" cy="170" r="5" fill="#E03A00"></circle>
+          <text x="286" y="128" text-anchor="middle" fill="#8B8B85" font-size="13.5">nenhum despachante humano</text>
+          <text x="286" y="236" text-anchor="middle" fill="#494946" font-size="13.5">pontos laranja: os únicos lugares em que um humano pode pausá-lo</text>
+        </svg>
+      </div>
+      <div>
+        <div class="stat" style="margin-bottom:14px"><div class="v" style="color:var(--amber);font-size:64px">54+ h</div><div class="k">execução mais longa, totalmente autônoma</div></div>
+        <ul class="list tight">
+          <li><b>Intake</b> lê os roadmaps e cria tarefas candidatas que já nascem como contratos.</li>
+          <li><b>Admission</b> controla cada candidata: dependências, áreas de escrita, capacidade e política. Veredictos: <b>aceitar · reduzir · endurecer · adiar · rejeitar</b>.</li>
+          <li>Cada handoff vira regra. Humanos mantêm os pontos de pausa.</li>
+          <li>O loop pode se pausar. Nunca pode parar em silêncio.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="kicker">O roadmap dá intenção. As checagens dão confiança. <span style="color:var(--amber)">Ninguém vigia o loop.</span></p>
+  </div>
+</section>
+
+<!-- S9 · FIVE NUMBERS + THE SURPRISE -->
+<section class="slide" data-title="Cinco números por tarefa" data-notes="[8:25] Para cada tarefa, precisamos de cinco números: qualidade antes da revisão, qualidade depois da revisão, tamanho, revisão recebida e dano quando há falha. Estes números conectam operação e teoria. Para o público, este é o primeiro resultado aplicável: se o seu sistema só registra a resposta final, ele ainda não tem os dados necessários para decidir quanto supervisionar.">
+  <span class="crumb"><b>I · O SISTEMA</b> · O QUE ELE TE DÁ</span>
+  <div class="body">
+    <h2>Cinco números por tarefa, e uma surpresa</h2>
+    <div class="cols" style="margin-block:auto;grid-template-columns:1.05fr .95fr">
+      <table class="mini" style="font-size:21px">
+        <tbody><tr><th>número</th><th>medido em</th></tr>
+        <tr><td>feito certo, <b>antes</b> da revisão</td><td>primeira passada</td></tr>
+        <tr><td>feito certo, <b>depois</b> da revisão</td><td>merge</td></tr>
+        <tr><td>tamanho declarado</td><td>planejamento</td></tr>
+        <tr><td>revisão recebida</td><td>checagens &amp; pausas</td></tr>
+        <tr><td>dano quando falhou</td><td>retrospectiva</td></tr>
+      </tbody></table>
+      <div class="card" style="border-color:rgba(224,58,0,.4);align-self:center">
+        <p style="font-size:23px;line-height:1.6"><span style="font-size: 26px; font-weight: 600; letter-spacing: -0.01em; background-color: rgb(255, 255, 255); color: rgb(17, 17, 17);">O tempo desse revisor é bem gasto? Isso exige um frame teórico.</span></p></div></div>
+  </div>
+</section>
+
+<!-- S10 · DIVIDER II -->
+<section class="slide divider" data-title="II · A Teoria" data-notes="[8:55] Agora podemos formular o problema.">
+  <div class="n">II</div>
+  <div class="t">A Teoria</div>
+  <p class="th">Qual é a <span style="color:var(--amber)">menor revisão</span> que mantém a qualidade?</p>
+  <p class="sub"><b>Supervisão mínima suficiente (MSO)</b>. Uma fórmula, usada de quatro jeitos. arXiv:2606.15563.</p>
+</section>
+
+<!-- MSO · IN ONE PICTURE -->
+<section class="slide" data-title="MSO em uma figura" data-notes="[9:00] Supervisão mínima suficiente é o menor nível de revisão que mantém a qualidade entregue acima de uma meta. No eixo horizontal está o orçamento de revisão; no vertical, a qualidade. No início, revisar compra bastante melhoria. Depois, os ganhos diminuem. O ponto que procuramos é o primeiro cruzamento da meta. Antes dele, a revisão é insuficiente. Depois dele, estamos gastando revisão sem ganho relevante.">
+  <span class="crumb"><b>II · A TEORIA</b> · O OBJETIVO</span>
+  <span class="ctag">supervisão mínima suficiente</span>
+  <div class="body">
+    <h2>Supervisão mínima suficiente, em uma figura</h2>
+    <div class="cols" style="grid-template-columns:1.2fr .8fr;align-items:center;margin-top:4px">
+      <div>
+        <svg viewBox="0 0 680 350" width="700" aria-label="Qualidade entregue versus orçamento de revisão: o ponto mínimo suficiente">
+          <rect x="396" y="60" width="224" height="250" fill="rgba(17,17,17,.05)"></rect>
+          <g font-size="14" fill="#8B8B85">
+            <text x="200" y="256" text-anchor="middle">revisão insuficiente</text>
+            <text x="200" y="272" text-anchor="middle">abaixo da meta</text>
+            <text x="508" y="112" text-anchor="middle">revisão excessiva</text>
+            <text x="508" y="128" text-anchor="middle">a qualidade quase não muda</text>
+          </g>
+          <line x1="60" y1="310" x2="620" y2="310" stroke="#111111" stroke-width="1.5"></line>
+          <g font-size="14" fill="#6E6E68">
+            <text x="620" y="333" text-anchor="end">orçamento total de revisão →</text>
+            <text x="18" y="185" transform="rotate(-90 18 185)" text-anchor="middle">qualidade entregue</text>
+            <text x="52" y="291" text-anchor="end">45%</text>
+            <text x="52" y="88" text-anchor="end" fill="#E03A00">90%</text>
+          </g>
+          <line x1="60" y1="83" x2="620" y2="83" stroke="#E03A00" stroke-width="1.2" stroke-dasharray="5 5"></line>
+          <text x="70" y="72" fill="#E03A00" font-size="12">a meta de qualidade</text>
+          <polyline points="60,287 130,210 200,155 270,119 340,96 396,83 460,74 530,68 620,65" fill="none" stroke="#111111" stroke-width="2.5" stroke-linejoin="round"></polyline>
+          <line x1="396" y1="83" x2="396" y2="310" stroke="#E03A00" stroke-width="1.2" stroke-dasharray="4 5"></line>
+          <circle cx="396" cy="83" r="9" fill="#E03A00"></circle>
+          <text x="396" y="46" text-anchor="middle" fill="#E03A00" font-size="16" font-weight="600">o ponto mínimo suficiente</text>
+        </svg>
+      </div>
+      <div>
+        <div class="card" style="border-color:rgba(224,58,0,.4);margin-bottom:14px">
+          <p style="font-size:21px;line-height:1.6"><b style="color:var(--ink)">Suficiente</b>: qualidade entregue ≥ meta.<br><b style="color:var(--ink)">Mínima</b>: nem uma revisão a mais.</p>
+        </div>
+        <ul class="list tight">
+          <li>A revisão tem retornos decrescentes: os primeiros olhares compram mais.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="kicker">Gaste revisão até o ponto e então pare.</p>
+  </div>
+</section>
+
+<!-- S11 · THE FORMULA -->
+<section class="slide" data-title="A fórmula, em palavras" data-notes="[9:45] A equação mais simples separa quatro quantidades. Sigma raw é a fração correta antes da revisão. Alfa é a fração das tarefas que observamos. A capacidade de detecção é a fração dos erros revisados que percebemos. E a capacidade de correção é a fração dos erros detectados que realmente reparamos. A qualidade entregue é a qualidade inicial mais a parte dos erros restantes que foi observada, detectada e corrigida. Essa separação evita tratar revisão como uma única taxa opaca. Um avaliador pode detectar bem e corrigir mal, ou o contrário.">
+  <span class="crumb"><b>II · A TEORIA</b> · USO 1: PARA FRENTE</span>
+  <div class="body">
+    <h2>O que a revisão faz com a qualidade</h2>
+    <div style="margin-block:auto">
+      <div class="eq">depois <span class="m">=</span> antes <span class="m">+</span> (1 − antes) × <span class="a">olhou</span> × <span class="a">detectou</span> × <span class="a">corrigiu</span></div>
+      <div class="worked">o time de burst-guard, toda tarefa revisada:&nbsp;&nbsp;<b>0.45</b> + 0.55 × <b>0.80</b> × <b>0.85</b> ≈ <span class="res" style="font-size:30px;font-weight:700">0.82</span></div>
+    </div>
+    <div class="cols3" style="margin-top:36px">
+      <div class="card"><span class="tag">olhou</span><p style="font-size:17.5px">fração das tarefas que você revisa</p></div>
+      <div class="card"><span class="tag">detectou</span><p style="font-size:17.5px">erros que você nota quando olha</p></div>
+      <div class="card"><span class="tag">corrigiu</span><p style="font-size:17.5px">erros notados de fato reparados</p></div>
+    </div>
+    <p class="kicker">Três botões, todos mensuráveis a partir dos cinco números do log.</p>
+  </div>
+</section>
+
+<!-- S12 · MASKING -->
+<section class="slide" data-title="Mascaramento" data-notes="[10:45] Agora aparece o mascaramento. Três agentes podem entregar oitenta e dois por cento depois do pipeline, embora tenham competências iniciais muito diferentes. Se concedermos autonomia usando apenas a qualidade corrigida, autorizaremos agentes que dependem fortemente do revisor. Portanto, registre dois resultados: o que estava correto antes de qualquer intervenção e o que foi entregue ao usuário. O primeiro calibra confiança; o segundo protege o usuário.">
+  <span class="crumb"><b>II · A TEORIA</b> · USO 2: PARA TRÁS</span>
+  <span class="ctag">mascaramento</span>
+  <div class="body">
+    <h2>O dashboard diz 82%. Qual agente é esse?</h2>
+    <div class="cols" style="margin-block:auto;grid-template-columns:1.05fr .95fr">
+      <div>
+        <table class="mini" style="font-size:22px">
+          <tbody><tr><th>habilidade pré-revisão</th><th>qualidade da revisão</th><th>dashboard</th></tr>
+          <tr><td>82%</td><td>nenhuma necessária</td><td>82%</td></tr>
+          <tr><td style="color:var(--amber)">45%</td><td>detecta 80% · corrige 85%</td><td>82%</td></tr>
+          <tr><td style="color:var(--amber)">28%</td><td>detecta 86% · corrige 87%</td><td>82%</td></tr>
+        </tbody></table>
+        <p style="margin-top:18px;font-size:21px;color:var(--ink)">82 ÷ 45 ≈ <b style="color:var(--amber)">1.8× de bajulação</b>, medida em produção.</p>
+      </div>
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="stat"><div class="v" style="font-size:60px">+36%</div><div class="k">autonomia concedida a mais via dashboard</div></div>
+          <div class="stat"><div class="v" style="font-size:60px">31×</div><div class="k">erro possível da estimativa de habilidade</div></div>
+        </div>
+        <div class="card" style="margin-top:12px"><p style="font-size:17.5px">Registre <b style="color:var(--ink)">dois resultados por tarefa</b>: antes da revisão, depois da revisão.</p></div>
+        <div style="margin-top:12px"><span class="kill">✕ “Confiar no pipeline verde”</span></div>
+      </div>
+    </div>
+    <p class="kicker">O verde mede o workflow. Autonomia precisa do número pré-revisão.</p>
+  </div>
+</section><section class="slide" data-title="Onde a revisão paga" data-notes="[11:25] A revisão não produz o mesmo retorno em qualquer nível de habilidade. Quando o agente é muito fraco, corrigir frequentemente equivale a refazer a tarefa. Quando já é quase perfeito, a maioria das revisões não encontra nada. O retorno tende a ser maior na faixa intermediária, quando uma intervenção tem boa chance de transformar uma falha em sucesso. Na prática, o agente mais fraco nem sempre deve receber mais revisão; talvez deva receber uma tarefa menor ou não receber a delegação.">
+  <span class="crumb"><b>II · A TEORIA</b> · USO 3: NA MARGEM</span>
+  <span class="ctag">alocação marginal</span>
+  <div class="body">
+    <h2>A revisão paga mais em agentes quase bons</h2>
+    <div class="cols" style="grid-template-columns:1.25fr .75fr;align-items:center;margin-top:4px">
+      <div>
+        <svg viewBox="0 0 680 352" width="660" aria-label="Valor da revisão por habilidade do agente, com pico perto de 75%">
+          <rect x="60" y="60" width="196" height="240" fill="#101014"></rect>
+          <rect x="368" y="60" width="196" height="240" fill="rgba(224,58,0,.06)"></rect>
+          <g font-size="13.5" fill="#8B8B85">
+            <text x="158" y="82" text-anchor="middle">fraco demais</text>
+            <text x="158" y="98" text-anchor="middle">consertar = refazer</text>
+            <text x="440" y="176" text-anchor="middle" fill="#E03A00">ponto ideal</text>
+            <text x="596" y="236" text-anchor="end">quase perfeito</text>
+            <text x="596" y="252" text-anchor="end">amostragem</text>
+          </g>
+          <line x1="60" y1="300" x2="620" y2="300" stroke="#111111" stroke-width="1.5"></line>
+          <g font-size="12.5" fill="#6E6E68">
+            <text x="60" y="322" text-anchor="middle">0</text><text x="200" y="322" text-anchor="middle">25%</text>
+            <text x="340" y="322" text-anchor="middle">50%</text><text x="480" y="322" text-anchor="middle" fill="#E03A00">75%</text>
+            <text x="620" y="322" text-anchor="middle">100%</text>
+            <text x="620" y="345" text-anchor="end">habilidade do agente pré-revisão</text>
+            <text x="18" y="180" transform="rotate(-90 18 180)" text-anchor="middle">valor de uma olhada</text>
+          </g>
+          <polyline points="60,300 88,292 116,279 172,243 228,203 284,161 340,123 396,92 452,73 480,70 508,73 536,85 564,109 592,153 609,203 620,300" fill="none" stroke="#111111" stroke-width="2.5" stroke-linejoin="round"></polyline>
+          <line x1="480" y1="70" x2="480" y2="300" stroke="#E03A00" stroke-width="1.2" stroke-dasharray="4 5"></line>
+          <circle cx="480" cy="70" r="9" fill="#E03A00"></circle>
+          <text x="494" y="58" fill="#E03A00" font-size="22" font-weight="600">pico ≈ 75%</text>
+        </svg>
+      </div>
+      <div>
+        <ul class="list tight">
+          <li><b>Agente fraco:</b> reparar é refazer. Realoque.</li>
+          <li><b>Agente quase perfeito:</b> uma olhada raramente muda algo. Amostre.</li>
+          <li><b>No meio:</b> uma olhada costuma virar falha → passou. Gaste aqui.</li>
+        </ul>
+        <div style="margin-top:16px"><span class="kill">✕ “Vigiar o trabalho mais fraco”</span></div>
+      </div>
+    </div>
+    <div class="port">
+      <div class="p"><span class="s">97%</span><span class="d">amostragem</span></div>
+      <div class="p"><span class="s">88%</span><span class="d">leve</span></div>
+      <div class="p"><span class="s">74%</span><span class="d"><span class="a">mais revisão</span></span></div>
+      <div class="p"><span class="s">62%</span><span class="d"><span class="a">pesada</span></span></div>
+      <div class="p"><span class="s">41%</span><span class="d">encolha a tarefa</span></div>
+      <div class="p"><span class="s">22%</span><span class="d">não delegue</span></div>
+    </div>
+    <p class="kicker">Gaste cada olhada <span style="color:var(--amber)">onde ela compra mais qualidade</span>.</p>
+  </div>
+</section>
+
+<!-- S13 · WHERE REVIEW PAYS -->
+
+
+<!-- S14 · FEASIBILITY -->
+<section class="slide" data-title="Viabilidade" data-notes="[12:10] Antes de otimizar, precisamos verificar viabilidade. Neste exemplo, a meta é noventa por cento, o agente começa em quarenta e cinco, o revisor detecta oitenta por cento dos erros e corrige oitenta e cinco por cento do que detecta. A cobertura necessária resulta em cento e vinte por cento. Isso é impossível. Não há política de alocação capaz de compensar esse limite. As alternativas são melhorar o agente, reduzir a tarefa, fortalecer detecção ou correção, ou manter decisão humana. Esta verificação evita investir mais autonomia em um sistema que não pode atingir o contrato.">
+  <span class="crumb"><b>II · A TEORIA</b> · USO 4: NO LIMITE</span>
+  <div class="body">
+    <h2>Algumas metas são impossíveis em qualquer orçamento</h2>
+    <div class="cols" style="margin-block:8px 4px;grid-template-columns:1.1fr .9fr">
+      <div class="contract" style="font-size:16px;line-height:1.55">
+        <span class="k">meta 90% · agente em 45% · detecta 80% · corrige 85%</span><br>
+        lacuna a fechar:&nbsp; 0.90 − 0.45 <span class="k">=</span> 0.45<br>
+        cada revisão recupera:&nbsp; 0.55 × 0.80 × 0.85 <span class="k">=</span> 0.374<br>
+        0.45 ÷ 0.374 = <span class="hl" style="font-weight:700;font-size:22px">1.20 → revisar 120% das tarefas</span><br>
+        <span style="color:#B42318;font-weight:700;font-size:20px">✕ impossível: revisão sozinha não fecha a lacuna</span><br>
+        <span style="color:var(--ink)">meta de 80% → cobertura de 94%.</span>
+      </div>
+      <div style="align-self:center">
+        <p style="font:500 11px/1 var(--mono);letter-spacing:.16em;color:var(--amber);text-transform:uppercase;margin-bottom:12px">quando a matemática diz não</p>
+        <ul class="list tight">
+          <li>Encolher as tarefas</li>
+          <li>Testes &amp; críticos melhores</li>
+          <li>Loop de reparo melhor</li>
+          <li>Baixar a meta, ou manter um humano</li>
+        </ul>
+      </div>
+    </div>
+    <div class="cols" style="margin-top:8px">
+      <div class="card" style="padding:14px 18px"><p style="font-size:15.5px">Todo pipeline tem um <b style="color:var(--ink)">teto de qualidade</b>: metas acima dele falham em qualquer orçamento.</p></div>
+      <div class="card" style="padding:14px 18px"><p style="font-size:15.5px">Mais peças móveis → <b style="color:var(--ink)">autonomia segura mais curta</b>.</p></div>
+    </div>
+    <p class="kicker">“Isso pode rodar sozinho?” se resolve com uma divisão.</p>
+  </div>
+</section>
+
+<!-- MOTIFS · SHAPE ECONOMICS -->
+<section class="slide" data-title="Economia dos motifs" data-notes="[13:00] Até aqui calculamos uma tarefa isolada. Num workflow, a forma muda a economia. Em uma chain, erros acumulam com a profundidade e gates intermediários podem ser necessários. Em fan-out, o nó que alimenta vários ramos merece proteção porque uma falha contamina todos eles. Em diamond, ramos aparentemente independentes podem compartilhar a mesma fonte de erro. Em merge, uma revisão pode cobrir vários caminhos, mas também pode virar gargalo. O ponto prático é revisar pela propagação potencial da falha, e não apenas pela qualidade local do nó.">
+  <span class="crumb"><b>II · A TEORIA</b> · FORMAS</span>
+  <span class="ctag">motifs de workflow</span>
+  <div class="body">
+    <h2>A forma do workflow muda a matemática</h2>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:14px;flex:1"><div class="card" style="padding:18px 16px;display:flex;flex-direction:column"><span class="tag" style="font-size:13px">chain</span><div style="margin-top:10px"><svg viewBox="0 0 150 34" width="100%" aria-hidden="true"><g fill="#494946"><circle cx="15" cy="17" r="6"></circle><circle cx="55" cy="17" r="6"></circle><circle cx="95" cy="17" r="6"></circle><circle cx="135" cy="17" r="6"></circle></g><g stroke="#8B8B85" stroke-width="1.5"><line x1="21" y1="17" x2="49" y2="17"></line><line x1="61" y1="17" x2="89" y2="17"></line><line x1="101" y1="17" x2="129" y2="17"></line></g></svg></div><div style="margin-block:auto;padding:12px 0"><div style="font-size:52px;font-weight:220;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums">10</div><div style="font:500 11.5px/1.4 var(--mono);letter-spacing:.09em;color:var(--mut);text-transform:uppercase;margin-top:7px">chain mais funda no log</div></div><p style="font-size:16.5px;line-height:1.5">cinco passos de 90% → <b style="color:var(--ink)">59%</b><br><span style="color:var(--amber)">gate a cada passagem → 85%</span></p></div><div class="card" style="padding:18px 16px;display:flex;flex-direction:column"><span class="tag" style="font-size:13px">fan-out</span><div style="margin-top:10px"><svg viewBox="0 0 150 34" width="100%" aria-hidden="true"><g fill="#494946"><circle cx="15" cy="17" r="6"></circle><circle cx="135" cy="5" r="6"></circle><circle cx="135" cy="17" r="6"></circle><circle cx="135" cy="29" r="6"></circle></g><g stroke="#8B8B85" stroke-width="1.5"><line x1="21" y1="15" x2="129" y2="5"></line><line x1="21" y1="17" x2="129" y2="17"></line><line x1="21" y1="19" x2="129" y2="29"></line></g></svg></div><div style="margin-block:auto;padding:12px 0"><div style="font-size:52px;font-weight:220;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums">113</div><div style="font:500 11.5px/1.4 var(--mono);letter-spacing:.09em;color:var(--mut);text-transform:uppercase;margin-top:7px">fan-outs no log</div></div><p style="font-size:16.5px;line-height:1.5">4 ramos todos limpos: <b style="color:var(--ink)">66%</b><br><span style="color:var(--amber)">o dano fica em um ramo: amostre</span></p></div><div class="card" style="padding:18px 16px;display:flex;flex-direction:column;border-color:rgba(224,58,0,.45)"><span class="tag" style="font-size:13px">merge</span><div style="margin-top:10px"><svg viewBox="0 0 150 34" width="100%" aria-hidden="true"><g fill="#494946"><circle cx="15" cy="5" r="6"></circle><circle cx="15" cy="17" r="6"></circle><circle cx="15" cy="29" r="6"></circle></g><circle cx="135" cy="17" r="7" fill="#E03A00"></circle><g stroke="#8B8B85" stroke-width="1.5"><line x1="21" y1="5" x2="127" y2="15"></line><line x1="21" y1="17" x2="127" y2="17"></line><line x1="21" y1="29" x2="127" y2="19"></line></g></svg></div><div style="margin-block:auto;padding:12px 0"><div style="font-size:52px;font-weight:220;line-height:1;color:var(--amber);font-variant-numeric:tabular-nums">117</div><div style="font:500 11.5px/1.4 var(--mono);letter-spacing:.09em;color:var(--mut);text-transform:uppercase;margin-top:7px">merges no log</div></div><p style="font-size:16.5px;line-height:1.5">o risco se concentra aqui<br><span style="color:var(--amber)">uma olhada cobre todos os ramos</span></p></div><div class="card" style="padding:18px 16px;display:flex;flex-direction:column"><span class="tag" style="font-size:13px">diamond</span><div style="margin-top:10px"><svg viewBox="0 0 150 34" width="100%" aria-hidden="true"><g fill="#494946"><circle cx="15" cy="17" r="6"></circle><circle cx="75" cy="5" r="6"></circle><circle cx="75" cy="29" r="6"></circle></g><circle cx="135" cy="17" r="7" fill="#E03A00"></circle><g stroke="#8B8B85" stroke-width="1.5"><line x1="21" y1="15" x2="69" y2="6"></line><line x1="21" y1="19" x2="69" y2="28"></line><line x1="81" y1="6" x2="128" y2="15"></line><line x1="81" y1="28" x2="128" y2="19"></line></g></svg></div><div style="margin-block:auto;padding:12px 0"><div style="font-size:52px;font-weight:220;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums">65</div><div style="font:500 11.5px/1.4 var(--mono);letter-spacing:.09em;color:var(--mut);text-transform:uppercase;margin-top:7px">diamonds no log</div></div><p style="font-size:16.5px;line-height:1.5">um fan-out que precisa reconciliar<br><span style="color:var(--amber)">revise a junção, amostre os braços</span></p></div><div class="card" style="padding:18px 16px;display:flex;flex-direction:column"><span class="tag" style="font-size:13px">loop</span><div style="margin-top:10px"><svg viewBox="0 0 150 34" width="100%" aria-hidden="true"><circle cx="75" cy="17" r="6" fill="#494946"></circle><path d="M 90 8 A 18 14 0 1 1 90 26" fill="none" stroke="#8B8B85" stroke-width="1.5"></path><path d="M88 29 L96 26 L90 21 z" fill="#8B8B85"></path></svg></div><div style="margin-block:auto;padding:12px 0"><div style="font-size:21px;font-weight:600;line-height:1.3">a deriva se acumula por ciclo</div></div><p style="font-size:16.5px;line-height:1.5">o agente de longa duração<br><span style="color:var(--amber)">auditoria fixa a cada N ciclos</span></p></div></div>
+    <p class="kicker">A olhada de maior alavancagem num grafo fica no merge.</p>
+  </div>
+
+</section>
+
+<!-- REPAIR DEPTH · WHEN REPLAY PAYS -->
+<section class="slide" data-title="Profundidade de reparo: quando replay paga" data-notes="[13:50] Detectar uma falha não determina automaticamente a correção. Podemos apenas sinalizar, aplicar um patch, repetir o nó que falhou ou reconstruir desde uma origem anterior. Quanto mais profundo o replay, maior o custo e maior a chance de remover uma causa upstream. Portanto, cobertura e profundidade são decisões diferentes: revisão é paga em toda tarefa; replay é pago apenas quando uma falha é capturada.">
+  <span class="crumb"><b>II · A TEORIA</b> · PROFUNDIDADE DE REPARO</span>
+  <span class="ctag">profundidade de reparo</span>
+  <div class="body">
+    <h2>Cobertura se paga em toda tarefa; replay, só na captura.</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:8px 0 14px">
+      <div class="card" style="padding:13px 15px"><p style="font-size:16px"><b style="color:var(--ink)">Sinalizar e seguir</b> <span style="color:var(--mut)">· grátis</span><br><span style="font-size:14px">quando a precisão do crítico é baixa</span></p></div>
+      <div class="card" style="padding:13px 15px"><p style="font-size:16px"><b style="color:var(--ink)">Patch na saída</b> <span style="color:var(--mut)">· barato</span><br><span style="font-size:14px">fraco em defeitos herdados</span></p></div>
+      <div class="card" style="padding:13px 15px"><p style="font-size:16px"><b style="color:var(--ink)">Retry do passo</b> <span style="color:var(--mut)">· médio</span><br><span style="font-size:14px">funciona onde o defeito nasceu</span></p></div>
+      <div class="card" style="padding:13px 15px;border-color:rgba(224,58,0,.4)"><p style="font-size:16px"><b style="color:var(--amber)">Replay da raiz</b> <span style="color:var(--mut)">· caro</span><br><span style="font-size:14px">a única cura para cascatas</span></p></div>
+    </div>
+    <div class="cols" style="grid-template-columns:1.12fr .88fr;align-items:center">
+      <div>
+        <svg viewBox="0 0 620 250" width="600" aria-label="O valor do replay cai com a distância enquanto seu custo aumenta">
+          <line x1="52" y1="212" x2="596" y2="212" stroke="#111111" stroke-width="1.5"></line>
+          <g font-size="12" fill="#6E6E68">
+            <text x="112" y="234" text-anchor="middle">1 salto</text>
+            <text x="248" y="234" text-anchor="middle">2</text>
+            <text x="384" y="234" text-anchor="middle">3</text>
+            <text x="520" y="234" text-anchor="middle">4+</text>
+            <text x="596" y="248" text-anchor="end" fill="#8B8B85">quão atrás está a causa raiz</text>
+          </g>
+          <polyline points="112,58 248,104 384,140 520,167" fill="none" stroke="#E03A00" stroke-width="2.6"></polyline>
+          <polyline points="112,186 248,158 384,130 520,102" fill="none" stroke="#1D4ED8" stroke-width="2.6"></polyline>
+          <g font-size="12.5">
+            <circle cx="112" cy="58" r="4" fill="#E03A00"></circle><circle cx="248" cy="104" r="4" fill="#E03A00"></circle>
+            <circle cx="384" cy="140" r="4" fill="#E03A00"></circle><circle cx="520" cy="167" r="4" fill="#E03A00"></circle>
+            <circle cx="112" cy="186" r="4" fill="#1D4ED8"></circle><circle cx="248" cy="158" r="4" fill="#1D4ED8"></circle>
+            <circle cx="384" cy="130" r="4" fill="#1D4ED8"></circle><circle cx="520" cy="102" r="4" fill="#1D4ED8"></circle>
+            <text x="128" y="48" fill="#E03A00">valor do replay: decai</text>
+            <text x="128" y="200" fill="#1D4ED8">custo do replay: cresce</text>
+          </g>
+          <line x1="452" y1="30" x2="452" y2="212" stroke="#B42318" stroke-width="1.2" stroke-dasharray="4 5"></line>
+          <text x="462" y="44" fill="#B42318" font-size="12.5">pare o replay aqui</text>
+          <text x="462" y="62" fill="#494946" font-size="11.5">o cruzamento se move</text>
+          <text x="462" y="78" fill="#494946" font-size="11.5">com o seu orçamento</text>
+        </svg>
+        <p style="font:500 14px/1.6 var(--mono);color:var(--ink2);margin-top:4px">além de ≈ 6 saltos, replay perde até com orçamento ilimitado</p>
+      </div>
+      <div>
+        <ul class="list tight">
+          <li>A cada salto para trás, mais um estágio precisa sobreviver de novo: <b>o valor cai, a conta sobe</b>.</li>
+        </ul>
+        <table class="mini" style="margin-top:12px;font-size:18px">
+          <tbody><tr><th>gate</th><th>qualidade por token</th></tr>
+          <tr><td>build</td><td>0.047</td></tr>
+          <tr><td>ship</td><td>0.043</td></tr>
+          <tr><td style="color:var(--amber)">intake</td><td style="color:var(--amber);font-weight:600;font-size:20px">0.013 · um terço</td></tr>
+        </tbody></table>
+        <p style="font-size:18px;color:var(--ink2);margin-top:12px">A melhor política financia build e ship, <b style="color:var(--amber)">pula intake</b>, e paga os replays.</p>
+      </div>
+    </div>
+    <p class="kicker">Um pipeline saudável dá replay de propósito. Replays subindo apontam o gate subfinanciado.</p>
+  </div>
+</section>
+
+<!-- S15 · DRIFT -->
+<section class="slide" data-title="Deriva" data-notes="[14:25] Nenhuma estimativa permanece válida indefinidamente. Modelos, prompts, ferramentas e distribuição das tarefas mudam. Por isso o plano deve manter uma pequena amostra aleatória, atualizar a habilidade estimada e recalcular a alocação. O resultado aplicável é um ciclo: estimar, alocar, executar, medir e reestimar.">
+  <span class="crumb"><b>II · A TEORIA</b> · AO LONGO DO TEMPO</span>
+  <div class="body">
+    <h2>Habilidades derivam. Planos de revisão vencem.</h2>
+    <div class="cols" style="margin-top:6px;grid-template-columns:.9fr 1.1fr">
+      <div>
+        <svg viewBox="0 0 430 260" width="540" aria-label="Loop de alocação de revisão">
+          <defs><marker id="ar3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#E03A00"></path></marker></defs>
+          <g font-size="12.5" fill="#111111">
+            <rect x="125" y="6" width="180" height="44" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="215" y="33" text-anchor="middle">estima habilidade</text>
+            <rect x="245" y="106" width="180" height="44" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="335" y="133" text-anchor="middle">aloca revisão</text>
+            <rect x="125" y="206" width="180" height="44" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="215" y="233" text-anchor="middle">executa e entrega</text>
+            <rect x="5" y="106" width="180" height="44" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="95" y="133" text-anchor="middle">mede resultados</text>
+          </g>
+          <g stroke="#E03A00" stroke-width="1.5" fill="none">
+            <path d="M292 50 C 326 66 334 82 333 102" marker-end="url(#ar3)"></path>
+            <path d="M333 150 C 330 176 300 196 285 208" marker-end="url(#ar3)"></path>
+            <path d="M138 206 C 112 192 94 174 94 154" marker-end="url(#ar3)"></path>
+            <path d="M96 106 C 100 78 126 58 140 50" marker-end="url(#ar3)"></path>
+          </g>
+        </svg>
+      </div>
+      <div style="align-self:center">
+        <div class="stat" style="margin-bottom:16px"><div class="v">5</div><div class="k">updates de modelo em dois meses · habilidades mexeram toda vez</div></div>
+        <div class="card" style="border-color:rgba(224,58,0,.45);margin-bottom:16px"><p style="font-size:22px;color:var(--ink)"><b style="color:var(--amber)">Solte revisão onde a habilidade subiu.</b></p></div>
+        <ul class="list tight">
+          <li>Reestime em agenda fixa.</li>
+          <li>Mantenha uma pequena auditoria aleatória sempre ligada.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="kicker">A alocação se repete, porque as habilidades seguem mudando.</p>
+  </div>
+</section>
+
+<!-- S16 · DIVIDER III -->
+<section class="slide divider" data-title="III · O Teste" data-notes="[14:55] A teoria agora produz previsões que podemos confrontar com dados.">
+  <div class="n">III</div>
+  <div class="t">O Teste</div>
+  <p class="th">Quatro previsões, checadas contra os dados.</p>
+  <p class="sub">
+    <span style="color:var(--amber)">1</span> · Fluxos de trabalho bajulam modelos<br>
+    <span style="color:var(--amber)">2</span> · Pedidos maiores falham mais<br>
+    <span style="color:var(--amber)">3</span> · A revisão fica onde a falha não está<br>
+    <span style="color:var(--amber)">4</span> · Planos fixos envelhecem; adaptativos seguram<br>
+    <span style="color:var(--mut);font-size:15px">dados: o log de 150.000 eventos + SWE-bench Verified</span>
+  </p>
+</section>
+
+<!-- S17 · DATA & METHODS -->
+<section class="slide" data-title="Dois conjuntos de dados, três métodos" data-notes="[15:00] Usamos duas fontes complementares. O log de produção mostra revisão real, mas não possui um gabarito perfeito. O SWE-bench Verified oferece tarefas com testes, mas não representa governança de produção. Recuperamos o workflow por mineração de processos, avaliamos dano com juízes calibrados e usamos um simulador ajustado em dados reservados. É importante manter os rótulos: alguns resultados são observados, outros são correlações e outros são contrafactuais simulados.">
+  <span class="crumb"><b>III · O TESTE</b> · A EVIDÊNCIA</span>
+  <span class="ctag">mineração de processos · llm como juiz</span>
+  <div class="body">
+    <h2>Dois conjuntos de dados, três métodos</h2>
+    <div class="cols" style="margin-block:auto">
+      <div class="card"><span class="tag">log de produção</span><div style="font-size:46px;font-weight:220;margin:8px 0 6px">793</div><p style="font-size:18px"><b style="color:var(--ink)">tarefas concluídas</b>, de 877 abertas. Revisão e governança reais; sem gabarito.</p></div>
+      <div class="card"><span class="tag">swe-bench verified</span><div style="font-size:46px;font-weight:220;margin:8px 0 6px">500 × 16</div><p style="font-size:18px"><b style="color:var(--ink)">tarefas × modelos</b>, testes ocultos. Com gabarito; sem governança.</p></div>
+    </div>
+    <div class="cols3" style="margin-top:16px">
+      <div class="card"><p style="font-size:16.5px"><b style="color:var(--ink)">Fluxo de trabalho recuperado</b> do log por mineração de processos: 16 papéis achados.</p></div>
+      <div class="card"><p style="font-size:16.5px"><b style="color:var(--ink)">Dano avaliado</b> em 444 falhas por juízes LLM: concordância 0.84, tudo dentro de um nível.</p></div>
+      <div class="card"><p style="font-size:16.5px"><b style="color:var(--ink)">Simulador calibrado</b> em dados reservados: o modelo do planejador do Ato I, condicionado nos eventos.</p></div>
+    </div>
+    <p class="kicker">Traces dizem o que aconteceu. O simulador diz o que teria acontecido.</p>
+  </div>
+</section>
+
+<!-- S18 · THE RECOVERED WORKFLOW -->
+<section class="slide" data-title="O fluxo de trabalho recuperado" data-notes="[15:45] Este é o fluxo recuperado dos eventos, não um diagrama desenhado antes da operação. Os passos vermelhos são governança e as bordas mais grossas mostram pausas humanas. Ele permite localizar onde o trabalho falhou e onde a supervisão realmente aconteceu.">
+  <span class="crumb"><b>III · O TESTE</b> · O CENÁRIO</span>
+  <div class="body">
+    <h2>O workflow, recuperado do log</h2>
+    <div class="svgwrap" style="margin-top:16px">
+    <svg viewBox="0 30 1100 250" width="1096" aria-label="Fluxo de entrega recuperado">
+      <defs><marker id="ar4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#8B8B85"></path></marker><marker id="arA4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#E03A00"></path></marker></defs>
+      <g font-size="15">
+        <rect x="30" y="60" width="140" height="46" rx="0" fill="rgba(224,58,0,.08)" stroke="rgba(224,58,0,.4)"></rect><text x="100" y="88" text-anchor="middle" fill="#111111">intake</text>
+        <rect x="205" y="60" width="140" height="46" rx="0" fill="rgba(224,58,0,.08)" stroke="rgba(224,58,0,.4)"></rect><text x="275" y="88" text-anchor="middle" fill="#111111">planejamento</text>
+        <rect x="380" y="60" width="140" height="46" rx="0" fill="rgba(224,58,0,.08)" stroke="rgba(224,58,0,.4)"></rect><text x="450" y="88" text-anchor="middle" fill="#111111">admission</text>
+        <rect x="555" y="60" width="140" height="46" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="625" y="88" text-anchor="middle" fill="#111111">dispatch</text>
+        <rect x="730" y="60" width="140" height="46" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="800" y="80" text-anchor="middle" fill="#111111">implementar</text><text x="800" y="97" text-anchor="middle" fill="#E03A00" font-size="10.5">resultado pré-revisão</text>
+        <rect x="905" y="60" width="140" height="46" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="975" y="80" text-anchor="middle" fill="#111111">teste / CI</text><text x="975" y="97" text-anchor="middle" fill="#E03A00" font-size="10.5">taxa de detecção</text>
+      </g>
+      <g stroke="#8B8B85" stroke-width="1.5">
+        <line x1="170" y1="83" x2="201" y2="83" marker-end="url(#ar4)"></line><line x1="345" y1="83" x2="376" y2="83" marker-end="url(#ar4)"></line>
+        <line x1="520" y1="83" x2="551" y2="83" marker-end="url(#ar4)"></line><line x1="695" y1="83" x2="726" y2="83" marker-end="url(#ar4)"></line>
+        <line x1="870" y1="83" x2="901" y2="83" marker-end="url(#ar4)"></line>
+      </g>
+      <path d="M1045 106 C 1078 130 1078 160 1045 184" fill="none" stroke="#8B8B85" stroke-width="1.5" marker-end="url(#ar4)"></path>
+      <g font-size="15">
+        <rect x="905" y="185" width="140" height="46" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="975" y="213" text-anchor="middle" fill="#111111">revisão</text>
+        <rect x="730" y="185" width="140" height="46" rx="0" fill="rgba(224,58,0,.08)" stroke="#E03A00" stroke-width="1.8"></rect><text x="800" y="207" text-anchor="middle" fill="#111111">PR gate</text><text x="800" y="223" text-anchor="middle" fill="#E03A00" font-size="10.5">ponto de pausa humano</text>
+        <rect x="555" y="185" width="140" height="46" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="625" y="207" text-anchor="middle" fill="#111111">merge</text><text x="625" y="223" text-anchor="middle" fill="#E03A00" font-size="10.5">resultado pós-revisão</text>
+        <rect x="380" y="185" width="140" height="46" rx="0" fill="rgba(224,58,0,.08)" stroke="#E03A00" stroke-width="1.8"></rect><text x="450" y="207" text-anchor="middle" fill="#111111">release</text><text x="450" y="223" text-anchor="middle" fill="#E03A00" font-size="10.5">ponto de pausa humano</text>
+        <rect x="205" y="185" width="140" height="46" rx="0" fill="rgba(224,58,0,.08)" stroke="rgba(224,58,0,.4)"></rect><text x="275" y="207" text-anchor="middle" fill="#111111">retrospectiva</text><text x="275" y="223" text-anchor="middle" fill="#E03A00" font-size="10.5">dano avaliado</text>
+      </g>
+      <g stroke="#8B8B85" stroke-width="1.5">
+        <line x1="905" y1="208" x2="874" y2="208" marker-end="url(#ar4)"></line><line x1="730" y1="208" x2="699" y2="208" marker-end="url(#ar4)"></line>
+        <line x1="555" y1="208" x2="524" y2="208" marker-end="url(#ar4)"></line><line x1="380" y1="208" x2="349" y2="208" marker-end="url(#ar4)"></line>
+      </g>
+      <path d="M905 200 C 884 158 876 134 864 112" fill="none" stroke="#E03A00" stroke-width="1.3" stroke-dasharray="5 6" marker-end="url(#arA4)"></path>
+      <text x="856" y="150" text-anchor="end" fill="#E03A00" font-size="12.5">loop de conserto · taxa de reparo</text>
+      <path d="M205 208 C 60 208 40 150 68 110" fill="none" stroke="#8B8B85" stroke-width="1.3" stroke-dasharray="5 6" marker-end="url(#ar4)"></path>
+      <text x="42" y="150" fill="#8B8B85" font-size="12.5">próxima onda</text>
+
+    </svg>
+    </div>
+    <p style="font:500 15px/1.5 var(--mono);color:var(--ink2);margin-top:10px">caixas vermelhas: governança · borda grossa: pausa humana</p>
+    <p class="kicker">Cada achado a seguir aponta de volta para este mapa.</p>
+  </div>
+</section>
+
+<!-- S19 · FINDING 1 -->
+<section class="slide" data-title="Achado 1 · a bajulação de 4×" data-notes="[16:10] Primeiro achado: o mesmo modelo resolveu cerca de três vírgula nove vezes mais tarefas dentro do workflow do que sozinho. O workflow decompõe, testa e repara, portanto o resultado final é melhor. Isso é bom para a entrega, mas não deve ser interpretado como competência bruta do modelo. Entre setenta e três e oitenta e nove por cento das vitórias do workflow ocorreram em tarefas nas quais o modelo havia falhado sozinho. A consequência é autorizar com a medição raw e operar com a medição corrigida.">
+  <span class="crumb"><b>III · O TESTE</b> · PREVISÃO 1</span>
+  <div class="body">
+    <div class="pv"><span class="p">previsto</span><span class="txt">fluxos de trabalho fazem modelos parecerem melhores do que são</span><span class="vd">confirmado · medido · causalidade em aberto</span></div>
+    <h2>O mesmo modelo parece 4× melhor dentro do workflow</h2>
+    <div class="cols" style="grid-template-columns:1.25fr .75fr;align-items:center">
+      <div>
+        <svg viewBox="0 0 640 360" width="620" aria-label="Taxa de resolução isolada versus no fluxo de trabalho, por dificuldade">
+          <g font-size="12" fill="#6E6E68">
+            <text x="8" y="330">0</text><text x="8" y="248">10</text><text x="8" y="166">20</text><text x="8" y="84">30</text>
+            <text x="8" y="26">tarefas resolvidas (%)</text>
+          </g>
+          <g stroke="#E6E6E1" stroke-width="1">
+            <line x1="40" y1="326" x2="620" y2="326"></line><line x1="40" y1="244" x2="620" y2="244"></line>
+            <line x1="40" y1="162" x2="620" y2="162"></line><line x1="40" y1="80" x2="620" y2="80"></line>
+          </g>
+          <g font-size="12.5" fill="#494946">
+            <circle cx="66" cy="28" r="7" fill="#E03A00"></circle><text x="80" y="33" fill="#111111">dentro do workflow</text>
+            <circle cx="270" cy="28" r="7" fill="none" stroke="#494946" stroke-width="2"></circle><text x="284" y="33">modelo sozinho</text>
+          </g>
+          <g>
+            <line x1="160" y1="248" x2="160" y2="64" stroke="#C9C9C3" stroke-width="2"></line>
+            <circle cx="160" cy="248" r="9" fill="#000" stroke="#494946" stroke-width="2"></circle>
+            <circle cx="160" cy="64" r="9" fill="#E03A00"></circle>
+            <text x="178" y="252" fill="#494946" font-size="13">9.5</text>
+            <text x="178" y="69" fill="#111111" font-size="14">32.0</text>
+            <text x="160" y="350" text-anchor="middle" fill="#494946" font-size="13">tarefas fáceis</text>
+          </g>
+          <g>
+            <line x1="370" y1="307" x2="370" y2="221" stroke="#C9C9C3" stroke-width="2"></line>
+            <circle cx="370" cy="307" r="9" fill="#000" stroke="#494946" stroke-width="2"></circle>
+            <circle cx="370" cy="221" r="9" fill="#E03A00"></circle>
+            <text x="388" y="312" fill="#494946" font-size="13">2.3</text>
+            <text x="388" y="226" fill="#111111" font-size="14">12.8</text>
+            <text x="370" y="350" text-anchor="middle" fill="#494946" font-size="13">tarefas médias</text>
+          </g>
+          <g>
+            <circle cx="560" cy="326" r="9" fill="none" stroke="#494946" stroke-width="2"></circle>
+            <circle cx="560" cy="326" r="4.5" fill="#E03A00"></circle>
+            <text x="578" y="331" fill="#494946" font-size="13">0 · 0</text>
+            <text x="560" y="350" text-anchor="middle" fill="#494946" font-size="13">tarefas difíceis</text>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <div class="stat" style="margin-bottom:12px"><div class="v" style="color:var(--amber);font-size:76px">3.9×</div><div class="k">workflow vs. modelo sozinho, modelos pareados</div></div>
+        <div class="stat" style="margin-bottom:14px"><div class="v" style="font-size:60px">73–89%</div><div class="k">das vitórias do workflow: tarefas que o modelo falhou sozinho</div></div>
+        <p style="font-size:18.5px;color:var(--ink2);line-height:1.5">Em produção este mecanismo mediu <b style="color:var(--ink)">1.8×</b>. Nas tarefas mais difíceis a diferença some.</p>
+      </div>
+    </div>
+    <p class="kicker">Conceda autonomia pela habilidade solo; resultado de workflow bajula o modelo.</p>
+  </div>
+  <div class="foot"><span>SWE-bench Verified, execuções públicas pareadas</span></div>
+</section>
+
+<!-- S20 · FINDING 2 -->
+<section class="slide" data-title="Achado 2 · tamanho vence dificuldade" data-notes="[16:55] Segundo achado: o tamanho declarado da tarefa esteve mais associado ao dano do que uma avaliação subjetiva de dificuldade. Tarefas grandes atravessam mais contexto, ferramentas e dependências; criam mais oportunidades de degradação. Como o tamanho é conhecido antes da execução, ele pode orientar admissão e revisão. Uma regra simples é dividir a tarefa quando ela já precisa de mais de uma categoria de tamanho.">
+  <span class="crumb"><b>III · O TESTE</b> · PREVISÃO 2</span>
+  <div class="body">
+    <div class="pv"><span class="p">previsto</span><span class="txt">pedidos maiores falham mais, mesmo em dificuldade igual</span><span class="vd">confirmado · correlação</span></div>
+    <h2>Pedidos maiores falham mais. Mais difíceis, bem menos.</h2>
+    <div class="cols" style="grid-template-columns:1.02fr .98fr;align-items:center">
+      <div>
+        <svg viewBox="0 0 560 348" width="530" aria-label="Dano médio por tamanho e dificuldade da tarefa">
+          <text x="70" y="20" fill="#6E6E68" font-size="14">dano médio em 444 tarefas falhas · mais escuro = pior</text>
+          <g font-size="12.5" fill="#494946">
+            <text x="60" y="80" text-anchor="end">grande</text><text x="60" y="170" text-anchor="end">médio</text><text x="60" y="260" text-anchor="end">pequeno</text>
+            <text x="20" y="170" transform="rotate(-90 20 170)" text-anchor="middle" fill="#6E6E68">tamanho do pedido</text>
+            <text x="131" y="316" text-anchor="middle">baixa</text><text x="255" y="316" text-anchor="middle">média</text><text x="379" y="316" text-anchor="middle">alta</text>
+            <text x="255" y="344" text-anchor="middle" fill="#6E6E68">dificuldade</text>
+          </g>
+          <g font-size="18" font-weight="500">
+            <rect x="72" y="40" width="118" height="80" rx="0" fill="#111111"></rect><text x="131" y="87" text-anchor="middle" fill="#FFFFFF">1.69</text>
+            <rect x="196" y="40" width="118" height="80" rx="0" fill="#77776F"></rect><text x="255" y="87" text-anchor="middle" fill="#FFFFFF">1.39</text>
+            <rect x="320" y="40" width="118" height="80" rx="0" fill="#111111"></rect><text x="379" y="87" text-anchor="middle" fill="#FFFFFF">1.69</text>
+            <rect x="72" y="130" width="118" height="80" rx="0" fill="#C4C4BE"></rect><text x="131" y="177" text-anchor="middle" fill="#111111">1.27</text>
+            <rect x="196" y="130" width="118" height="80" rx="0" fill="#9A9A93"></rect><text x="255" y="177" text-anchor="middle" fill="#FFFFFF">1.48</text>
+            <rect x="320" y="130" width="118" height="80" rx="0" fill="#77776F"></rect><text x="379" y="177" text-anchor="middle" fill="#FFFFFF">1.39</text>
+            <rect x="72" y="220" width="118" height="80" rx="0" fill="#F0F0EC"></rect><text x="131" y="267" text-anchor="middle" fill="#111111">0.86</text>
+            <rect x="196" y="220" width="118" height="80" rx="0" fill="#F0F0EC"></rect><text x="255" y="267" text-anchor="middle" fill="#111111">0.93</text>
+            <rect x="320" y="220" width="118" height="80" rx="0" fill="#9A9A93"></rect><text x="379" y="267" text-anchor="middle" fill="#FFFFFF">1.48</text>
+          </g>
+          <g font-size="13" fill="#E03A00">
+            <text x="466" y="60">média da linha</text>
+            <text x="466" y="92" font-size="30" font-weight="600">1.62</text><text x="466" y="182" font-size="30" font-weight="600">1.35</text><text x="466" y="272" font-size="30" font-weight="600">1.07</text>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <ul class="list tight">
+          <li>Tamanho e dificuldade quase não se correlacionam aqui.</li>
+          </ul>
+        <p style="font-size:23px;line-height:1.45;margin:14px 0;color:var(--ink)">Um degrau a mais de <b style="color:var(--amber)">tamanho</b> ≈ <b style="color:var(--amber)">2×</b> o dano de um degrau de dificuldade.</p>
+        <ul class="list tight">
+          <li>Igual no SWE-bench: patches maiores, menos resolvidos.</li>
+        </ul>
+        <div class="card" style="margin-top:16px"><p style="font-size:18px">Se uma tarefa pede dois rótulos de tamanho, <b style="color:var(--ink)">divida</b>.</p></div>
+      </div>
+    </div>
+    <p class="kicker">O tamanho é fixado no planejamento, antes de existir código.</p>
+  </div>
+</section>
+
+<!-- S21 · FINDING 3 -->
+<section class="slide" data-title="Achado 3 · revisão no lugar errado" data-notes="[17:35] Terceiro achado: sessenta e nove por cento das pausas humanas estavam no release e vinte e oito por cento no pull request, embora muitas falhas nascessem antes. A revisão realizada teve poder de priorização próximo do acaso; um score estrutural simples foi apenas moderado, mas melhor. Isso não prova causalidade. Mostra uma diferença entre onde o sistema acumulava risco e onde as pessoas tinham oportunidade de olhar.">
+  <span class="crumb"><b>III · O TESTE</b> · PREVISÃO 3</span>
+  <div class="body">
+    <div class="pv"><span class="p">previsto</span><span class="txt">a revisão humana fica onde a falha não está</span><span class="vd">confirmado · observado</span></div>
+    <h2>A revisão guardou o fim. Os erros nasceram antes.</h2>
+    <div style="margin-top:10px">
+      <svg viewBox="0 0 1100 104" width="1096" aria-label="Onde ficaram as 298 pausas humanas">
+        <text x="4" y="14" fill="#6E6E68" font-size="14">onde ficaram as 298 pausas humanas</text>
+        <rect x="4" y="28" width="683" height="62" rx="0" fill="#111111"></rect>
+        <rect x="691" y="28" width="277" height="62" rx="0" fill="#8B8B85"></rect>
+        <rect x="972" y="28" width="29" height="62" rx="0" fill="#C9C9C3"></rect>
+        <rect x="1005" y="28" width="90" height="62" rx="0" fill="none" stroke="#8B8B85" stroke-dasharray="4 5"></rect>
+        <text x="18" y="66" fill="#FFFFFF" font-size="17" font-weight="600">release · 69%</text>
+        <text x="703" y="66" fill="#111111" font-size="17" font-weight="600">pull request · 28%</text>
+        <text x="986" y="20" text-anchor="middle" fill="#494946" font-size="12">outras 3%</text>
+        <text x="1050" y="66" fill="#8B8B85" font-size="14" text-anchor="middle">0%</text>
+      </svg>
+    <p style="font-size:24px;margin-top:14px;color:var(--ink)">implementação, onde os erros nascem: <b style="color:var(--amber);font-size:32px">0</b> pausas</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:20px;margin-top:18px">
+      <div class="stat"><div class="v" style="font-size:64px">0.47</div><div class="k">revisão gasta vs. falha futura · 0.5 = cara ou coroa</div></div>
+      <div class="stat"><div class="v" style="color:var(--amber);font-size:64px">0.58</div><div class="k">só da estrutura da tarefa · fraco mas real</div></div>
+      <div class="card" style="align-self:center"><p style="font-size:19px">Sinalizadas pela estrutura, sub-revisadas por humanos: <b style="color:var(--ink)">47% falharam vs. 35%</b>.</p></div>
+    </div>
+    <p class="kicker">A atenção seguiu o calendário, e o risco ficou sem vigia.</p>
+  </div>
+</section>
+
+<!-- S22 · FINDING 4 -->
+<section class="slide" data-title="Achado 4 · ⅙ da revisão" data-notes="[18:20] No simulador, revisar tudo atingiu a meta com custo alto. Uma política adaptativa, que colocou revisão onde o ganho marginal era maior e se recalibrou com os resultados, atingiu a mesma meta usando aproximadamente um sexto da revisão. Este é um resultado de simulação, não uma economia já implantada. Seu valor é formular uma hipótese operacional testável: comparar a política atual com uma alocação orientada por habilidade, topologia e deriva.">
+  <span class="crumb"><b>III · O TESTE</b> · PREVISÃO 4</span>
+  <div class="body">
+    <div class="pv"><span class="p">previsto</span><span class="txt">revisão posta onde paga atinge a meta bem mais barato</span><span class="vd">confirmado · em simulação</span></div>
+    <h2>Mesma qualidade, um sexto da revisão</h2>
+    <div class="cols" style="grid-template-columns:1.3fr .7fr;align-items:center">
+      <div>
+        <svg viewBox="0 0 660 320" width="640" aria-label="Custo de revisão por política para a mesma meta de qualidade">
+          <text x="4" y="16" fill="#6E6E68" font-size="12">custo de revisão para segurar a mesma meta · unidades relativas</text>
+          <g font-size="16" fill="#111111">
+            <text x="4" y="66">o que humanos fizeram</text>
+            <rect x="250" y="44" width="294" height="36" rx="0" fill="#DDDDD7"></rect>
+            <text x="256" y="67" font-size="13"><tspan fill="#B42318">✕</tspan><tspan fill="#111111" dx="6">perde a meta</tspan></text>
+            <text x="552" y="67" fill="#494946" font-size="14">9.2</text>
+            <text x="4" y="136">revisar tudo</text>
+            <rect x="250" y="114" width="365" height="36" rx="0" fill="#8B8B85"></rect>
+            <text x="256" y="137" fill="#FFFFFF" font-size="13">✓ segura a meta</text>
+            <text x="623" y="137" fill="#FFFFFF" font-size="14">11.4</text>
+            <text x="4" y="206">pôr onde paga</text>
+            <rect x="250" y="184" width="61" height="36" rx="0" fill="#E03A00"></rect>
+            <text x="319" y="207" fill="#111111" font-size="14" font-weight="600">1.9  ✓ segura a meta</text>
+            <text x="4" y="276">ótimo teórico</text>
+            <rect x="250" y="254" width="51" height="36" rx="0" fill="#FFFFFF" stroke="#E03A00" stroke-dasharray="5 4"></rect>
+            <text x="309" y="277" fill="#494946" font-size="14">1.6</text>
+          </g>
+          <line x1="250" y1="34" x2="250" y2="300" stroke="#111111" stroke-width="1.5"></line>
+        </svg>
+      </div>
+      <div>
+        <div class="stat" style="margin-bottom:12px"><div class="v" style="color:var(--amber);font-size:88px">⅙</div><div class="k">do custo de revisar tudo · 1.9 vs 11.4</div></div>
+        <div class="card" style="margin-bottom:14px"><p style="font-size:17px">Sob drift, planos fixos <b style="color:var(--ink)">perdem a meta</b>. O loop adaptativo <b style="color:var(--ink)">segura</b>: a política do planejador do Ato I, redecidindo conforme as estimativas mudam.</p></div>
+      </div>
+    </div>
+    <p class="kicker">Um resultado de simulação. O próximo passo é um teste ao vivo.</p>
+  </div>
+</section>
+
+<!-- S23 · WHAT THE NUMBERS CAN SAY -->
+<section class="slide" data-title="O que os números podem dizer" data-notes="[19:05] Resumindo a força da evidência: mascaramento e posição da revisão foram observados; tamanho é uma correlação; o ganho de custo e o comportamento sob deriva são resultados de simulação. A seguir, as execuções com modelos reais acrescentam evidência direcional, com amostras pequenas. Esta distinção importa porque uma teoria útil também precisa declarar o que ainda não demonstrou.">
+  <span class="crumb"><b>III · O TESTE</b> · COMO CITAR ISTO</span>
+  <div class="body">
+    <h2>O que os números desta noite podem e não podem dizer</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-block:auto">
+      <div class="card"><span class="tag">medido</span><h3>bajulação 4× · posição da revisão</h3><p style="font-size:17px">Aconteceram.<br><b style="color:var(--ink)">Não provam causa.</b></p></div>
+      <div class="card"><span class="tag">correlação</span><h3>tamanho ranqueia risco</h3><p style="font-size:17px">Conhecido antes do código.<br><b style="color:var(--ink)">Não prova que mover a revisão ajuda.</b></p></div>
+      <div class="card"><span class="tag">simulação</span><h3>custo ⅙ · resultados de deriva</h3><p style="font-size:17px">Previsto pelo modelo.<br><b style="color:var(--ink)">Ainda não implantado.</b></p></div>
+      <div class="card" style="border-color:rgba(224,58,0,.4)"><span class="tag">execuções ao vivo</span><h3>O Ato IV soma um quarto tipo</h3><p style="font-size:17px">Modelos reais, nota mecânica, n = 6 por célula.<br><b style="color:var(--ink)">Evidência direcional.</b></p></div>
+    </div>
+    <p class="kicker">Cite cada número com seu rótulo.</p>
+  </div>
+</section>
+
+<!-- S24 · DIVIDER IV -->
+<section class="slide divider" data-title="IV · Segunda-feira" data-notes="[19:30] Finalmente, como aplicar isso num workflow real.">
+  <div class="n">IV</div>
+  <div class="t">A Prática</div>
+  <p class="th">Como aplicar review patterns em coding workflows?</p>
+  <p class="sub">Execuções em modelos reais.</p>
+</section>
+
+<!-- E1 · TWO REAL WORKFLOWS -->
+<section class="slide" data-title="Rodamos: uma chain, um fan-out" data-notes="[19:35] Implementamos duas formas conhecidas. A chain em LangGraph passa por especificação, implementação e verificação, com retorno ao ponto em que o defeito nasceu. O fan-out em ADK usa analistas paralelos, um sintetizador e revisão na junção. O avaliador fica fora do loop e usa testes ou critérios definidos previamente. A comparação mostra que a intervenção correta depende da topologia e do tipo de evidência disponível.">
+  <span class="crumb"><b>IV · A PRÁTICA</b> · EXECUÇÕES AO VIVO 1/4</span>
+  <div class="body">
+    <h2>Patterns: uma chain com feedback, e um fan-out com re-dispatch.</h2>
+    <div class="cols" style="margin-top:8px;gap:28px">
+      <div>
+        <svg viewBox="0 0 520 122" width="100%" aria-label="Cadeia: especificar, implementar e verificar, com setas de retry e replay">
+          <defs><marker id="arE1" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="#8B8B85"></path></marker><marker id="arE1A" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="#E03A00"></path></marker></defs>
+          <g font-size="12" fill="#111111">
+            <rect x="8" y="26" width="120" height="36" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="68" y="48" text-anchor="middle">especificar</text>
+            <rect x="188" y="26" width="120" height="36" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="248" y="48" text-anchor="middle">implementar</text>
+            <rect x="368" y="26" width="130" height="36" rx="0" fill="#FFFFFF" stroke="rgba(224,58,0,.5)"></rect><text x="433" y="48" text-anchor="middle">verificar · crítico</text>
+          </g>
+          <g stroke="#8B8B85" stroke-width="1.4"><line x1="128" y1="44" x2="184" y2="44" marker-end="url(#arE1)"></line><line x1="308" y1="44" x2="364" y2="44" marker-end="url(#arE1)"></line></g>
+          <path d="M400 62 C 360 92 290 92 255 66" fill="none" stroke="#1D4ED8" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arE1)"></path>
+          <text x="330" y="112" fill="#1D4ED8" font-size="12.5" text-anchor="middle">retry + feedback</text>
+          <path d="M430 62 C 380 112 130 112 70 66" fill="none" stroke="#E03A00" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arE1A)"></path>
+          <text x="150" y="112" fill="#E03A00" font-size="12.5" text-anchor="middle">replay da raiz</text>
+          <text x="8" y="14" fill="#494946" font-size="12.5">CHAIN · LangGraph · o implementador nunca vê o ticket</text>
+        </svg>
+        <div class="contract" style="font-size:12.5px;line-height:1.8;margin-top:8px;padding:12px 14px">
+          <span class="k">def</span> <span class="v">gate(state) -&gt; Command:</span><br>
+          <span class="v">&nbsp;&nbsp;verdict = ask(CRITIC, ...)</span><br>
+          <span class="v">&nbsp;&nbsp;if verdict.startswith("OK"):</span><br>
+          <span class="v">&nbsp;&nbsp;&nbsp;&nbsp;return Command(goto=END)</span><br>
+          <span class="v">&nbsp;&nbsp;if "DEFECT_SPEC" in verdict:</span>&nbsp;<br>
+          <span class="v">&nbsp;&nbsp;&nbsp;&nbsp;return Command(goto=<span class="hl">"spec"</span>, update={"feedback": [verdict]})</span><br>
+          <span class="v">&nbsp;&nbsp;return Command(goto=<span class="hl">"implement"</span>, update={"feedback": [verdict]})</span>
+        </div>
+      </div>
+      <div>
+        <svg viewBox="0 0 520 122" width="100%" aria-label="Fan-out: analistas, síntese e checagem, com redespacho de um ramo">
+          <g font-size="11.5" fill="#111111">
+            <rect x="8" y="6" width="104" height="26" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="60" y="23" text-anchor="middle">analista A</text>
+            <rect x="8" y="36" width="104" height="26" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="60" y="53" text-anchor="middle">analista B</text>
+            <rect x="8" y="66" width="104" height="26" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="60" y="83" text-anchor="middle">analista C</text>
+            <rect x="212" y="36" width="120" height="26" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="272" y="53" text-anchor="middle">sintetizar</text>
+            <rect x="392" y="36" width="110" height="26" rx="0" fill="#FFFFFF" stroke="rgba(224,58,0,.5)"></rect><text x="447" y="53" text-anchor="middle">checar · crítico</text>
+          </g>
+          <g stroke="#8B8B85" stroke-width="1.3">
+            <line x1="112" y1="19" x2="208" y2="45" marker-end="url(#arE1)"></line>
+            <line x1="112" y1="49" x2="208" y2="49" marker-end="url(#arE1)"></line>
+            <line x1="112" y1="79" x2="208" y2="53" marker-end="url(#arE1)"></line>
+            <line x1="332" y1="49" x2="388" y2="49" marker-end="url(#arE1)"></line>
+          </g>
+          <path d="M447 62 C 400 98 150 98 66 94" fill="none" stroke="#E03A00" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arE1A)"></path>
+          <text x="270" y="116" fill="#E03A00" font-size="12.5" text-anchor="middle">redespacha o ÚNICO ramo culpado</text>
+          <text x="140" y="14" fill="#494946" font-size="12.5">FAN-OUT · ADK · o merge vê só resumos</text>
+        </svg>
+        <div class="contract" style="font-size:12.5px;line-height:1.8;margin-top:8px;padding:12px 14px">
+          <span class="v">async def _run_async_impl(self, ctx):</span><br>
+          <span class="v">&nbsp;&nbsp;async for ev in self.fan.run_async(ctx): yield ev</span>&nbsp;<span class="k"># 3 analistas</span><br>
+          <span class="v">&nbsp;&nbsp;async for ev in self.synth.run_async(ctx): yield ev</span><br>
+          <span class="v">&nbsp;&nbsp;blamed = localize(ask(CRITIC, ...))</span>&nbsp;&nbsp;<span class="hl"># revisar a junção</span><br>
+          <span class="v">&nbsp;&nbsp;async for ev in self.analysts[<span class="hl">blamed</span>].run_async(ctx):</span><br>
+          <span class="v">&nbsp;&nbsp;&nbsp;&nbsp;yield ev</span>&nbsp;&nbsp;<span class="hl"># repetir UM ramo e então unir de novo</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <span class="chip hot">revisor: maritaca, outra família</span><span class="chip hot">avaliador: juiz independente + checagens automáticas, fora do loop</span><span class="chip">gabarito: testes ocultos · gabaritos de prova</span><span class="chip">executores: gemini 3.5 / 3.6</span><span class="chip">o código completo no repo</span></div>
+  </div>
+</section>
+
+<!-- E2 · ROUND 1 FAILURE -->
+<section class="slide" data-title="Rodada 1: a revisão piorou tudo" data-notes="[20:20] Na primeira rodada, a revisão piorou o resultado. Havia uma tarefa realmente quebrada em quinze, mas o crítico sinalizou oito. Sete eram falsos alarmes e três soluções funcionais foram danificadas por reparos desnecessários. A qualidade caiu de noventa e três para setenta e três por cento. Com uma taxa-base baixa de falhas, um crítico que apenas opina entre OK e defeito pode criar mais dano do que benefício. A política correta teria sido registrar o sinal e evitar correção automática." data-hidden="true">
+  <span class="crumb"><b>IV · A PRÁTICA</b> · EXECUÇÕES AO VIVO 2/4</span>
+  <span class="ctag">taxas-base</span>
+  <div class="body">
+    <h2>Rodada 1: a revisão piorou as coisas</h2>
+    <div class="cols" style="margin-top:10px;grid-template-columns:1.05fr .95fr;align-items:center">
+      <div>
+        <svg viewBox="0 0 520 205" width="100%" aria-label="15 tarefas, 1 quebrada, 8 sinalizadas e 3 quebradas pelo reparo">
+          <text x="10" y="18" fill="#6E6E68" font-size="14">15 tarefas · chain a 93% de habilidade · crítico de veredito em toda tarefa</text>
+          <g>
+            <!-- row of 15 dots: dot 6 = truly broken(red); rings = flagged -->
+            <circle cx="40" cy="70" r="13" fill="#15803D"></circle><circle cx="40" cy="70" r="19" fill="none" stroke="#E03A00" stroke-width="2"></circle>
+            <circle cx="100" cy="70" r="13" fill="#15803D"></circle>
+            <circle cx="160" cy="70" r="13" fill="#15803D"></circle><circle cx="160" cy="70" r="19" fill="none" stroke="#E03A00" stroke-width="2"></circle>
+            <circle cx="220" cy="70" r="13" fill="#15803D"></circle><circle cx="220" cy="70" r="19" fill="none" stroke="#E03A00" stroke-width="2"></circle>
+            <circle cx="280" cy="70" r="13" fill="#B42318"></circle><circle cx="280" cy="70" r="19" fill="none" stroke="#E03A00" stroke-width="2"></circle>
+            <circle cx="340" cy="70" r="13" fill="#15803D"></circle>
+            <circle cx="400" cy="70" r="13" fill="#15803D"></circle><circle cx="400" cy="70" r="19" fill="none" stroke="#E03A00" stroke-width="2"></circle>
+            <circle cx="460" cy="70" r="13" fill="#15803D"></circle>
+            <circle cx="40" cy="130" r="13" fill="#15803D"></circle><circle cx="40" cy="130" r="19" fill="none" stroke="#E03A00" stroke-width="2"></circle>
+            <circle cx="100" cy="130" r="13" fill="#15803D"></circle>
+            <circle cx="160" cy="130" r="13" fill="#15803D"></circle><circle cx="160" cy="130" r="19" fill="none" stroke="#E03A00" stroke-width="2"></circle>
+            <circle cx="220" cy="130" r="13" fill="#15803D"></circle>
+            <circle cx="280" cy="130" r="13" fill="#15803D"></circle><circle cx="280" cy="130" r="19" fill="none" stroke="#E03A00" stroke-width="2"></circle>
+            <circle cx="340" cy="130" r="13" fill="#15803D"></circle>
+            <circle cx="400" cy="130" r="13" fill="#15803D"></circle>
+          </g>
+          <g font-size="13" fill="#494946">
+            <circle cx="30" cy="185" r="7" fill="#15803D"></circle><text x="44" y="190">trabalho correto</text>
+            <circle cx="175" cy="185" r="7" fill="#B42318"></circle><text x="189" y="190">1 quebrada</text>
+            <circle cx="345" cy="185" r="7" fill="none" stroke="#E03A00" stroke-width="2"></circle><text x="359" y="190">8 marcadas · 7 falsas</text>
+          </g>
+        </svg>
+        <div style="display:grid;grid-template-columns:1.1fr 1fr .8fr;gap:10px;margin-top:8px">
+          <div class="stat" style="padding:12px 14px"><div class="v" style="font-size:29px;color:#B42318;white-space:nowrap">0.93 → 0.73</div><div class="k">qualidade após reparos forçados</div></div>
+          <div class="stat" style="padding:12px 16px"><div class="v" style="font-size:34px;color:#B42318">3 · 0</div><div class="k">soluções funcionais quebradas · salvas</div></div>
+          <div class="stat" style="padding:12px 16px"><div class="v" style="font-size:34px;color:#B42318">0.79</div><div class="k">índice de mascaramento</div></div>
+        </div>
+      </div>
+      <div>
+        <table class="mini" style="font-size:18px">
+          <tbody><tr><th>crítico</th><th>precisão</th></tr>
+          <tr><td>maritaca small</td><td>0.10</td></tr>
+          <tr><td>maritaca large</td><td>0.00</td></tr>
+          <tr><td>gemini flash</td><td>0.00</td></tr>
+          <tr><td>gemini <b>pro</b></td><td><b>0.00</b></td></tr>
+        </tbody></table>
+        <p style="margin-top:12px;font-size:18px;color:var(--ink2)">Faixa de capacidade de 3×, mesmos artefatos congelados. <b style="color:var(--ink)">Discriminação idêntica.</b> Defeitos raros fazem de qualquer crítico de veredito um gerador de alarmes falsos.</p>
+        <div class="contract" style="font-size:12.5px;line-height:1.7;margin-top:12px;padding:11px 14px"><span class="k">a identidade assumia que revisão só ajuda. Ela quebrou:</span><br><span class="v">after = before + (1−before)·b·c·f <span class="hl">− before·b·(1−p)·ρ</span></span></div>
+      </div>
+    </div>
+    <p class="kicker">Melhoramos o crítico. Nada mudou. O instrumento era o problema.</p>
+  </div>
+</section>
+
+<!-- E3 · THE INSTRUMENT FIX -->
+<section class="slide" data-title="O conserto foi o instrumento" data-notes="[21:10] O problema não era apenas o modelo; era o instrumento. Um crítico binário produz uma opinião difícil de verificar. Um crítico executável produz asserts ou testes que podemos rodar. Um juiz por critérios avalia uma lista definida antes da execução e informa exatamente quais critérios falharam. Esses artefatos servem como evidência, como sinal de avaliação e como feedback para reparo. Para quem implementa isso, a regra é pedir ao revisor um objeto verificável, não somente um veredito fluente.">
+  <span class="crumb"><b>IV · A PRÁTICA</b> · EXECUÇÕES AO VIVO 3/4</span>
+  <span class="ctag">críticos executáveis</span>
+  <div class="body">
+    <h2>O conserto foi o instrumento: críticos que produzem evidência</h2>
+    <div class="cols3" style="margin-block:auto">
+      <div class="card" style="padding:20px 22px">
+        <span class="tag" style="color:#B42318">veredito · uma opinião</span>
+        <div style="font:400 14px/1.7 var(--mono);color:var(--ink)">“Se o código satisfaz todos os critérios, responda exatamente: <b style="color:var(--ink)">OK</b><br>Se violar um deles, responda: <b style="color:var(--ink)">DEFECT_CODE: …</b>”</div>
+        <div style="margin-top:16px"><div style="font:500 11px/1 var(--mono);letter-spacing:.14em;color:var(--mut);text-transform:uppercase">precisão</div><div style="font-size:30px;font-weight:650;color:#B42318;margin-top:6px">0,00–0,20</div></div>
+      </div>
+      <div class="card" style="padding:20px 22px">
+        <span class="tag">executável · evidência</span>
+        <div style="font:400 14px/1.7 var(--mono);color:var(--ink)">“ <b style="color:var(--ink)">NÃO</b> julgue o código: escreva instruções <b style="color:var(--ink)">assert</b> que expressem os critérios. <b style="color:var(--ink)">Nós as executamos.</b>”</div>
+        <div style="margin-top:16px"><div style="font:500 11px/1 var(--mono);letter-spacing:.14em;color:var(--mut);text-transform:uppercase">precisão</div><div style="font-size:30px;font-weight:650;color:var(--ink);margin-top:6px">2×</div><p style="font-size:14px;margin-top:8px;color:var(--ink2)">mesmo modelo · ele deve escrever testes válidos</p></div>
+      </div>
+      <div class="card" style="padding:20px 22px;border-color:rgba(224,58,0,.4)">
+        <span class="tag">rubrica · evidência + feedback</span>
+        <div style="font:400 14px/1.7 var(--mono);color:var(--ink)">“Pontue <b style="color:var(--ink)">cada critério</b>: PASS ou FAIL. Não invente critérios.”</div>
+        <div style="margin-top:16px"><div style="font:500 11px/1 var(--mono);letter-spacing:.14em;color:var(--mut);text-transform:uppercase">concordância dos juízes</div><div style="font-size:30px;font-weight:650;color:var(--amber);margin-top:6px">0,85–0,97</div><p style="font-size:14px;margin-top:8px;color:var(--ink2)">critérios reprovados = mensagem de reparo</p></div>
+      </div>
+    </div>
+    <p class="kicker">Um veredito é uma opinião. Uma asserção que executa, ou um critério pontuado, é evidência.</p>
+  </div>
+</section>
+
+<!-- E4 · THE PAYOFF MATRIX -->
+<section class="slide" data-title="A revisão enfim paga" data-notes="[21:55] Com o instrumento adequado, a revisão passou a ajudar. No fan-out, revisar, redespachar o ramo culpado e reconstruir a síntese elevou a qualidade de zero vírgula setenta e oito para zero vírgula noventa e seis, sem regressões observadas nessa pequena amostra. Trocar apenas o modelo do sintetizador não resolveu, porque a informação já havia sido perdida antes do merge. Incluir critérios no contrato levou a qualidade a um vírgula zero, sem custo adicional de revisão. São execuções pequenas, portanto evidência direcional, mas mostram como a topologia indica a alavanca.">
+  <span class="crumb"><b>IV · A PRÁTICA</b> · EXECUÇÕES AO VIVO 4/4</span>
+  <div class="body">
+    <h2>Com o instrumento certo, a revisão enfim paga</h2>
+    <div class="cols" style="grid-template-columns:1.25fr .75fr;align-items:center;margin-block:auto">
+      <div>
+        <svg viewBox="0 0 620 300" width="100%" aria-label="Qualidade antes e depois por política, em um fluxo fan-out">
+          <line x1="477" y1="24" x2="477" y2="284" stroke="#E03A00" stroke-width="1.1" stroke-dasharray="5 5"></line>
+          <text x="483" y="40" fill="#E03A00" font-size="13">meta 0.8</text>
+          <g font-size="16" fill="#111111">
+            <text x="8" y="70">base</text>
+            <line x1="373" y1="66" x2="384" y2="66" stroke="#C9C9C3" stroke-width="2"></line>
+            <circle cx="373" cy="66" r="7" fill="none" stroke="#8B8B85" stroke-width="2"></circle><circle cx="384" cy="66" r="7" fill="#8B8B85"></circle>
+            <text x="358" y="71" text-anchor="end" fill="#494946" font-size="14">0.61 → 0.63</text>
+            <text x="8" y="120">patch + falhas</text>
+            <line x1="345" y1="116" x2="520" y2="116" stroke="#C9C9C3" stroke-width="2"></line>
+            <circle cx="345" cy="116" r="7" fill="none" stroke="#1D4ED8" stroke-width="2"></circle><circle cx="520" cy="116" r="7" fill="#1D4ED8"></circle>
+            <text x="330" y="121" text-anchor="end" fill="#1D4ED8" font-size="14">0.56 → 0.88</text>
+            <text x="8" y="170" font-weight="650">revisão + reconstrução</text>
+            <line x1="466" y1="166" x2="564" y2="166" stroke="#C9C9C3" stroke-width="2"></line>
+            <circle cx="466" cy="166" r="7" fill="none" stroke="#E03A00" stroke-width="2"></circle><circle cx="564" cy="166" r="8" fill="#E03A00"></circle>
+            <text x="451" y="171" text-anchor="end" fill="#E03A00" font-size="16" font-weight="700">0.78 → 0.96</text>
+            <text x="558" y="192" text-anchor="middle" fill="#E03A00" font-size="12.5">zero regressões</text>
+            <text x="8" y="220">critérios no contrato</text>
+            <circle cx="586" cy="216" r="7" fill="#15803D"></circle>
+            <text x="571" y="221" text-anchor="end" fill="#15803D" font-size="14">1.00 estável</text>
+            <text x="8" y="270">upgrade</text>
+            <circle cx="362" cy="266" r="7" fill="#8B8B85"></circle>
+            <text x="347" y="271" text-anchor="end" fill="#8B8B85" font-size="14">0.59 → 0.59 · estável</text>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <ul class="list tight">
+          <li><b>O upgrade não comprou nada:</b> a falha era informação perdida entre nós.</li>
+          <li><b>Revisão com feedback reconstruiu exatamente isso</b>, e a chain concordou baixinho (+0.02, zero regressões).</li>
+          <li><b>Critérios marcaram 1.00 em tudo:</b> contrato, lista de critérios e feedback são um artefato só.</li>
+        </ul>
+        <div style="margin-top:14px"><span class="chip">n = 6 por célula · execuções únicas · modelos ao vivo</span></div>
+      </div>
+    </div>
+    <p class="kicker">O workflow diz o que comprar: revisão, profundidade de feedback ou um nó melhor.</p>
+  </div>
+</section>
+
+<!-- OPTIMIZE · ADK + COCKPIT -->
+<section class="slide" data-title="Entregue um fluxo de trabalho, receba um plano" data-notes="[22:40] O delegation-lab transforma essas decisões em um plano. Recebe o workflow, as estimativas de habilidade, a meta e os custos. Primeiro verifica se cada parte é viável. Depois compara revisão, upgrade, redução de escopo e mudanças de topologia. A saída não é uma recomendação genérica; é uma alocação por nó, acompanhada das hipóteses usadas. O valor para a equipe é poder testar cenários antes de aumentar autonomia ou orçamento.">
+  <span class="crumb"><b>IV · A PRÁTICA</b> · DELEGATION-LAB</span>
+  <div class="body">
+    <h2>delegation-lab calcula qual alavanca</h2>
+    <div class="cols" style="margin-block:auto;grid-template-columns:1.02fr .98fr">
+      <div>
+        <div class="contract" style="font-size:15px;line-height:2">
+          <span class="v">from google.adk import Agent</span><br>
+          <span class="v">from minimal_oversight import analyze_pipeline</span><br>
+          <br>
+          <span class="v">support = Agent(name=<span class="hl">"support"</span>,</span><br>
+          <span class="v">&nbsp;&nbsp;sub_agents=[triage, locate, patch, verify])</span><br>
+          <span class="v">report = analyze_pipeline(support, p_min=<span class="hl">0.90</span>)</span>
+        </div>
+        <div style="margin-top:12px">
+          <span class="chip">viável ou não</span><span class="chip">revisão por nó</span><span class="chip">ranking de mascaramento</span><span class="chip">agenda de rechecagem</span>
+        </div>
+      </div>
+      <div>
+        <table class="mini" style="font-size:18px">
+          <tbody><tr><th>nó</th><th>habilidade</th><th>o plano</th></tr>
+          <tr><td>triage</td><td>95%</td><td>pular</td></tr>
+          <tr><td>locate</td><td>70%</td><td>revisar 98% das execuções</td></tr>
+          <tr><td>patch</td><td>55% <span style="color:var(--amber)">→ 75%</span></td><td><span style="color:var(--amber)">upgrade</span> + revisar 88%</td></tr>
+          <tr><td>verify</td><td>85%</td><td>revisar 49%</td></tr>
+        </tbody></table>
+        <p style="margin-top:14px;font-size:18px;color:var(--ink2)"><span style="font-size:30px;font-weight:650;color:var(--amber)">2.4</span> unidades de revisão põem todo nó ≥ 90%. “Revisar tudo” custa <b style="color:var(--ink)">4.0</b> e ainda perde: um nó de 55% não chega a 90% em cobertura nenhuma.</p>
+        <p style="margin-top:10px;font-size:16px;color:var(--ink2)">Aqui a matemática manda subir o nó; no fan-out ela mandou feedback.</p>
+      </div>
+    </div>
+    <p class="kicker">O cockpit faz isso ao vivo: cole rastros ou um grafo, arraste a meta, veja o plano se mover.</p>
+  </div>
+
+</section>
+
+<!-- S25 · FIVE HABITS -->
+<section class="slide" data-title="Seis hábitos" data-notes="[23:20] Para começar sem adotar toda a teoria, eu sugiro seis hábitos. Defina critérios antes da execução. Registre qualidade antes e depois da correção. Faça críticos produzirem testes ou critérios reprovados. Declare o tamanho da tarefa. Divida antes de delegar quando o escopo cresce. E reestime habilidade e cobertura em uma cadência fixa. Os três primeiros já melhoram a qualidade da evidência; os três seguintes melhoram a alocação.">
+  <span class="crumb"><b>IV · A PRÁTICA</b> · PLAYBOOK</span>
+  <div class="body">
+    <h2>Seis hábitos, ranqueados por efeito medido</h2>
+<div style="display:flex;flex-direction:column;margin-top:6px">
+      <div class="act" style="grid-template-columns:36px 300px 1fr 290px;padding:14px 4px;border-left:3px solid rgba(224,58,0,.55);padding-left:12px"><span class="rn">1</span><span class="nm" style="font-size:20px">Escreva os critérios antes de alguém agir</span><span class="ds" style="font-size:15.5px">1.00 em toda célula ao vivo; contrato, lista de critérios e feedback são um artefato só</span><span class="tm" style="text-align:left;color:var(--ink2);font-size:13.5px">adicione um bloco de critérios a um template de tarefa</span></div>
+      <div class="act" style="grid-template-columns:36px 300px 1fr 290px;padding:14px 4px;border-left:3px solid rgba(224,58,0,.55);padding-left:12px"><span class="rn">2</span><span class="nm" style="font-size:20px">Registre dois números por tarefa</span><span class="ds" style="font-size:15.5px">a revisão esconde a habilidade real, e pode inverter (mascaramento ao vivo 0.79)</span><span class="tm" style="text-align:left;color:var(--ink2);font-size:13.5px">adicione uma coluna pré-revisão</span></div>
+      <div class="act" style="grid-template-columns:36px 300px 1fr 290px;padding:14px 4px;border-left:3px solid rgba(224,58,0,.55);padding-left:12px"><span class="rn">3</span><span class="nm" style="font-size:20px">Faça críticos produzirem evidência</span><span class="ds" style="font-size:15.5px">precisão de veredito 0.00 → 2×; juízes que dão nota critério a critério concordam 0.85–0.97</span><span class="tm" style="text-align:left;color:var(--ink2);font-size:13.5px">transforme um crítico em asserts ou em nota critério a critério</span></div>
+      <div class="act" style="grid-template-columns:36px 300px 1fr 290px;padding:14px 4px"><span class="rn">4</span><span class="nm" style="font-size:20px">Declare o tamanho no planejamento</span><span class="ds" style="font-size:15.5px">tamanho prevê dano 2× melhor que dificuldade</span><span class="tm" style="text-align:left;color:var(--ink2);font-size:13.5px">um campo de tamanho · divida o que for XL</span></div>
+      <div class="act" style="grid-template-columns:36px 300px 1fr 290px;padding:14px 4px"><span class="rn">5</span><span class="nm" style="font-size:20px">Divida antes de delegar</span><span class="ds" style="font-size:15.5px">algumas metas de qualidade são impossíveis em qualquer orçamento</span><span class="tm" style="text-align:left;color:var(--ink2);font-size:13.5px">&nbsp;faça a divisão para um pipeline</span></div>
+      <div class="act" style="grid-template-columns:36px 300px 1fr 290px;padding:14px 4px"><span class="rn">6</span><span class="nm" style="font-size:20px">Re-estime em agenda fixa</span><span class="ds" style="font-size:15.5px">cinco updates de modelo em dois meses mexeram toda habilidade</span><span class="tm" style="text-align:left;color:var(--ink2);font-size:13.5px">agende · mantenha auditorias aleatórias</span></div>
+    </div>
+    <p class="kicker">Os três do topo são as principais alavancas.</p>
+  </div>
+</section>
+
+<!-- CONCEPTS · TAKE-HOME MAP -->
+<section class="slide" data-title="O que você aprendeu esta noite" data-notes="[24:05] A apresentação conectou quatro áreas: engenharia de software para registrar e testar, planejamento para escolher ações sob incerteza, engenharia de harness para controlar agentes e a teoria de supervisão mínima suficiente para alocar revisão. Não é necessário adotar todos os termos agora. O essencial é separar competência, correção, custo e estrutura.">
+  <span class="crumb"><b>IV · A PRÁTICA</b> · PARA LEVAR</span>
+  <div class="body">
+    <h2>O que você aprendeu esta noite</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-block:auto">
+      <div class="card">
+        <span class="tag">engenharia de software</span>
+        <p style="font-size:17px;line-height:1.55"><b style="color:var(--ink)">event sourcing</b><br>o log é a única verdade<br><br><b style="color:var(--ink)">design by contract</b><br>o pedido é fixado de antemão<br><br><b style="color:var(--ink)">defesa em profundidade</b><br>checagens independentes em camadas</p>
+      </div>
+      <div class="card">
+        <span class="tag">planejamento de ia</span>
+        <p style="font-size:17px;line-height:1.55"><b style="color:var(--ink)">MDP fatorado</b><br>o mundo em variáveis pequenas<br><br><b style="color:var(--ink)">RDDL</b><br>uma língua para MDPs fatorados<br><br><b style="color:var(--ink)">alocação marginal</b><br>gaste cada olhada onde compra mais</p>
+      </div>
+      <div class="card">
+        <span class="tag">engenharia de harness</span>
+        <p style="font-size:17px;line-height:1.55"><b style="color:var(--ink)">hooks</b><br>código em momentos fixos do loop<br><br><b style="color:var(--ink)">adaptadores &amp; sidecars</b><br>plugam qualquer harness no log<br><br><b style="color:var(--ink)">playbooks &amp; skills</b><br>passos fixos, modelo dentro</p>
+      </div>
+      <div class="card" style="border-color:rgba(224,58,0,.4)">
+        <span class="tag">esta teoria</span>
+        <p style="font-size:17px;line-height:1.55"><b style="color:var(--ink)">supervisão mínima suficiente</b><br>a menor revisão que mantém a qualidade<br><br><b style="color:var(--ink)">mascaramento</b><br>a revisão esconde a habilidade real<br><br><b style="color:var(--ink)">o pico de 75%</b><br>onde a revisão paga mais<br><br><b style="color:var(--ink)">profundidade de reparo</b><br>patch · retry · replay</p>
+      </div>
+    </div>
+    <p class="kicker">Cada um destes está a uma busca de distância.</p>
+  </div>
+
+</section>
+
+<!-- S27 · CLOSE -->
+<section class="slide" data-title="Fechamento" data-notes="[24:30] A conclusão é operacional. Primeiro, verifique se a meta é atingível com o agente, o revisor e o workflow disponíveis. Segundo, aloque revisão onde ela compra mais qualidade, considerando a propagação de falhas no grafo. Terceiro, mantenha uma amostra que permita recalibrar o sistema quando houver deriva. E, sempre que possível, faça a revisão produzir evidência executável. O paper contém a formulação; o delegation-lab contém as implementações e o optimizer. Obrigado. Podemos ir às perguntas.">
+  <span class="crumb">FECHAMENTO</span>
+  <div class="body" style="justify-content:center">
+    <div class="cols3" style="margin-bottom:36px">
+      <div class="tomb"><div class="h">“Revisar tudo”</div><div class="c"><b>6× o custo</b> pela mesma qualidade</div></div>
+      <div class="tomb"><div class="h">“Confiar no pipeline verde”</div><div class="c">a revisão esconde o agente: <b>bajulação de 1.8×</b></div></div>
+      <div class="tomb"><div class="h">“Vigiar o trabalho mais fraco”</div><div class="c">a revisão paga mais perto de <b>75% de habilidade</b></div></div>
+    </div>
+    <p class="statement" style="font-size:56px;max-width:28ch">Autonomia é um <em>orçamento</em>, definido pelo pipeline inteiro; o modelo contribui um termo.</p>
+    <p style="margin-top:18px;font-size:23px;color:var(--ink2)">Cheque se é viável. Gaste onde paga. Recheque em agenda fixa.<br><span style="color:var(--ink)">A revisão se paga quando críticos produzem evidência.</span></p>
+    <div style="margin-top:34px;display:flex;gap:56px;font:400 15px/2 var(--mono);color:var(--ink)">
+      <div><span style="color:var(--mut)">paper</span><br>arxiv.org/abs/2606.15563</div>
+      <div><span style="color:var(--mut)">código</span><br>github.com/crbazevedo/delegation-lab</div>
+      <div><span style="color:var(--mut)">instalar</span><br>pip install minimal-oversight</div>
+      <div><span style="color:var(--mut)">eu</span><br>@crbazevedo</div>
+    </div>
+    <p style="margin-top:34px;font-size:28px;font-weight:640">Obrigado. <span style="color:var(--mut);font-weight:400">Perguntas?</span></p>
+  </div>
+</section>
+
+<!-- A0 · APPENDIX DIVIDER -->
+<section class="slide divider" data-title="Apêndice" data-notes="Placa para o Q&amp;A. Coloque na tela no momento em que as perguntas abrirem. Na prateleira: as fórmulas, a refatoração de forma, a avaliação do grafo minerado, confiabilidade dos juízes, estatísticas de estrutura, referências, a história da parada silenciosa, os anexos e as partes puladas do plano de controle. Novo: A7, a linha do tempo de seis anos de modelos.">
+  <div class="n" style="font-size:180px">A</div>
+  <div class="t">Apêndice · para o Q&amp;A</div>
+  <p class="th" style="font-size:34px">Fórmulas · confiabilidade dos juízes · estatísticas de estrutura · referências · história de campo · anexos · partes puladas · seis anos de modelos</p>
+</section>
+
+<!-- A1 · THE FORMULAS -->
+<section class="slide" data-title="A1 · as fórmulas" data-notes="Para o pessoal do quadro branco. A identidade de correção com o termo emendado de falso positivo das execuções ao vivo, o ótimo de alocação com pico perto de 0.75, o buffer de autonomia com o termo de complexidade, o relógio de deriva, a condição de replay e o limite de cobertura: se a cobertura exigida passa de 100 por cento, revisão sozinha não atinge a meta. Recorra a isto em qualquer pergunta de me-mostre-a-conta.">
+  <span class="crumb">APÊNDICE · A1</span>
+  <div class="body">
+    <h2>As fórmulas por trás do Ato II</h2>
+    <div class="cols" style="margin-top:12px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="eq" style="font-size:18px">σ<sub>corr</sub> = σ<sub>raw</sub> + (1−σ<sub>raw</sub>)·b·c·f <span class="m">· olhou × detectou × corrigiu</span></div>
+        <div class="eq" style="font-size:18px">emendada (execuções ao vivo): − σ<sub>raw</sub>·b·(1−p)·ρ <span class="m">· reparos falso-positivos destroem trabalho correto</span></div>
+        <div class="eq" style="font-size:18px">α*(x) = min(α<sub>max</sub>, (λ/2)·σ√(σ(1−σ))) <span class="m">· pico ≈ <span style="color:var(--amber)">0.75</span></span></div>
+        <div class="eq" style="font-size:18px">B<sub>eff</sub> = C<sub>op</sub> − p<sub>min</sub> − λ·H(W) <span class="m">· λ ≈ 0.02 / bit</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="eq" style="font-size:18px">T*<sub>auto</sub> = B<sub>eff</sub> / μ<sub>eff</sub> <span class="m">· inclinação observada −0.99</span></div>
+        <div class="eq" style="font-size:18px">K/N ≥ (p<sub>min</sub>−σ<sub>raw</sub>) / [(1−σ<sub>raw</sub>)·c·f] <span class="m" style="font-size:14px">· acima de 100%: revisão sozinha não atinge a meta</span></div>
+        <div class="eq" style="font-size:17px">replay iff w·[f(1−ρ)σ̄<sup>d</sup> − f₁<sup>up</sup>] &gt; λ·ΔC(d)</div>
+        <div class="eq" style="font-size:17px">r₃(j) = ℓ b<sub>j</sub>c<sub>j</sub> Σ<sub>m&lt;j</sub> π̃<sub>m</sub> Π(1−b<sub>g</sub>c<sub>g</sub>e<sub>g</sub>)</div>
+      </div>
+    </div>
+    <p class="kicker">Cada quantidade é estimável a partir das duas colunas do log.</p>
+  </div>
+  <div class="foot"><span>arXiv:2606.15563</span></div>
+</section>
+
+<!-- SHAPE · SAME AGENTS, BETTER SHAPE -->
+<section class="slide" data-title="Mesmos agentes, forma melhor" data-notes="Recorra a isto quando perguntarem se vale reestruturar em vez de somar revisão. Um redesenho simulado: um agente com doze ferramentas e uma chain de seis passos entrega 46 por cento de ponta a ponta; três agentes com quatro ferramentas cada e uma emenda revisada por passagem entregam 88. Pedidos menores sobem a habilidade por passo (o achado do tamanho), emendas dão à revisão onde se segurar, e menos ferramentas devolvem uns três pontos de buffer de autonomia. A aritmética: 0.88^6 = 0.465; segmentos 0.93^2 = 0.865; revisado 0.865 + 0.135 x 0.68 = 0.957; 0.957^3 = 0.876.">
+  <span class="crumb">APÊNDICE · REFATORAÇÃO DE FORMA (SIMULADA)</span>
+  <div class="body">
+    <h2>Mesmos agentes, forma melhor: 46% → 88%</h2>
+    <div class="cols" style="grid-template-columns:1.1fr .9fr;align-items:center;margin-block:auto">
+      <div>
+        <svg viewBox="0 0 680 260" width="640" aria-label="Refatoração do fluxo: cadeia monolítica versus três agentes com passagens revisadas">
+          <text x="10" y="24" fill="#494946" font-size="14">antes · um agente · 12 ferramentas · chain de seis passos</text>
+          <rect x="10" y="36" width="600" height="72" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.3)"></rect>
+          <g fill="#494946"><circle cx="70" cy="72" r="9"></circle><circle cx="162" cy="72" r="9"></circle><circle cx="254" cy="72" r="9"></circle><circle cx="346" cy="72" r="9"></circle><circle cx="438" cy="72" r="9"></circle><circle cx="530" cy="72" r="9"></circle></g>
+          <g stroke="#8B8B85" stroke-width="1.5"><line x1="79" y1="72" x2="153" y2="72"></line><line x1="171" y1="72" x2="245" y2="72"></line><line x1="263" y1="72" x2="337" y2="72"></line><line x1="355" y1="72" x2="429" y2="72"></line><line x1="447" y1="72" x2="521" y2="72"></line></g>
+          <text x="676" y="78" text-anchor="end" fill="#B42318" font-size="22" font-weight="600">46%</text>
+          <text x="10" y="156" fill="#494946" font-size="14">depois · três agentes · 4 ferramentas cada · emenda revisada por passagem</text>
+          <g font-size="12.5" fill="#111111">
+            <rect x="10" y="170" width="150" height="56" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="85" y="194" text-anchor="middle">agente A</text><text x="85" y="212" text-anchor="middle" fill="#8B8B85" font-size="10.5">intake &amp; spec</text>
+            <rect x="228" y="170" width="150" height="56" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="303" y="194" text-anchor="middle">agente B</text><text x="303" y="212" text-anchor="middle" fill="#8B8B85" font-size="10.5">build &amp; teste</text>
+            <rect x="446" y="170" width="150" height="56" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="521" y="194" text-anchor="middle">agente C</text><text x="521" y="212" text-anchor="middle" fill="#8B8B85" font-size="10.5">ship &amp; docs</text>
+          </g>
+          <g stroke="#8B8B85" stroke-width="1.5"><line x1="160" y1="198" x2="224" y2="198"></line><line x1="378" y1="198" x2="442" y2="198"></line><line x1="596" y1="198" x2="601" y2="198"></line></g>
+          <g fill="#E03A00">
+            <rect x="186" y="192" width="12" height="12" transform="rotate(45 192 198)"></rect>
+            <rect x="404" y="192" width="12" height="12" transform="rotate(45 410 198)"></rect>
+            <rect x="602" y="192" width="12" height="12" transform="rotate(45 608 198)"></rect>
+          </g>
+          <text x="192" y="246" text-anchor="middle" fill="#E03A00" font-size="10.5">olhada</text>
+          <text x="410" y="246" text-anchor="middle" fill="#E03A00" font-size="10.5">olhada</text>
+          <text x="608" y="246" text-anchor="middle" fill="#E03A00" font-size="10.5">olhada</text>
+          <text x="676" y="204" text-anchor="end" fill="#15803D" font-size="22" font-weight="600">88%</text>
+        </svg>
+      </div>
+      <div>
+        <ul class="list tight">
+          <li><b>Menos ferramentas por agente</b>: cada dobra nas escolhas taxa o buffer de autonomia (≈ 2% por bit).</li>
+          <li><b>Divida o mega-agente</b>: pedidos menores sobem a habilidade crua. É o achado do tamanho.</li>
+          <li><b>Revise nas emendas</b>: a passagem dá à olhada onde se segurar.</li>
+        </ul>
+        <p class="anchor" style="margin-top:14px;font:400 12px/1.7 var(--mono);color:var(--mut)">exemplo resolvido · passos 88% → 93% · detecção 80% · correção 85%</p>
+      </div>
+    </div>
+    <p class="kicker">Forma amigável à governança é escolha de projeto; aqui ela subiu a qualidade.</p>
+  </div>
+</section>
+
+<!-- CENSUS · THE MINED GRAPH, ASSESSED -->
+<section class="slide" data-title="Este grafo, avaliado" data-notes="Recorra a isto nas perguntas de onde-você-olharia-primeiro. A matemática dos motifs aplicada ao grafo minerado: 117 merges, 14 por cento dos nós; 113 fan-outs; 65 diamonds; chains até profundidade dez. Três consequências: revisar só as junções inspeciona a maior parte do trabalho conjunto; a 95 por cento por passo uma chain de profundidade dez entrega 60 por cento cru e mesmo revisão no fim trava em 87, então chains de cinco ou mais pedem gates no meio; e 56 por cento dos merges são junções diamond, a forma que previu dano. Ordem de prioridade: junções, depois gates de chain, depois ramos amostrados, depois pare.">
+  <span class="crumb">APÊNDICE · O GRAFO MINERADO, AVALIADO</span>
+  <div class="body">
+    <h2>Este grafo, avaliado: revise as junções, trave as chains fundas</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-block:auto">
+      <div class="stat"><div class="v" style="font-size:52px;color:var(--amber)">117</div><div class="k">merges · 14% de todos os nós</div></div>
+      <div class="stat"><div class="v" style="font-size:52px">113</div><div class="k">fan-outs</div></div>
+      <div class="stat"><div class="v" style="font-size:52px">65</div><div class="k">diamonds · 56% dos merges</div></div>
+      <div class="stat"><div class="v" style="font-size:52px">10</div><div class="k">chain mais funda</div></div>
+    </div>
+    <div class="cols3" style="margin-top:14px">
+      <div class="card" style="border-color:rgba(224,58,0,.4)"><span class="tag">pesado em merges → alavancagem</span><p style="font-size:15.5px">117 olhadas (14% dos nós) ficam a jusante de todo ramo paralelo. <b style="color:var(--ink)">Revisar só as junções inspeciona a maior parte do trabalho conjunto do grafo.</b></p></div>
+      <div class="card"><span class="tag">chains fundas → gates, por aritmética</span><p style="font-size:15.5px">Profundidade 10 a 95%/passo entrega <b style="color:var(--ink)">60% cru</b>. Revisar o fim de toda execução ainda trava em <b style="color:var(--ink)">87%</b>, abaixo da meta. <b style="color:var(--ink)">Chains ≥ 5 pedem gates no meio.</b></p></div>
+      <div class="card"><span class="tag">diamonds → risco de reconciliação</span><p style="font-size:15.5px">56% dos merges juntam braços que precisam concordar: a forma de fan-in que previu dano. <b style="color:var(--ink)">Prioridade: junções → gates de chain → ramos amostrados → pare.</b></p></div>
+    </div>
+    <p class="kicker">A estrutura diz onde olhar, antes de qualquer resultado chegar.</p>
+  </div>
+  <div class="foot"><span>estimativas: estrutura minerada × as equações desta noite</span></div>
+</section>
+
+<!-- A2 · JUDGE RELIABILITY -->
+<section class="slide" data-title="A2 · confiabilidade dos juízes" data-notes="Recorra a isto no ceticismo com juiz LLM. Kappa ponderado 0.84 numa re-nota em dados reservados, Fleiss 0.61 entre quatro avaliadores, 100 por cento dentro de um nível de dano, o juiz mais duro reportado em vez de corrigido, e achados inalterados sob construções alternativas de rótulo. O dano é pontuado de 0 a 3 no campo o-que-quebrou de 815 retrospectivas.">
+  <span class="crumb">APÊNDICE · A2</span>
+  <div class="body">
+    <h2>Juízes LLM precisam ganhar confiança</h2>
+    <div class="cols" style="margin-block:auto">
+      <table class="mini">
+        <tbody><tr><th>checagem</th><th>valor</th></tr>
+        <tr><td>concordância ponderada, re-nota reservada κ_w</td><td style="color:var(--ink);font-weight:600;font-size:24px">0.84</td></tr>
+        <tr><td>concordância entre quatro avaliadores (Fleiss κ)</td><td style="color:var(--ink);font-weight:600;font-size:24px">0.61</td></tr>
+        <tr><td>dentro de um nível de dano</td><td style="color:var(--ink);font-weight:600;font-size:24px">100%</td></tr>
+        <tr><td>juiz mais duro</td><td>reportado, sem correção</td></tr>
+        <tr><td>construções alternativas de rótulo</td><td>achados inalterados</td></tr>
+      </tbody></table>
+      <ul class="list tight" style="align-self:center">
+        <li>Dano pontuado 0–3 no campo “o que quebrou” de cada retrospectiva.</li>
+        <li>815 retrospectivas · re-nota reservada de 120 tarefas por outros juízes.</li>
+        <li>Contagens de menção medem ruído de processo; o juiz pontua o dano.</li>
+      </ul>
+    </div>
+    <p class="kicker">Confiabilidade de juiz é um número que você mede e reporta.</p>
+  </div>
+  <div class="foot"><span>Zheng et al. ’23 · Wang et al. ’23 · Landis &amp; Koch ’77</span></div>
+</section>
+
+<!-- A3 · STRUCTURE STATS -->
+<section class="slide" data-title="A3 · estatísticas de estrutura" data-notes="Recorra a isto sobre onde upgrades de modelo pagam. A estrutura recuperada: 16 famílias de papel, 864 nós, 671 arestas, profundidade dez, 113 fan-outs, 117 merges, 65 diamonds. Entre modelos no SWE-bench: a inclinação habilidade-resolução é maior na dificuldade média (0.91, depois 1.11, depois 0.73), então upgrades compram mais na faixa do meio. O elo com a ênfase em habilidade média só vale sob uma premissa não testada, sinalizada como tal.">
+  <span class="crumb">APÊNDICE · A3</span>
+  <div class="body">
+    <h2>A estrutura recuperada, e onde a habilidade do modelo importa</h2>
+    <div class="cols" style="margin-block:auto">
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="stat"><div class="v" style="font-size:52px">16</div><div class="k">famílias de papel (864 nós · 671 arestas)</div></div>
+          <div class="stat"><div class="v" style="font-size:52px">10</div><div class="k">profundidade máxima de chain</div></div>
+          <div class="stat"><div class="v" style="font-size:52px">113</div><div class="k">fan-outs</div></div>
+          <div class="stat"><div class="v" style="font-size:52px">117 · 65</div><div class="k">merges · diamonds</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <span class="tag">entre modelos, swe-bench (16 modelos)</span>
+        <p style="font-size:20px;line-height:1.6">inclinação habilidade→resolução por dificuldade:<br>
+        fácil <b style="color:var(--ink)">0.91</b> · média <b style="color:var(--amber)">1.11</b> · difícil <b style="color:var(--ink)">0.73</b><br><br>
+        Upgrades de modelo compram mais nas <b style="color:var(--ink)">tarefas médias</b>.</p>
+        <p style="font-size:14px;color:var(--ink2);margin-top:10px">O elo com habilidade média repousa numa premissa não testada.</p>
+      </div>
+    </div>
+    <p class="kicker">Toda forma de workflow que a teoria assume ocorre em produção.</p>
+  </div>
+</section>
+
+<!-- A4 · REFERENCES -->
+<section class="slide" data-title="A4 · referências" data-notes="A lista de leitura. Deixe na tela enquanto as pessoas fotografam e circulam. O paper da teoria e o lab são públicos; o estudo empírico está em revisão.">
+  <span class="crumb">APÊNDICE · A4</span>
+  <div class="body">
+    <h2>Referências &amp; ponteiros</h2>
+    <div class="cols" style="margin-block:auto">
+      <ul class="list tight">
+        <li><b>Azevedo (2026)</b> · Minimal Oversight · <span class="d">arXiv:2606.15563</span></li>
+        <li><b>delegation-lab</b> · toolkit + demos · <span class="d">github.com/crbazevedo/delegation-lab</span></li>
+        <li><b>Estudo empírico</b> · supervisão em rastros reais de agentes · <span class="d">em revisão, 2026</span></li>
+        <li><b>Cemri et al. (2025)</b> · por que sistemas multiagentes falham (MAST) · <span class="d">arXiv:2503.13657</span></li>
+        <li><b>Jimenez et al. (2024)</b> · SWE-bench · <span class="d">ICLR</span></li>
+      </ul>
+      <ul class="list tight">
+        <li><b>Bowman et al. (2022)</b> · supervisão escalável · <span class="d">arXiv:2211.03540</span></li>
+        <li><b>Madras et al. (2018)</b> · learning to defer · <span class="d">NeurIPS</span></li>
+        <li><b>Geifman &amp; El-Yaniv (2017)</b> · predição seletiva · <span class="d">NeurIPS</span></li>
+        <li><b>Zheng et al. (2023)</b> · LLM-as-a-judge · <span class="d">NeurIPS</span></li>
+        <li><b>van der Aalst (2016)</b> · Process Mining · <span class="d">Springer</span></li>
+      </ul>
+    </div>
+    <p class="kicker">Lâminas + notas do apresentador vivem neste arquivo: aperte N.</p>
+  </div>
+</section>
+
+<!-- A5 · FIELD STORY -->
+<section class="slide" data-title="A5 · a parada silenciosa" data-notes="Cor de Q&amp;A para perguntas de segurança. Uma execução autônoma longa pausou sem crash e sem erro: o modelo vinha segurando a decisão de parar ou continuar, escolheu parar, e não registrou nada. O conserto foi estrutural: parar saiu do vocabulário do modelo para regras fixas sobre o log; o fallback é trabalho ocioso útil, e só o kill switch do operador para o loop.">
+  <span class="crumb">APÊNDICE · A5 · HISTÓRIA DE CAMPO</span>
+  <div class="body">
+    <h2>A execução que parou em silêncio</h2>
+    <div class="cols" style="margin-block:auto">
+      <div class="card" style="border-color:rgba(224,58,0,.4)">
+        <p style="font-size:22px;line-height:1.6">Uma execução autônoma longa pausou.<br>Sem crash. Sem erro.<br><br>O modelo vinha segurando a decisão de parar ou continuar, e escolheu <b style="color:var(--amber)">parar</b>, sem registrar nada.</p>
+      </div>
+      <ul class="list tight" style="align-self:center">
+        <li>Parar-ou-continuar saiu do modelo, para regras fixas sobre o log.</li>
+        <li>“Parar” não está no vocabulário do modelo; o fallback é trabalho ocioso útil.</li>
+        <li>Só o kill switch do operador para o loop.</li>
+      </ul>
+    </div>
+    <p class="kicker">O modelo nunca deve decidir quando parar.</p>
+  </div>
+</section>
+
+<!-- ATTACH · HOOKS / ADAPTERS / SKILLS / PLAYBOOKS -->
+<section class="slide" data-title="Como toca um agente" data-notes="Recorra a isto sobre como o plane segura um harness que você não controla. Diagrama de cima: o loop do agente (percebe, decide, age) com losangos vermelhos de hook fixados em momentos fixos; hooks rodam código e podem bloquear, porque são código em vez de prompt. Ao lado, um harness de terceiros com um sidecar montado nele, traduzindo eventos para o log. Depois os quatro cards: hooks, adaptadores e sidecars, skills, playbooks. A regra de projeto por trás dos quatro: o que precisa acontecer é escrito como código, e o modelo preenche as lacunas de julgamento.">
+  <span class="crumb">APÊNDICE · OS ACOPLAMENTOS</span>
+  <span class="ctag">hooks · sidecars</span>
+  <div class="body">
+    <h2>Como o plano de controle toca um agente</h2>
+    <div class="svgwrap" style="margin:10px 0 4px">
+    <svg viewBox="0 0 1100 128" width="1096" aria-label="Hooks no loop do agente; um sidecar envia eventos de outro harness ao log">
+      <defs><marker id="arH" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#8B8B85"></path></marker></defs>
+      <g font-size="13.5" fill="#111111">
+        <rect x="40" y="34" width="130" height="40" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="105" y="59" text-anchor="middle">percebe</text>
+        <rect x="250" y="34" width="130" height="40" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="315" y="59" text-anchor="middle">decide</text>
+        <rect x="460" y="34" width="130" height="40" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="525" y="59" text-anchor="middle">age</text>
+      </g>
+      <g stroke="#8B8B85" stroke-width="1.4" fill="none">
+        <line x1="170" y1="54" x2="246" y2="54" marker-end="url(#arH)"></line>
+        <line x1="380" y1="54" x2="456" y2="54" marker-end="url(#arH)"></line>
+        <path d="M525 74 C 500 112 140 112 105 78" stroke-dasharray="4 5" marker-end="url(#arH)"></path>
+      </g>
+      <g fill="#E03A00">
+        <rect x="202" y="48" width="12" height="12" transform="rotate(45 208 54)"></rect>
+        <rect x="412" y="48" width="12" height="12" transform="rotate(45 418 54)"></rect>
+        <rect x="309" y="98" width="12" height="12" transform="rotate(45 315 104)"></rect>
+      </g>
+      <g font-size="12.5" fill="#E03A00">
+        <text x="208" y="34" text-anchor="middle">hook</text>
+        <text x="418" y="34" text-anchor="middle">hook</text>
+        <text x="315" y="124" text-anchor="middle">hook</text>
+      </g>
+      <g font-size="13.5" fill="#111111">
+        <rect x="700" y="28" width="170" height="52" rx="0" fill="#FFFFFF" stroke="rgba(17,17,17,.35)"></rect><text x="785" y="50" text-anchor="middle">harness de terceiros</text><text x="785" y="67" text-anchor="middle" fill="#8B8B85" font-size="12">não é seu</text>
+        <rect x="880" y="36" width="86" height="36" rx="0" fill="#F5F5F2" stroke="rgba(224,58,0,.55)" stroke-dasharray="4 4"></rect><text x="923" y="58" text-anchor="middle" fill="#E03A00" font-size="11">sidecar</text>
+        <rect x="1006" y="28" width="74" height="52" rx="0" fill="#FFFFFF" stroke="rgba(224,58,0,.45)"></rect><text x="1043" y="58" text-anchor="middle" fill="#E03A00">log</text>
+      </g>
+      <line x1="966" y1="54" x2="1002" y2="54" stroke="#E03A00" stroke-width="1.4" marker-end="url(#arH)"></line>
+    </svg>
+    </div>
+    <div class="cols" style="margin-top:10px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card"><span class="tag">hooks</span><p style="font-size:17.5px">Código em momentos fixos do loop do agente: antes de uma chamada de ferramenta, depois da saída. <b style="color:var(--ink)">Pode bloquear: é código em vez de prompt.</b></p></div>
+        <div class="card"><span class="tag">adaptadores &amp; sidecars</span><p style="font-size:17.5px">Um processo companheiro acoplado a um harness que não é seu. Ele traduz os eventos daquele harness <b style="color:var(--ink)">para o log</b>. Mesma ideia dos sidecars do Kubernetes.</p></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card"><span class="tag">skills</span><p style="font-size:17.5px">Conhecimento prático empacotado que o agente carrega sob demanda: procedimentos, checklists, regras de domínio.</p></div>
+        <div class="card"><span class="tag">playbooks</span><p style="font-size:17.5px">Sequências fixas de passos para tipos de tarefa conhecidos. O modelo improvisa <b style="color:var(--ink)">só dentro de um passo</b>.</p></div>
+      </div>
+    </div>
+    <p class="kicker">O que precisa acontecer é código. O modelo preenche as lacunas de julgamento.</p>
+  </div>
+</section>
+
+<!-- A6 · THE SKIPPED PARTS -->
+<section class="slide" data-title="A6 · as partes puladas" data-notes="Recorra a isto em perguntas de segurança e permissões. Blast radius: ações ranqueadas de só-leitura a irreversível, e um workflow é tão arriscado quanto seu passo mais arriscado. Aprovações de uso único: ações perigosas consomem uma aprovação emitida para aquele estado exato. Controle de admissão: planos recebem uma de cinco respostas graduadas: aceitar, reduzir, endurecer, adiar, rejeitar. Confiança conquistada: a confiança é computada de resultados do log, e a revisão nunca desliga; a taxa se move.">
+  <span class="crumb">APÊNDICE · A6 · PULADO DE PROPÓSITO</span>
+  <div class="body">
+    <h2>O resto do plano de controle, em quatro linhas</h2>
+    <div class="cols" style="margin-block:auto">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card"><span class="tag">blast radius</span><p style="font-size:19.5px">Ações ranqueadas de só-leitura → irreversível. Um workflow é tão arriscado quanto seu <b style="color:var(--ink)">passo mais arriscado</b>.</p></div>
+        <div class="card"><span class="tag">aprovações de uso único</span><p style="font-size:19.5px">Ações perigosas consomem uma aprovação emitida para aquele <b style="color:var(--ink)">estado exato</b>.</p></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card"><span class="tag">controle de admissão</span><p style="font-size:17px">Planos recebem uma de cinco respostas graduadas: aceitar · reduzir · endurecer · adiar · rejeitar.</p></div>
+        <div class="card"><span class="tag">confiança conquistada</span><p style="font-size:19.5px">A confiança é computada de resultados do log. A revisão <b style="color:var(--ink)">nunca desliga</b>; a taxa se move.</p></div>
+      </div>
+    </div>
+    <p class="kicker">Um instinto em tudo: transformar julgamentos em comparações contra o log.</p>
+  </div>
+</section><section class="slide" data-title="A7 · seis anos de modelos" data-notes="Para a pergunta do comitê sobre a evolução da supervisão. Quatro colunas por família e a faixa do ecossistema. O arco qualitativo, se pedirem: texto lido por resposta (2020-2022); revisão pulada e código disparado (2023); ferramentas, contexto de projeto e raciocínio oculto (2024); agentes de horas com permissões e auditoria (2025); governança contínua de sistemas de longa duração (2026). Toda data foi verificada; fontes e ressalvas no kb.">
+  <span class="crumb">APÊNDICE · A7 · LINHA DO TEMPO</span>
+  <div class="body">
+    <h2>Seis anos de modelos, por família</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin-top:18px;font-size:15px;line-height:1.48">
+      <div><p style="font:600 11.5px/1 var(--mono);letter-spacing:.14em;color:var(--amber);text-transform:uppercase;margin:0 0 10px">OpenAI</p><p style="margin:0 0 10px"><b>jun 20</b> GPT-3<br><span style="color:var(--ink2);font-size:13.5px">texto atrás de API; humano lê tudo</span></p><p style="margin:0 0 10px"><b>nov 22</b> ChatGPT<br><span style="color:var(--ink2);font-size:13.5px">escala de massa em 5 dias</span></p><p style="margin:0 0 10px"><b>mar 23</b> GPT-4<br><span style="color:var(--ink2);font-size:13.5px">boa o bastante para pularem a revisão</span></p><p style="margin:0 0 10px"><b>set 24</b> o1-preview<br><span style="color:var(--ink2);font-size:13.5px">raciocínio oculto por trás da resposta</span></p><p style="margin:0 0 10px"><b>abr 25</b> o3<br><span style="color:var(--ink2);font-size:13.5px">ferramentas dentro do raciocínio</span></p><p style="margin:0 0 10px"><b>ago 25</b> GPT-5<br><span style="color:var(--ink2);font-size:13.5px">cadeias longas de ferramentas</span></p></div><div><p style="font:600 11.5px/1 var(--mono);letter-spacing:.14em;color:var(--amber);text-transform:uppercase;margin:0 0 10px">Anthropic</p><p style="margin:0 0 10px"><b>mar 23</b> Claude 1<br><span style="color:var(--ink2);font-size:13.5px">assistente HHH via API</span></p><p style="margin:0 0 10px"><b>mar 24</b> Claude 3<br><span style="color:var(--ink2);font-size:13.5px">família em camadas, com visão</span></p><p style="margin:0 0 10px"><b>out 24</b> computer use<br><span style="color:var(--ink2);font-size:13.5px">opera tela, cursor e teclado</span></p><p style="margin:0 0 10px"><b>mai 25</b> Claude 4<br><span style="color:var(--ink2);font-size:13.5px">horas de código autônomo</span></p><p style="margin:0 0 10px"><b>set 25</b> Sonnet 4.5<br><span style="color:var(--ink2);font-size:13.5px">execuções de 30 horas</span></p><p style="margin:0 0 10px"><b>jun 26</b> Claude 5<br><span style="color:var(--ink2);font-size:13.5px">salvaguardas por nível no produto</span></p></div><div><p style="font:600 11.5px/1 var(--mono);letter-spacing:.14em;color:var(--amber);text-transform:uppercase;margin:0 0 10px">Google</p><p style="margin:0 0 10px"><b>mar 23</b> Bard<br><span style="color:var(--ink2);font-size:13.5px">chat ao lado da busca</span></p><p style="margin:0 0 10px"><b>fev 24</b> Gemini 1.5<br><span style="color:var(--ink2);font-size:13.5px">contexto de 1M de tokens</span></p><p style="margin:0 0 10px"><b>dez 24</b> Gemini 2.0<br><span style="color:var(--ink2);font-size:13.5px">modelo para a era agêntica</span></p><p style="margin:0 0 10px"><b>mar 25</b> Gemini 2.5<br><span style="color:var(--ink2);font-size:13.5px">orçamento de raciocínio exposto</span></p><p style="margin:0 0 10px"><b>nov 25</b> Gemini 3<br><span style="color:var(--ink2);font-size:13.5px">plataforma orientada a agentes</span></p><p style="margin:0 0 10px"><b>mai 26</b> Gemini 3.5 Flash<br><span style="color:var(--ink2);font-size:13.5px">agente pessoal 24/7 (Spark)</span></p></div><div><p style="font:600 11.5px/1 var(--mono);letter-spacing:.14em;color:var(--amber);text-transform:uppercase;margin:0 0 10px">DeepSeek + abertos</p><p style="margin:0 0 10px"><b>jul 23</b> Llama 2<br><span style="color:var(--ink2);font-size:13.5px">pesos abertos amplamente adotados</span></p><p style="margin:0 0 10px"><b>dez 24</b> DeepSeek-V3<br><span style="color:var(--ink2);font-size:13.5px">fronteira auto-hospedável</span></p><p style="margin:0 0 10px"><b>jan 25</b> DeepSeek-R1<br><span style="color:var(--ink2);font-size:13.5px">raciocínio aberto, licença MIT</span></p><p style="margin:0 0 10px"><b>jul 25</b> Kimi K2<br><span style="color:var(--ink2);font-size:13.5px">agêntico aberto, 1T parâmetros</span></p><p style="margin:0 0 10px"><b>abr 26</b> DeepSeek-V4<br><span style="color:var(--ink2);font-size:13.5px">contexto de 1M, aberto</span></p></div>
+    </div>
+    <p style="font-size:15px;line-height:1.55;color:var(--ink);margin-top:18px"><span style="font:600 11.5px/1 var(--mono);letter-spacing:.14em;color:var(--amber);text-transform:uppercase">o arco</span> &nbsp; <b>2020-22</b> texto lido por resposta &nbsp;·&nbsp; <b>2023</b> revisão pulada, código disparado &nbsp;·&nbsp; <b>2024</b> ferramentas, contexto de projeto, raciocínio oculto &nbsp;·&nbsp; <b>2025</b> agentes de horas, com permissões e auditoria &nbsp;·&nbsp; <b>2026</b> governança contínua de sistemas de longa duração</p>
+    <div class="card" style="margin-top:12px"><p style="font-size:15px"><span style="font:600 11.5px/1 var(--mono);letter-spacing:.14em;color:var(--amber);text-transform:uppercase">ecossistema</span> &nbsp; <b>jun 23</b> function calling &nbsp;·&nbsp; <b>nov 24</b> MCP &nbsp;·&nbsp; <b>fev 25</b> CLIs de código no terminal &nbsp;·&nbsp; <b>mar 25</b> horizonte METR dobrando em meses &nbsp;·&nbsp; <b>set 25</b> execuções de 30 h anunciados</p></div>
+  </div>
+  <div class="foot"><span>datas verificadas em 2026-08-03 · fontes no kb (evolution-milestones)</span></div>
+</section>
+
+<!--A7 · SIX YEARS OF MODELS-->
+
+
+</div>
+
+<div id="bar" style="width: 15.3846%;"></div>
+<div id="hud">8 / 52</div>
+<div id="notes"><div class="nt">Notas do apresentador · N para ocultar</div><div class="nb">[3:40] Chamarei de modelo o componente que gera respostas. Agente é o modelo operando com contexto, memória e ferramentas. Harness é o ambiente que executa e restringe o agente. Acima disso, o plano de controle coordena contratos, agenda, políticas, avaliação e observabilidade. Contratos descem para os agentes; eventos e resultados sobem. Para quem constrói agentes, a consequência é importante: não é possível governar apenas pelo prompt ou pela resposta final. Precisamos observar o objeto completo que produz o resultado.</div></div>
+<div id="toc"><h4>Índice · G ou Esc para fechar</h4><ol></ol></div>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide:not([data-hidden="true"])')];
+  const hud=document.getElementById('hud'),bar=document.getElementById('bar');
+  const notes=document.getElementById('notes'),nb=notes.querySelector('.nb');
+  const toc=document.getElementById('toc'),tocList=toc.querySelector('ol');
+  const stage=document.getElementById('stage');
+  let i=0;
+
+  slides.forEach((s,k)=>{
+    const li=document.createElement('li');
+    const b=document.createElement('button');
+    const n=document.createElement('span');n.className='i';n.textContent=String(k+1).padStart(2,'0');
+    const t=document.createElement('span');t.textContent=s.dataset.title||('Lâmina '+(k+1));
+    b.append(n,t);b.addEventListener('click',()=>{go(k);toggleToc(false);});
+    li.appendChild(b);tocList.appendChild(li);
+  });
+
+  function go(k){
+    i=Math.max(0,Math.min(slides.length-1,k));
+    slides.forEach((s,j)=>s.classList.toggle('on',j===i));
+    hud.textContent=(i+1)+' / '+slides.length;
+    bar.style.width=((i+1)/slides.length*100)+'%';
+    nb.textContent=slides[i].dataset.notes||'·';
+    if(location.hash!=='#/'+(i+1)) history.replaceState(null,'','#/'+(i+1));
+  }
+  function toggleToc(force){toc.classList.toggle('on',force!==undefined?force:!toc.classList.contains('on'));}
+  function fit(){
+    const s=Math.min(innerWidth/1280,innerHeight/720);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')';
+  }
+  addEventListener('keydown',e=>{
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    switch(e.key){
+      case 'ArrowRight':case ' ':case 'PageDown':e.preventDefault();go(i+1);break;
+      case 'ArrowLeft':case 'PageUp':e.preventDefault();go(i-1);break;
+      case 'Home':go(0);break;
+      case 'End':go(slides.length-1);break;
+      case 'n':case 'N':notes.classList.toggle('on');break;
+      case 'g':case 'G':toggleToc();break;
+      case 'Escape':toggleToc(false);notes.classList.remove('on');break;
+    }
+  });
+  addEventListener('hashchange',()=>{const m=location.hash.match(/^#\/(\d+)/);if(m)go(+m[1]-1);});
+  addEventListener('resize',fit);
+  const m=location.hash.match(/^#\/(\d+)/);
+  fit();go(m?+m[1]-1:0);
+})();
+</script>
+</body></html>

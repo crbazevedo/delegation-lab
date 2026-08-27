@@ -12,7 +12,7 @@ the **Minimum Sufficient Oversight Principle (MSO)**.
 
 Companion package to *"Minimal Oversight: Uncertainty-Aware Governance for Delegated AI Systems"* (Azevedo, 2026).
 
-**[Documentation](https://crbazevedo.github.io/delegation-lab/)** | **[Interactive widgets](web/)** | **[Notebooks](https://github.com/crbazevedo/delegation-lab/tree/main/notebooks)** | **[Changelog](https://github.com/crbazevedo/delegation-lab/blob/main/CHANGELOG.md)**
+**[Documentation](https://crbazevedo.github.io/delegation-lab/)** | **[Interactive widgets](web/)** | **[Talk - AGI Club Sao Paulo 2026](https://crbazevedo.github.io/delegation-lab/talks/agi-club-sp-2026/)** | **[Notebooks](https://github.com/crbazevedo/delegation-lab/tree/main/notebooks)** | **[Changelog](https://github.com/crbazevedo/delegation-lab/blob/main/CHANGELOG.md)**
 
 Current release tag: [`v0.1.3`](https://github.com/crbazevedo/delegation-lab/releases/tag/v0.1.3) / PyPI package: [`minimal-oversight==0.1.3`](https://pypi.org/project/minimal-oversight/0.1.3/)
 
