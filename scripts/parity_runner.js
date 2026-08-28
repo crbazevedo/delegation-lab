@@ -9,6 +9,7 @@
 const fs = require("fs");
 const MSO = require("../web/mso-core.js");
 const MSOEstimate = require("../web/mso-estimate.js");
+const MSO_Priors = require("../web/mso-priors.js");
 
 const inPath = process.argv[2];
 const outPath = process.argv[3];
@@ -58,5 +59,19 @@ out.risk = cases.risk.map((p) => MSO.rankNodesByRisk(p).map((r) => ({
   name: r.name, sota: r.sota_score, dc: r.delegation_centrality, masking: r.masking_index,
   fi: r.fan_in_degree, fo: r.fan_out_degree, bott: r.is_bottleneck,
 })));
+
+out.seed_node = (cases.seed_node || []).map((c) => {
+  const s = MSO_Priors.seedNode(c.model, c.task_type);
+  const p = s.provenance;
+  return {
+    seeds: s.seeds,
+    sigma_skill: s.sigma_skill != null ? s.sigma_skill : null,
+    catch_rate: s.catch_rate,
+    confidence: p.confidence,
+    band_low: p.band.low,
+    band_mid: p.band.mid,
+    band_high: p.band.high,
+  };
+});
 
 fs.writeFileSync(outPath, JSON.stringify(out));
